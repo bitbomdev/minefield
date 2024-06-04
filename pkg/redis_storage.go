@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -68,6 +69,68 @@ func (r *RedisStorage[T]) GetAllKeys() ([]uint32, error) {
 	}
 
 	return returnedKeys, nil
+}
+
+func (r *RedisStorage[T]) SaveCache(cache *NodeCache) error {
+	data, err := json.Marshal(cache)
+	if err != nil {
+		return err
+	}
+	return r.client.Set(context.Background(), fmt.Sprintf("cacheHelper:%d", cache.nodeID), data, 0).Err()
+}
+
+// ToBeCached returns all nodes that haven't been cached
+func (r *RedisStorage[T]) ToBeCached() ([]uint32, error) {
+	data, err := r.client.Get(context.Background(), "toBeCached").Result()
+	if err != nil {
+		return nil, err
+	}
+	var toBeCached []uint32
+	if err := json.Unmarshal([]byte(data), &toBeCached); err != nil {
+		return nil, err
+	}
+	return toBeCached, nil
+}
+
+func (r *RedisStorage[T]) AddNodeToCachedStack(id uint32) error {
+	data, err := r.client.Get(context.Background(), "toBeCached").Result()
+	if err != nil {
+		return err
+	}
+	var toBeCached []uint32
+	if err := json.Unmarshal([]byte(data), &toBeCached); err != nil {
+		return err
+	}
+	toBeCached = append(toBeCached, id)
+
+	setData, err := json.Marshal(toBeCached)
+	if err != nil {
+		return err
+	}
+
+	return r.client.Set(context.Background(), "toBeCached", setData, 0).Err()
+}
+
+func (r *RedisStorage[T]) ClearCacheStack() error {
+	var toBeCached []uint32
+	setData, err := json.Marshal(toBeCached)
+	if err != nil {
+		return err
+	}
+
+	return r.client.Set(context.Background(), "toBeCached", setData, 0).Err()
+}
+
+func (r *RedisStorage[T]) GetCache(id uint32) (*NodeCache, error) {
+	data, err := r.client.Get(context.Background(), fmt.Sprintf("cacheHelper:%d", id)).Result()
+	if err != nil {
+		return nil, err
+	}
+	var nodeCache NodeCache
+	if err := json.Unmarshal([]byte(data), &nodeCache); err != nil {
+		return nil, err
+	}
+	return &nodeCache, nil
 }
 
 func (r *RedisStorage[T]) SetDependency(nodeID, neighborID uint32) error {

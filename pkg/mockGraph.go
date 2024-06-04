@@ -17,6 +17,8 @@ type MockStorage[T any] struct {
 	idCounter    uint32
 	fullyCached  bool
 	mu           sync.Mutex
+	cache        map[uint32]*NodeCache
+	toBeCached   []uint32
 }
 
 func NewMockStorage[T any]() *MockStorage[T] {
@@ -61,6 +63,43 @@ func (m *MockStorage[T]) GetAllKeys() ([]uint32, error) {
 	return keys, nil
 }
 
+func (m *MockStorage[T]) SaveCache(cache *NodeCache) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.cache == nil {
+		m.cache = map[uint32]*NodeCache{}
+	}
+	m.cache[cache.nodeID] = cache
+	return nil
+}
+
+func (m *MockStorage[T]) ToBeCached() ([]uint32, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.toBeCached, nil
+}
+
+func (m *MockStorage[T]) AddNodeToCachedStack(id uint32) error {
+	m.toBeCached = append(m.toBeCached, id)
+
+	return nil
+}
+
+func (m *MockStorage[T]) ClearCacheStack() error {
+	m.toBeCached = []uint32{}
+
+	return nil
+}
+
+func (m *MockStorage[T]) GetCache(id uint32) (*NodeCache, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.cache[id]; !ok {
+		return nil, errors.New("cacheHelper not found")
+	}
+	return m.cache[id], nil
+}
+
 func (m *MockStorage[T]) SetDependency(nodeID, neighborID uint32) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -78,7 +117,7 @@ func (m *MockStorage[T]) SetDependency(nodeID, neighborID uint32) error {
 func (m *MockStorage[T]) QueryDependents(nodeID uint32) (*roaring.Bitmap, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if _, exists := m.dependents[nodeID]; !exists {
+	if _, exists := m.nodes[nodeID]; !exists {
 		return nil, fmt.Errorf("node does not exist")
 	}
 	return m.nodes[nodeID].QueryDependents(m)
@@ -87,7 +126,7 @@ func (m *MockStorage[T]) QueryDependents(nodeID uint32) (*roaring.Bitmap, error)
 func (m *MockStorage[T]) QueryDependencies(nodeID uint32) (*roaring.Bitmap, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if _, exists := m.dependents[nodeID]; !exists {
+	if _, exists := m.nodes[nodeID]; !exists {
 		return nil, fmt.Errorf("node does not exist")
 	}
 	return m.nodes[nodeID].QueryDependencies(m)

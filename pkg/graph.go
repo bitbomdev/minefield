@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/RoaringBitmap/roaring"
 )
@@ -20,6 +22,26 @@ type Node[T any] struct {
 	Parent     *roaring.Bitmap `json:"parent"`
 	ChildData  []byte          `json:"childData"`
 	ParentData []byte          `json:"parentData"`
+}
+
+type NodeCache struct {
+	nodeID      uint32
+	allParents  *roaring.Bitmap
+	allChildren *roaring.Bitmap
+}
+
+func (n *Node[T]) GetID() uint32 { return n.Id }
+
+func (n *Node[T]) GetChildren() *roaring.Bitmap { return n.Child }
+
+func (n *Node[T]) GetParents() *roaring.Bitmap { return n.Parent }
+
+func NewNodeCache(id uint32, allParents, allChildren *roaring.Bitmap) *NodeCache {
+	return &NodeCache{
+		nodeID:      id,
+		allParents:  allParents,
+		allChildren: allChildren,
+	}
 }
 
 // MarshalJSON is a custom JSON marshalling tool.
@@ -82,7 +104,7 @@ func (n *Node[T]) UnmarshalJSON(data []byte) error {
 }
 
 // AddNode becomes generic in terms of metadata
-func AddNode[T any](storage Storage[T], _type string, metadata T, parent, child *roaring.Bitmap, name string) (*Node[T], error) {
+func AddNode[T any](storage Storage[T], _type string, metadata T, name string) (*Node[T], error) {
 	var ID uint32
 	if id, err := storage.NameToID(name); err == nil {
 		return storage.GetNode(id)
@@ -98,10 +120,18 @@ func AddNode[T any](storage Storage[T], _type string, metadata T, parent, child 
 		Type:     _type,
 		Name:     name,
 		Metadata: metadata,
-		Child:    child,
-		Parent:   parent,
+		Child:    roaring.New(),
+		Parent:   roaring.New(),
+	}
+	nCache := &NodeCache{
+		nodeID:      ID,
+		allParents:  roaring.New(),
+		allChildren: roaring.New(),
 	}
 	if err := storage.SaveNode(n); err != nil {
+		return nil, err
+	}
+	if err := storage.SaveCache(nCache); err != nil {
 		return nil, err
 	}
 	return n, nil
@@ -128,6 +158,13 @@ func (n *Node[T]) SetDependency(storage Storage[T], neighbor *Node[T]) error {
 	if err := storage.SaveNode(neighbor); err != nil {
 		return err
 	}
+	if err := storage.AddNodeToCachedStack(n.Id); err != nil {
+		return err
+	}
+	if err := storage.AddNodeToCachedStack(neighbor.Id); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -169,13 +206,96 @@ func (n *Node[T]) queryBitmap(storage Storage[T], direction string) (*roaring.Bi
 		}
 	}
 
+	result.Remove(n.Id)
+
 	return result, nil
 }
 
-func (n *Node[T]) QueryDependents(storage Storage[T]) (*roaring.Bitmap, error) {
+func (n *Node[T]) QueryDependentsNoCache(storage Storage[T]) (*roaring.Bitmap, error) {
 	return n.queryBitmap(storage, "parent")
 }
 
-func (n *Node[T]) QueryDependencies(storage Storage[T]) (*roaring.Bitmap, error) {
+func (n *Node[T]) QueryDependenciesNoCache(storage Storage[T]) (*roaring.Bitmap, error) {
 	return n.queryBitmap(storage, "child")
+}
+
+// QueryDependents checks if all nodes are cached, if so find the dependents in the cache, if not find the dependents without searching the cache
+func (n *Node[T]) QueryDependents(storage Storage[T]) (*roaring.Bitmap, error) {
+	uncachedNodes, err := storage.ToBeCached()
+	if err != nil {
+		return nil, err
+	}
+	if len(uncachedNodes) > 0 {
+		return n.QueryDependentsNoCache(storage)
+	}
+
+	nCache, err := storage.GetCache(n.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	return nCache.allParents, nil
+}
+
+func (n *Node[T]) QueryDependencies(storage Storage[T]) (*roaring.Bitmap, error) {
+	uncachedNodes, err := storage.ToBeCached()
+	if err != nil {
+		return nil, err
+	}
+	if len(uncachedNodes) > 0 {
+		return n.QueryDependenciesNoCache(storage)
+	}
+
+	nCache, err := storage.GetCache(n.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	return nCache.allChildren, nil
+}
+
+func GenerateDOT[T any](storage Storage[T]) (string, error) {
+	keys, err := storage.GetAllKeys()
+	if err != nil {
+		return "", err
+	}
+
+	var dotBuilder strings.Builder
+	dotBuilder.WriteString("digraph G {\n")
+	dotBuilder.WriteString("node [shape=ellipse, style=filled, fillcolor=lightblue];\n") // Node style
+	dotBuilder.WriteString("edge [color=gray];\n")                                       // Edge style
+
+	for _, key := range keys {
+		node, err := storage.GetNode(key)
+		if err != nil {
+			return "", err
+		}
+
+		// Add the node with a label that includes type and additional metadata if needed
+		label := fmt.Sprintf("%s\\nMetadata: %v", node.Type, node.Metadata)
+		dotBuilder.WriteString(fmt.Sprintf("%d [label=\"%s\"];\n", node.GetID(), label))
+
+		// Add edges for children
+		for _, childID := range node.Child.ToArray() {
+			dotBuilder.WriteString(fmt.Sprintf("%d -> %d;\n", node.GetID(), childID))
+		}
+	}
+	dotBuilder.WriteString("}\n")
+	return dotBuilder.String(), nil
+}
+
+func RenderGraph[T any](storage Storage[T]) error {
+	dotString, err := GenerateDOT(storage)
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command("dot", "-Tpng", "-o", "graph.png", "-Kfdp") // Using fdp for a spring model layout
+	cmd.Stdin = strings.NewReader(dotString)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	fmt.Println("Graph rendered as graph.png using fdp layout")
+	return nil
 }

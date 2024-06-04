@@ -12,6 +12,11 @@ type Storage[T any] interface {
 	SaveNode(node *Node[T]) error
 	GetNode(id uint32) (*Node[T], error)
 	GetAllKeys() ([]uint32, error)
+	SaveCache(cache *NodeCache) error
+	ToBeCached() ([]uint32, error)
+	AddNodeToCachedStack(id uint32) error
+	GetCache(id uint32) (*NodeCache, error)
+	ClearCacheStack() error
 	SetDependency(nodeID, neighborID uint32) error
 	QueryDependents(nodeID uint32) (*roaring.Bitmap, error)
 	QueryDependencies(nodeID uint32) (*roaring.Bitmap, error)
