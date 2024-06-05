@@ -1,11 +1,9 @@
-# Makefile
-
-# Variables
-GO_FILES := $(shell find . -name '*.go' -not -path "./vendor/*")
+# Default target
+.DEFAULT_GOAL := all
 
 # Build target
 build:
-	go build -o bin/bitbom ./...
+	go build -o bin/bitbom main.go
 
 # Test target
 test:
@@ -28,3 +26,5 @@ docker-down: clean-redis
 
 docker-logs:
 	docker-compose logs -f
+
+all: build test # Build and test the project
