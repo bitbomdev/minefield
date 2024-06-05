@@ -28,7 +28,7 @@ func IngestSBOM(sbomPath string, storage Storage[any]) error {
 		if err != nil {
 			return fmt.Errorf("failed to add node: %w", err)
 		}
-		protoIDToNodeID[node.Id] = graphNode.id
+		protoIDToNodeID[node.Id] = graphNode.Id
 	}
 
 	// Iterate over the dependencies of the node and create a dependency edge

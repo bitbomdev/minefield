@@ -29,7 +29,7 @@ func NewMockStorage[T any]() *MockStorage[T] {
 func (m *MockStorage[T]) SaveNode(node *Node[T]) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.nodes[node.id] = node
+	m.nodes[node.Id] = node
 	return nil
 }
 

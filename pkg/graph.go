@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -9,31 +10,80 @@ import (
 
 // Generic Node structure with metadata as generic type
 type Node[T any] struct {
-	id       uint32
-	_type    string
-	metadata T
-	child    roaring.Bitmap // what the node depends on
-	parent   roaring.Bitmap // what depends on the node
+	Id         uint32         `json:"Id"`
+	Type       string         `json:"type"`
+	Metadata   T              `json:"metadata"`
+	Child      roaring.Bitmap `json:"child"`
+	Parent     roaring.Bitmap `json:"parent"`
+	ChildData  []byte         `json:"childData"`
+	ParentData []byte         `json:"parentData"`
 }
 
-func (n *Node[T]) GetID() uint32 { return n.id }
+// MarshalJSON is a custom JSON marshalling tool.
+// Roaring bitmaps can't be marshaled directly, so we need to call the roaring bitmaps function to convert the bitmaps to an []byte
+// This takes the roaring bitmaps "Child" and "Parent" and converts them to byte slices called "ChildData" and "ParentData".
+func (n *Node[T]) MarshalJSON() ([]byte, error) {
+	childData, err := n.Child.ToBytes()
+	if err != nil {
+		return nil, err
+	}
+	parentData, err := n.Parent.ToBytes()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(&struct {
+		ID         uint32 `json:"Id"`
+		Type       string `json:"type"`
+		Metadata   T      `json:"metadata"`
+		ChildData  []byte `json:"childData"`
+		ParentData []byte `json:"parentData"`
+	}{
+		ID:         n.Id,
+		Type:       n.Type,
+		Metadata:   n.Metadata,
+		ChildData:  childData,
+		ParentData: parentData,
+	})
+}
 
-func (n *Node[T]) GetChild() roaring.Bitmap { return n.child }
-
-func (n *Node[T]) GetParent() roaring.Bitmap { return n.parent }
+// UnmarshalJSON is a custom JSON unmarshaling tool.
+// We store the roaring bitmaps as a byte slice, so we need to unmarshal them, and then convert them from []byte to roaring.Bitmap.
+// This takes the "ChildData" and "ParentData" fields and unmarshals them from bytes into roaring bitmaps.
+func (n *Node[T]) UnmarshalJSON(data []byte) error {
+	aux := &struct {
+		ID         uint32 `json:"Id"`
+		Type       string `json:"type"`
+		Metadata   T      `json:"metadata"`
+		ChildData  []byte `json:"childData"`
+		ParentData []byte `json:"parentData"`
+	}{}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+	n.Id = aux.ID
+	n.Type = aux.Type
+	n.Metadata = aux.Metadata
+	if _, err := n.Child.FromBuffer(aux.ChildData); err != nil {
+		return err
+	}
+	if _, err := n.Parent.FromBuffer(aux.ParentData); err != nil {
+		return err
+	}
+	return nil
+}
 
 // AddNode becomes generic in terms of metadata
 func AddNode[T any](storage Storage[T], _type string, metadata T, parent, child roaring.Bitmap) (*Node[T], error) {
-	id, err := storage.GenerateID()
+	ID, err := storage.GenerateID()
 	if err != nil {
 		return nil, err
 	}
 	n := &Node[T]{
-		id:       id,
-		_type:    _type,
-		metadata: metadata,
-		child:    child,
-		parent:   parent,
+		Id:       ID,
+		Type:     _type,
+		Metadata: metadata,
+		Child:    child,
+		Parent:   parent,
 	}
 	if err := storage.SaveNode(n); err != nil {
 		return nil, err
@@ -49,12 +99,12 @@ func (n *Node[T]) SetDependency(storage Storage[T], neighbor *Node[T]) error {
 	if neighbor == nil {
 		return errors.New("cannot add dependency to nil node")
 	}
-	if n.id == neighbor.id {
+	if n.Id == neighbor.Id {
 		return errors.New("cannot add self as dependency")
 	}
 
-	n.child.Add(neighbor.id)
-	neighbor.parent.Add(n.id)
+	n.Child.Add(neighbor.Id)
+	neighbor.Parent.Add(n.Id)
 
 	if err := storage.SaveNode(n); err != nil {
 		return err
@@ -78,24 +128,24 @@ func (n *Node[T]) queryBitmap(storage Storage[T], direction string) (*roaring.Bi
 		curNode := queue[0]
 		queue = queue[1:]
 
-		if visited[curNode.id] {
+		if visited[curNode.Id] {
 			continue
 		}
-		visited[curNode.id] = true
+		visited[curNode.Id] = true
 
 		var bitmap *roaring.Bitmap
 		switch direction {
 		case "child":
-			bitmap = &curNode.child
+			bitmap = &curNode.Child
 		case "parent":
-			bitmap = &curNode.parent
+			bitmap = &curNode.Parent
 		default:
-			return nil, fmt.Errorf("invalid direction during query: %s", direction)
+			return nil, fmt.Errorf("invalID direction during query: %s", direction)
 		}
 
 		result.Or(bitmap)
-		for _, nid := range bitmap.Clone().ToArray() {
-			node, err := storage.GetNode(nid)
+		for _, nID := range bitmap.Clone().ToArray() {
+			node, err := storage.GetNode(nID)
 			if err != nil {
 				return nil, err
 			}

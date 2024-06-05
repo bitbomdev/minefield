@@ -14,7 +14,7 @@ func TestAddNode(t *testing.T) {
 	node, err := AddNode(storage, "type1", "metadata1", *parent, *child)
 
 	assert.NoError(t, err)
-	pulledNode, err := storage.GetNode(node.GetID())
+	pulledNode, err := storage.GetNode(node.Id)
 	assert.NoError(t, err)
 	assert.Equal(t, node, pulledNode, "Expected 1 node")
 }
@@ -31,8 +31,8 @@ func TestSetDependency(t *testing.T) {
 	err = node1.SetDependency(storage, node2)
 
 	assert.NoError(t, err)
-	assert.Contains(t, node1.child.ToArray(), node2.id, "Expected node1 to have node2 as child dependency")
-	assert.Contains(t, node2.parent.ToArray(), node1.id, "Expected node2 to have node1 as parent dependency")
+	assert.Contains(t, node1.Child.ToArray(), node2.Id, "Expected node1 to have node2 as child dependency")
+	assert.Contains(t, node2.Parent.ToArray(), node1.Id, "Expected node2 to have node1 as parent dependency")
 }
 
 func TestSetDependent(t *testing.T) {
@@ -47,7 +47,7 @@ func TestSetDependent(t *testing.T) {
 	err = node1.SetDependency(storage, node2)
 
 	assert.NoError(t, err)
-	assert.Contains(t, node2.parent.ToArray(), node1.id, "Expected node2 to have node1 as parent dependency")
+	assert.Contains(t, node2.Parent.ToArray(), node1.Id, "Expected node2 to have node1 as parent dependency")
 }
 
 func TestQueryDependents(t *testing.T) {
@@ -63,7 +63,7 @@ func TestQueryDependents(t *testing.T) {
 	assert.NoError(t, err)
 	dependents, err := node1.QueryDependents(storage)
 	assert.NoError(t, err, "Expected no error")
-	assert.Contains(t, dependents.ToArray(), node2.id, "Expected node1 to have node2 as dependent")
+	assert.Contains(t, dependents.ToArray(), node2.Id, "Expected node1 to have node2 as dependent")
 }
 
 func TestQueryDependencies(t *testing.T) {
@@ -80,7 +80,7 @@ func TestQueryDependencies(t *testing.T) {
 	dependencies, err := node1.QueryDependencies(storage)
 	assert.NoError(t, err, "Expected no error")
 	t.Logf("Dependencies of node1: %v", dependencies.ToArray())
-	assert.Contains(t, dependencies.ToArray(), node2.id, "Expected node1 to have node2 as dependency")
+	assert.Contains(t, dependencies.ToArray(), node2.Id, "Expected node1 to have node2 as dependency")
 }
 
 func TestCircularDependency(t *testing.T) {
@@ -105,13 +105,13 @@ func TestCircularDependency(t *testing.T) {
 	dependents, err := node1.QueryDependents(storage)
 	assert.NoError(t, err, "Expected no error")
 	t.Logf("Dependents of node1: %v", dependents.ToArray())
-	assert.Contains(t, dependents.ToArray(), node2.id, "Expected node1 to have node2 as dependent")
-	assert.Contains(t, dependents.ToArray(), node3.id, "Expected node1 to have node3 as dependent")
+	assert.Contains(t, dependents.ToArray(), node2.Id, "Expected node1 to have node2 as dependent")
+	assert.Contains(t, dependents.ToArray(), node3.Id, "Expected node1 to have node3 as dependent")
 
 	// Test QueryDependencies for circular dependency
 	dependencies, err := node1.QueryDependencies(storage)
 	assert.NoError(t, err, "Expected no error")
 	t.Logf("Dependencies of node1: %v", dependencies.ToArray())
-	assert.Contains(t, dependencies.ToArray(), node2.id, "Expected node1 to have node2 as dependency")
-	assert.Contains(t, dependencies.ToArray(), node3.id, "Expected node1 to have node3 as dependency")
+	assert.Contains(t, dependencies.ToArray(), node2.Id, "Expected node1 to have node2 as dependency")
+	assert.Contains(t, dependencies.ToArray(), node3.Id, "Expected node1 to have node3 as dependency")
 }
