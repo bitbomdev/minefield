@@ -2,9 +2,9 @@ package pkg
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/go-redis/redis/v8"
@@ -22,11 +22,11 @@ func NewRedisStorage[T any](addr string) *RedisStorage[T] {
 }
 
 func (r *RedisStorage[T]) SaveNode(node *Node[T]) error {
-	data, err := json.Marshal(node)
+	data, err := node.MarshalJSON()
 	if err != nil {
 		return err
 	}
-	return r.client.Set(context.Background(), fmt.Sprintf("node:%d", node.id), data, 0).Err()
+	return r.client.Set(context.Background(), fmt.Sprintf("node:%d", node.Id), data, 0).Err()
 }
 
 func (r *RedisStorage[T]) GetNode(id uint32) (*Node[T], error) {
@@ -35,7 +35,7 @@ func (r *RedisStorage[T]) GetNode(id uint32) (*Node[T], error) {
 		return nil, err
 	}
 	var node Node[T]
-	if err := json.Unmarshal([]byte(data), &node); err != nil {
+	if err := node.UnmarshalJSON([]byte(data)); err != nil {
 		return nil, err
 	}
 	return &node, nil
@@ -50,7 +50,8 @@ func (r *RedisStorage[T]) GetAllKeys() ([]uint32, error) {
 	returnedKeys := make([]uint32, len(keys))
 
 	for i, k := range keys {
-		n, err := strconv.Atoi(k)
+		arr := strings.Split(k, ":")
+		n, err := strconv.Atoi(arr[1])
 		if err != nil {
 			return nil, err
 		}
