@@ -1,33 +1,69 @@
-# bitbom
+# Bitbom
 
-Bitbom graphs sboms using [Roaring BitMaps](https://github.com/RoaringBitmap/roaring).
+Bitbom is a tool for graphing Software Bill of Materials (SBOMs) using [Roaring BitMaps](https://github.com/RoaringBitmap/roaring). It processes SBOMs and utilizes [`protobom`](https://github.com/protobom/protobom) to read them, enabling the creation of a graph that represents nodes and their connections.
 
-The idea of bitbom is to have a similar functionality to `guacsec/guac`, but using a different storage implementation.
+## How the Graph is Constructed with a Bitmap
 
-Bitbom takes in sboms and then uses protobom to read them so that we can graph nodes.
+Each node in the graph has two bitmaps, a child and a parent bitmap. A dependency graph is created by adding the dependency node into the dependent node's child bitmap, and adding the dependent node into the dependency nodes parent bitmap, effectively representing the relationships between nodes.
 
-The graph is then created to represent nodes connecting to other nodes without specific edge nodes (This is partially where it differentiates from `guacsec/guac`).
+## Dependency Graph Representation
 
-For example, if we have 3 package nodes and vulnerability node, we could use the Roaring Bitmap to create a graph like:
+The mermaid graph represents a simplified dependency graph. Each node in the graph has two bitmasks: a child bitmask and a parent bitmask. These bitmasks are used to represent the dependencies between nodes.
 
-```mermaid
-flowchart TD
-    A[Package - A] --> |A depends on B| B[Package - B]
-    A --> |A depends on C| C[Package - C]
-    B --> |B depends on D| D[Vulnerability - D]
+- **Child Bitmask**: Indicates the nodes that the current node depends on.
+- **Parent Bitmask**: Indicates the nodes that depend on the current node.
+
+In the graph:
+- `Node A` has a child connection to `Node B`, meaning `Node A` depends on `Node B`.
+    - And `Node B` has a parent connection to `Node A`, meaning that `Node B` is a dependency of `Node A`.
+- `Node B` has a child connection to `Node C`, meaning `Node B` depends on `Node C`.
+    - And `Node C` has a parent connection to `Node B`, meaning that `Node C` is a dependency of `Node B`.
+- `Node C` has a child connection to `Node D`, meaning `Node C` depends on `Node D`.
+    - And `Node D` has a parent connection to `Node C`, meaning that `Node D` is a dependency of `Node C`.
+
+The arrows indicate the direction of the dependency, with the child bitmask of one node pointing to the next node and the parent bitmask of the next node pointing back to the previous node.
+
+
+``` mermaid
+graph TB
+
+subgraph D_Node[Node D]
+    subgraph D_Child_Node[Child Bitmask]
+    end
+    subgraph D_Parent_Node[Parent Bitmask]
+    end
+end
+
+subgraph C_Node[Node C]
+    subgraph C_Child_Node[Child Bitmask]
+    end
+    subgraph C_Parent_Node[Parent Bitmask]
+    end
+end
+
+subgraph B_Node[Node B]
+    subgraph B_Child_Node[Child Bitmask]
+    end
+    subgraph B_Parent_Node[Parent Bitmask]
+    end
+end
+
+subgraph A_Node[Node A]
+    subgraph A_Child_Node[Child Bitmask]
+    end
+    subgraph A_Parent_Node[Parent Bitmask]
+    end
+end
+
+A_Child_Node --> B_Node
+B_Parent_Node --> A_Node
+B_Child_Node --> C_Node
+C_Parent_Node --> B_Node
+C_Child_Node --> D_Node
+D_Parent_Node --> C_Node
 ```
 
----
+## Acknowledgements
 
-## How the graph is constructed with a bitmap
-
-Each node has its own bitmap, and then a dependency graph is created by adding the child node into the parent nodes bitmap.
-
----
-
-## Understand dependencies
-
-In bitbom there aren't dependency nodes unlike `guacsec/guac`.
-Without the dependency nodes the graph is a bit more simple and easier to understand.
-
-Without any type of dependency nodes we know which nodes depend on which by pointing a specific node to another via an edge.
+- https://github.com/RoaringBitmap/roaring
+- https://github.com/protobom/protobom
