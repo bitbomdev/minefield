@@ -8,6 +8,7 @@ import (
 
 type Storage[T any] interface {
 	SaveNode(node *Node[T]) error
+	SaveNodes(node []*Node[T]) error
 	GetNode(id uint32) (*Node[T], error)
 	GetAllKeys() ([]uint32, error)
 	SetDependency(nodeID, neighborID uint32) error

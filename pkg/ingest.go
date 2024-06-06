@@ -16,19 +16,41 @@ func IngestSBOM(sbomPath string, storage Storage[any]) error {
 	}
 
 	protoIDToNodeID := map[string]uint32{}
+	var nodesData []struct {
+		Type     string
+		Metadata any
+		Parent   roaring.Bitmap
+		Child    roaring.Bitmap
+	}
 
 	// Iterate over each node in the SBOM document
-	for _, node := range document.GetNodeList().GetNodes() {
+	for range document.GetNodeList().GetNodes() {
 		parent := roaring.New()
 		child := roaring.New()
 
-		// Create and add the node to the storage
-		// TODO: Add type and metadata
-		graphNode, err := AddNode(storage, "empty_type", "empty_metadata", *parent, *child)
-		if err != nil {
-			return fmt.Errorf("failed to add node: %w", err)
-		}
-		protoIDToNodeID[node.Id] = graphNode.Id
+		// Collect node data
+		nodesData = append(nodesData, struct {
+			Type     string
+			Metadata any
+			Parent   roaring.Bitmap
+			Child    roaring.Bitmap
+		}{
+			Type:     "empty_type",
+			Metadata: "empty_metadata",
+			Parent:   *parent,
+			Child:    *child,
+		})
+	}
+
+	// Create and save nodes in batch
+	nodes, err := AddNodes(storage, nodesData)
+	if err != nil {
+		return fmt.Errorf("failed to add nodes: %w", err)
+	}
+
+	// Map proto IDs to node IDs
+	for i, node := range document.GetNodeList().GetNodes() {
+		protoIDToNodeID[node.Id] = nodes[i].Id
 	}
 
 	// Iterate over the dependencies of the node and create a dependency edge

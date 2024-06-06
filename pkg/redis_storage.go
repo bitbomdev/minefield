@@ -29,6 +29,19 @@ func (r *RedisStorage[T]) SaveNode(node *Node[T]) error {
 	return r.client.Set(context.Background(), fmt.Sprintf("node:%d", node.Id), data, 0).Err()
 }
 
+func (r *RedisStorage[T]) SaveNodes(nodes []*Node[T]) error {
+	pipe := r.client.Pipeline()
+	for _, node := range nodes {
+		data, err := node.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		pipe.Set(context.Background(), fmt.Sprintf("node:%d", node.Id), data, 0)
+	}
+	_, err := pipe.Exec(context.Background())
+	return err
+}
+
 func (r *RedisStorage[T]) GetNode(id uint32) (*Node[T], error) {
 	data, err := r.client.Get(context.Background(), fmt.Sprintf("node:%d", id)).Result()
 	if err != nil {

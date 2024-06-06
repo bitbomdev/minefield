@@ -33,6 +33,15 @@ func (m *MockStorage[T]) SaveNode(node *Node[T]) error {
 	return nil
 }
 
+func (m *MockStorage[T]) SaveNodes(nodes []*Node[T]) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, node := range nodes {
+		m.nodes[node.Id] = node
+	}
+	return nil
+}
+
 func (m *MockStorage[T]) GetNode(id uint32) (*Node[T], error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

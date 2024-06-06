@@ -91,6 +91,35 @@ func AddNode[T any](storage Storage[T], _type string, metadata T, parent, child 
 	return n, nil
 }
 
+func AddNodes[T any](storage Storage[T], nodesData []struct {
+	Type     string
+	Metadata T
+	Parent   roaring.Bitmap
+	Child    roaring.Bitmap
+}) ([]*Node[T], error) {
+	nodes := make([]*Node[T], len(nodesData))
+	for i, data := range nodesData {
+		ID, err := storage.GenerateID()
+		if err != nil {
+			return nil, err
+		}
+		nodes[i] = &Node[T]{
+			Id:       ID,
+			Type:     data.Type,
+			Metadata: data.Metadata,
+			Child:    data.Child,
+			Parent:   data.Parent,
+		}
+	}
+
+	// Save all nodes in batch
+	if err := storage.SaveNodes(nodes); err != nil {
+		return nil, err
+	}
+
+	return nodes, nil
+}
+
 // SetDependency now uses generic types for metadata
 func (n *Node[T]) SetDependency(storage Storage[T], neighbor *Node[T]) error {
 	if n == nil {
