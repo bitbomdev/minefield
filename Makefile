@@ -6,7 +6,7 @@ build:
 	go build ./pkg/...
 
 # Test target
-test:
+test: docker-up
 	go test -v ./...
 
 # Clean target
@@ -15,10 +15,11 @@ clean:
 
 # Clean Redis data
 clean-redis:
-	docker-compose exec redis redis-cli FLUSHALL
+	docker-compose exec -T redis redis-cli ping || docker-compose up -d redis
+	docker-compose exec -T redis redis-cli FLUSHALL
 
 # Docker targets
-docker-up:
+docker-up: docker-down
 	docker-compose up -d
 
 docker-down: clean-redis

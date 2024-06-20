@@ -26,7 +26,16 @@ func (r *RedisStorage[T]) SaveNode(node *Node[T]) error {
 	if err != nil {
 		return err
 	}
-	return r.client.Set(context.Background(), fmt.Sprintf("node:%d", node.Id), data, 0).Err()
+	if err := r.client.Set(context.Background(), fmt.Sprintf("node:%d", node.Id), data, 0).Err(); err != nil {
+		return err
+	}
+	if err := r.client.Set(context.Background(), fmt.Sprint("id_to_name:", node.Id), node.Name, 0).Err(); err != nil {
+		return err
+	}
+	if err := r.client.Set(context.Background(), fmt.Sprint("name_to_id:", node.Name), strconv.Itoa(int(node.Id)), 0).Err(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *RedisStorage[T]) GetNode(id uint32) (*Node[T], error) {
@@ -95,4 +104,24 @@ func (r *RedisStorage[T]) GenerateID() (uint32, error) {
 		return 0, err
 	}
 	return uint32(id), nil
+}
+
+func (r *RedisStorage[T]) NameToID(name string) (uint32, error) {
+	id, err := r.client.Get(context.Background(), fmt.Sprint("name_to_id:", name)).Result()
+	if err != nil {
+		return 0, err
+	}
+	n, err := strconv.Atoi(id)
+	if err != nil {
+		return 0, err
+	}
+	return uint32(n), nil
+}
+
+func (r *RedisStorage[T]) IDToName(id uint32) (string, error) {
+	name, err := r.client.Get(context.Background(), fmt.Sprint("id_to_name:", id)).Result()
+	if err != nil {
+		return "", err
+	}
+	return name, nil
 }

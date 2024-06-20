@@ -8,15 +8,18 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
+var ErrNodeAlreadyExists = errors.New("node with name already exists")
+
 // Generic Node structure with metadata as generic type
 type Node[T any] struct {
-	Id         uint32         `json:"Id"`
-	Type       string         `json:"type"`
-	Metadata   T              `json:"metadata"`
-	Child      roaring.Bitmap `json:"child"`
-	Parent     roaring.Bitmap `json:"parent"`
-	ChildData  []byte         `json:"childData"`
-	ParentData []byte         `json:"parentData"`
+	Id         uint32          `json:"Id"`
+	Type       string          `json:"type"`
+	Name       string          `json:"name"`
+	Metadata   T               `json:"metadata"`
+	Child      *roaring.Bitmap `json:"child"`
+	Parent     *roaring.Bitmap `json:"parent"`
+	ChildData  []byte          `json:"childData"`
+	ParentData []byte          `json:"parentData"`
 }
 
 // MarshalJSON is a custom JSON marshalling tool.
@@ -34,25 +37,28 @@ func (n *Node[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		ID         uint32 `json:"Id"`
 		Type       string `json:"type"`
+		Name       string `json:"name"`
 		Metadata   T      `json:"metadata"`
 		ChildData  []byte `json:"childData"`
 		ParentData []byte `json:"parentData"`
 	}{
 		ID:         n.Id,
 		Type:       n.Type,
+		Name:       n.Name,
 		Metadata:   n.Metadata,
 		ChildData:  childData,
 		ParentData: parentData,
 	})
 }
 
-// UnmarshalJSON is a custom JSON unmarshaling tool.
+// UnmarshalJSON is a custom JSON unmarshalling tool.
 // We store the roaring bitmaps as a byte slice, so we need to unmarshal them, and then convert them from []byte to roaring.Bitmap.
-// This takes the "ChildData" and "ParentData" fields and unmarshals them from bytes into roaring bitmaps.
+// This takes the "ChildData" and "ParentData" fields and unmarshal them from bytes into roaring bitmaps.
 func (n *Node[T]) UnmarshalJSON(data []byte) error {
 	aux := &struct {
 		ID         uint32 `json:"Id"`
 		Type       string `json:"type"`
+		Name       string `json:"name"`
 		Metadata   T      `json:"metadata"`
 		ChildData  []byte `json:"childData"`
 		ParentData []byte `json:"parentData"`
@@ -62,7 +68,10 @@ func (n *Node[T]) UnmarshalJSON(data []byte) error {
 	}
 	n.Id = aux.ID
 	n.Type = aux.Type
+	n.Name = aux.Name
 	n.Metadata = aux.Metadata
+	n.Child = roaring.New()
+	n.Parent = roaring.New()
 	if _, err := n.Child.FromBuffer(aux.ChildData); err != nil {
 		return err
 	}
@@ -73,14 +82,21 @@ func (n *Node[T]) UnmarshalJSON(data []byte) error {
 }
 
 // AddNode becomes generic in terms of metadata
-func AddNode[T any](storage Storage[T], _type string, metadata T, parent, child roaring.Bitmap) (*Node[T], error) {
-	ID, err := storage.GenerateID()
-	if err != nil {
-		return nil, err
+func AddNode[T any](storage Storage[T], _type string, metadata T, parent, child *roaring.Bitmap, name string) (*Node[T], error) {
+	var ID uint32
+	if id, err := storage.NameToID(name); err == nil {
+		return storage.GetNode(id)
+	} else {
+		ID, err = storage.GenerateID()
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	n := &Node[T]{
 		Id:       ID,
 		Type:     _type,
+		Name:     name,
 		Metadata: metadata,
 		Child:    child,
 		Parent:   parent,
@@ -136,9 +152,9 @@ func (n *Node[T]) queryBitmap(storage Storage[T], direction string) (*roaring.Bi
 		var bitmap *roaring.Bitmap
 		switch direction {
 		case "child":
-			bitmap = &curNode.Child
+			bitmap = curNode.Child
 		case "parent":
-			bitmap = &curNode.Parent
+			bitmap = curNode.Parent
 		default:
 			return nil, fmt.Errorf("invalID direction during query: %s", direction)
 		}

@@ -1,62 +1,90 @@
 package pkg
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	"github.com/RoaringBitmap/roaring"
 	"github.com/protobom/protobom/pkg/reader"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
 func IngestSBOM(sbomPath string, storage Storage[any]) error {
-	// Create a new protobom SBOM reader:
-	sbomReader := reader.New()
-	document, err := sbomReader.ParseFile(sbomPath)
+	info, err := os.Stat(sbomPath)
 	if err != nil {
-		return fmt.Errorf("failed to parse SBOM file: %w", err)
+		return fmt.Errorf("error accessing path %s: %w", sbomPath, err)
 	}
 
-	protoIDToNodeID := map[string]uint32{}
-
-	// Iterate over each node in the SBOM document
-	for _, node := range document.GetNodeList().GetNodes() {
-		parent := roaring.New()
-		child := roaring.New()
-
-		// Create and add the node to the storage
-		// TODO: Add type and metadata
-		graphNode, err := AddNode(storage, "empty_type", "empty_metadata", *parent, *child)
+	if info.IsDir() {
+		entries, err := ioutil.ReadDir(sbomPath)
 		if err != nil {
+			return fmt.Errorf("failed to read directory %s: %w", sbomPath, err)
+		}
+		for _, entry := range entries {
+			entryPath := filepath.Join(sbomPath, entry.Name())
+			err := IngestSBOM(entryPath, storage)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		return processSBOMFile(sbomPath, storage)
+	}
+
+	return nil
+}
+
+func processSBOMFile(filePath string, storage Storage[any]) error {
+	sbomReader := reader.New()
+	document, err := sbomReader.ParseFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to parse SBOM file %s: %w", filePath, err)
+	}
+	nameToNodeID := map[string]uint32{}
+
+	for _, node := range document.GetNodeList().GetNodes() {
+		graphNode, err := AddNode(storage, node.Type.String(), any(node), roaring.New(), roaring.New(), string(node.Purl()))
+		if err != nil {
+			if errors.Is(err, ErrNodeAlreadyExists) {
+				fmt.Println("Skipping...")
+				continue
+			}
 			return fmt.Errorf("failed to add node: %w", err)
 		}
-		protoIDToNodeID[node.Id] = graphNode.Id
+		nameToNodeID[node.Name+string(node.Purl())+":version="+node.Version] = graphNode.Id
 	}
 
-	// Iterate over the dependencies of the node and create a dependency edge
-	err2 := addDependency(document, storage, protoIDToNodeID)
-	if err2 != nil {
-		return err2
+	err = addDependency(document, storage, nameToNodeID)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
 // addDependency iterates over all the edges protobom sbom document and creates a dependency edge between each node in an edge
-func addDependency(document *sbom.Document, storage Storage[any], protoIDToNodeID map[string]uint32) error {
+func addDependency(document *sbom.Document, storage Storage[any], nameToNodeID map[string]uint32) error {
 	for _, edge := range document.GetNodeList().GetEdges() {
+		fromProtoNode := document.GetNodeList().GetNodeByID(edge.From)
+		fromNode, err := storage.GetNode(nameToNodeID[fromProtoNode.Name+string(fromProtoNode.Purl())+":version="+fromProtoNode.Version])
+		if err != nil {
+			return fmt.Errorf("failed to get node: %w", err)
+		}
 		for _, to := range edge.To {
-			fromNode, err := storage.GetNode(protoIDToNodeID[edge.From])
-			if err != nil {
-				return err
-			}
+			toProtoNode := document.GetNodeList().GetNodeByID(to)
 
-			toNode, err := storage.GetNode(protoIDToNodeID[to])
+			toNode, err := storage.GetNode(nameToNodeID[toProtoNode.Name+string(toProtoNode.Purl())+":version="+toProtoNode.Version])
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to get node: %w", err)
 			}
 
 			err = fromNode.SetDependency(storage, toNode)
+
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to set dependency: %w", err)
 			}
 		}
 	}
