@@ -1,6 +1,6 @@
-module github.com/turrisxyz/BitBom
+module github.com/bitbom/bitbom
 
-go 1.22.1
+go 1.22.5
 
 require (
 	github.com/RoaringBitmap/roaring v1.9.3

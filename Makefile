@@ -3,7 +3,7 @@
 
 # Build target
 build:
-	go build -o bin/bitbom main.go
+	go build ./pkg/...
 
 # Test target
 test:
