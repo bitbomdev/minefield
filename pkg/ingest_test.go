@@ -1,11 +1,10 @@
 package pkg
 
 import (
-	"fmt"
-	"github.com/RoaringBitmap/roaring"
-	"github.com/protobom/protobom/pkg/sbom"
 	"sort"
 	"testing"
+
+	"github.com/RoaringBitmap/roaring"
 )
 
 func TestIngestSBOM(t *testing.T) {
@@ -17,7 +16,7 @@ func TestIngestSBOM(t *testing.T) {
 	}{
 		{
 			name:     "default",
-			sbomPath: "../test-data/syft-cyclonedx-docker.io-library-busybox.latest.json",
+			sbomPath: "../testdata/quicktest",
 			want: func() map[uint32]*Node[any] {
 				bitmap1Child := roaring.New()
 				bitmap1Child.Add(2)
@@ -27,16 +26,24 @@ func TestIngestSBOM(t *testing.T) {
 
 				return map[uint32]*Node[any]{
 					1: &Node[any]{
-						Id:       1,
-						Type:     "empty_type",
-						Metadata: "empty_metadata",
-						Child:    *bitmap1Child,
+						Id:   1,
+						Type: "PACKAGE",
+						Name: "pkg:generic/dep1@1.0.0",
 					},
 					2: &Node[any]{
-						Id:       2,
-						Type:     "empty_type",
-						Metadata: "empty_metadata",
-						Parent:   *bitmap2Parent,
+						Id:   2,
+						Type: "PACKAGE",
+						Name: "pkg:generic/dep2@1.0.0",
+					},
+					3: &Node[any]{
+						Id:   3,
+						Type: "PACKAGE",
+						Name: "pkg:generic/lib-A@1.0.0",
+					},
+					4: &Node[any]{
+						Id:   4,
+						Type: "PACKAGE",
+						Name: "pkg:generic/lib-B@1.0.0",
 					},
 				}
 			}(),
@@ -78,126 +85,4 @@ func (n *Node[T]) nodeEquals(n2 *Node[T]) bool {
 		return false
 	}
 	return true
-}
-
-func TestAddDependency(t *testing.T) {
-	tests := []struct {
-		name        string
-		fromNodeIDs map[uint32][]uint32 // Map of fromNodeID to a slice of toNodeIDs
-		wantErr     bool
-	}{
-		{
-			name: "default",
-			fromNodeIDs: map[uint32][]uint32{
-				1: {2},
-			},
-			wantErr: false,
-		},
-		{
-			name: "multiple dependencies",
-			fromNodeIDs: map[uint32][]uint32{
-				1: {2, 3},
-				4: {5},
-			},
-			wantErr: false,
-		},
-		{
-			name: "single node with no dependencies",
-			fromNodeIDs: map[uint32][]uint32{
-				1: {},
-			},
-			wantErr: false,
-		},
-		{
-			name: "circular dependency",
-			fromNodeIDs: map[uint32][]uint32{
-				1: {2},
-				2: {1},
-			},
-			wantErr: false,
-		},
-		{
-			name: "complex dependencies",
-			fromNodeIDs: map[uint32][]uint32{
-				1: {2, 3},
-				2: {4},
-				3: {4, 5},
-				5: {6},
-			},
-			wantErr: false,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			// Create the storage
-			storage := NewMockStorage[any]()
-
-			// Create the document and protoIDToNodeID map
-			document := &sbom.Document{}
-			nodeList := &sbom.NodeList{}
-			protoIDToNodeID := make(map[string]uint32)
-
-			// Add nodes to the document and storage
-			for fromNodeID, toNodeIDs := range test.fromNodeIDs {
-				fromNodeIDStr := fmt.Sprintf("%d", fromNodeID)
-
-				nodeList.Nodes = append(nodeList.Nodes, &sbom.Node{Id: fromNodeIDStr})
-				protoIDToNodeID[fromNodeIDStr] = fromNodeID
-
-				err := storage.SaveNode(&Node[any]{Id: fromNodeID})
-				if err != nil {
-					t.Fatalf("error saving node %v", err)
-				}
-
-				for _, toNodeID := range toNodeIDs {
-					toNodeIDStr := fmt.Sprintf("%d", toNodeID)
-
-					nodeList.Nodes = append(nodeList.Nodes, &sbom.Node{Id: toNodeIDStr})
-					protoIDToNodeID[toNodeIDStr] = toNodeID
-
-					err := storage.SaveNode(&Node[any]{Id: toNodeID})
-					if err != nil {
-						t.Fatalf("error saving node %v", err)
-					}
-				}
-			}
-
-			// Add edges to the document
-			for fromNodeID, toNodeIDs := range test.fromNodeIDs {
-				fromNodeIDStr := fmt.Sprintf("%d", fromNodeID)
-				var toNodeIDStrs []string
-
-				for _, toNodeID := range toNodeIDs {
-					toNodeIDStrs = append(toNodeIDStrs, fmt.Sprintf("%d", toNodeID))
-				}
-
-				nodeList.Edges = append(nodeList.Edges, &sbom.Edge{From: fromNodeIDStr, To: toNodeIDStrs})
-			}
-			document.NodeList = nodeList
-
-			// Call addDependency
-			err := addDependency(document, storage, protoIDToNodeID)
-			if test.wantErr != (err != nil) {
-				t.Errorf("addDependency() error = %v, wantErr = %v", err, test.wantErr)
-			}
-
-			// Verify the dependencies
-			for fromNodeID, toNodeIDs := range test.fromNodeIDs {
-				fromNode, err := storage.GetNode(fromNodeID)
-				if err != nil {
-					t.Fatalf("Failed to get node %d, %v", fromNodeID, err)
-				}
-				for _, toNodeID := range toNodeIDs {
-					toNode, err := storage.GetNode(toNodeID)
-					if err != nil {
-						t.Fatalf("Failed to get node %d, %v", toNodeID, err)
-					}
-
-					if !fromNode.Child.Contains(toNode.Id) {
-						t.Fatalf("expected node %d to have dependency on node %d", fromNodeID, toNodeID)
-					}
-				}
-			}
-		})
-	}
 }

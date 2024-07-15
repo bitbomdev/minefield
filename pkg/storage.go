@@ -7,6 +7,8 @@ import (
 )
 
 type Storage[T any] interface {
+	NameToID(name string) (uint32, error)
+	IDToName(id uint32) (string, error)
 	SaveNode(node *Node[T]) error
 	GetNode(id uint32) (*Node[T], error)
 	GetAllKeys() ([]uint32, error)
