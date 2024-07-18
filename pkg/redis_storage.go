@@ -3,6 +3,7 @@ package pkg
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -93,14 +94,17 @@ func (r *RedisStorage[T]) ToBeCached() ([]uint32, error) {
 }
 
 func (r *RedisStorage[T]) AddNodeToCachedStack(id uint32) error {
-	data, err := r.client.Get(context.Background(), "toBeCached").Result()
-	if err != nil {
-		return err
-	}
 	var toBeCached []uint32
-	if err := json.Unmarshal([]byte(data), &toBeCached); err != nil {
+
+	data, err := r.client.Get(context.Background(), "toBeCached").Result()
+	if !errors.Is(err, redis.Nil) {
 		return err
+	} else if err == nil {
+		if err := json.Unmarshal([]byte(data), &toBeCached); err != nil {
+			return err
+		}
 	}
+
 	toBeCached = append(toBeCached, id)
 
 	setData, err := json.Marshal(toBeCached)
