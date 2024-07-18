@@ -3,7 +3,6 @@ package pkg
 import (
 	"crypto/sha256"
 	"fmt"
-	"strings"
 
 	"github.com/RoaringBitmap/roaring"
 )
@@ -32,7 +31,14 @@ func NewNativeKeyManagement() *NativeKeyManagement {
 
 // BindKeys binds a group of keys to a single hash key.
 func (nkm *NativeKeyManagement) BindKeys(keys []string) (string, error) {
-	keyString := strings.Join(keys, "")
+	keyString := ""
+	// We are not summing up all keys in their non-hashed form to avoid collisions.
+	// For example, binding the keys 'a' and 'b' together would result in the same hash as binding 'ab' by itself.
+	// In this situation, we will not be able to distinguish between the two groups of keys.
+	for _, k := range keys {
+		keyString += fmt.Sprint(sha256.Sum256([]byte(k)))
+	}
+
 	hash := sha256.Sum256([]byte(keyString))
 	hashKey := fmt.Sprintf("shared:%x", hash)
 
