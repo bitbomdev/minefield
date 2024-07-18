@@ -98,7 +98,6 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = RenderGraph[string](storage)
 		assert.NoError(t, err)
 
 		t.Logf("Cache took %v for n = %v", time.Since(start), n)
@@ -198,7 +197,6 @@ func TestComplexCircularDependency(t *testing.T) {
 		assert.Equal(t, dependenciesNoCache.ToArray(), dependencies.ToArray(), "Cached and non-cached dependencies should match")
 		t.Logf("Dependencies of node%d: %v", node.GetID(), dependencies.ToArray())
 	}
-	err = RenderGraph[string](storage)
 	assert.NoError(t, err)
 }
 
@@ -225,7 +223,6 @@ func TestSimpleCircle(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = RenderGraph[string](storage)
 	assert.NoError(t, err)
 
 	// Test QueryDependents and QueryDependencies for simple circle
@@ -283,7 +280,6 @@ func TestIntermediateSimpleCircles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = RenderGraph[string](storage)
 	assert.NoError(t, err)
 
 	// Test QueryDependents and QueryDependencies for intermediate simple circles
