@@ -27,7 +27,7 @@ func IngestSBOM(sbomPath string, storage Storage[any]) error {
 			entryPath := filepath.Join(sbomPath, entry.Name())
 			err := IngestSBOM(entryPath, storage)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to ingest SBOM from path %s: %w", entryPath, err)
 			}
 		}
 	} else {
@@ -59,7 +59,7 @@ func processSBOMFile(filePath string, storage Storage[any]) error {
 
 	err = addDependency(document, storage, nameToNodeID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to add dependencies: %w", err)
 	}
 
 	return nil
@@ -82,7 +82,6 @@ func addDependency(document *sbom.Document, storage Storage[any], nameToNodeID m
 			}
 
 			err = fromNode.SetDependency(storage, toNode)
-
 			if err != nil {
 				return fmt.Errorf("failed to set dependency: %w", err)
 			}
