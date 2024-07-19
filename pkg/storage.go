@@ -6,6 +6,7 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
+// Storage is the interface that wraps the methods for a storage backend.
 type Storage[T any] interface {
 	NameToID(name string) (uint32, error)
 	IDToName(id uint32) (string, error)
@@ -19,10 +20,13 @@ type Storage[T any] interface {
 }
 
 var (
+	// storageInstance is the singleton instance of the storage interface.
 	storageInstance Storage[any]
-	once            sync.Once
+	// once is a sync.Once that ensures that the storage instance is only initialized once.
+	once sync.Once
 )
 
+// GetStorageInstance returns a singleton instance of the storage interface.
 func GetStorageInstance(addr string) Storage[any] {
 	once.Do(func() {
 		storageInstance = NewRedisStorage[any](addr)

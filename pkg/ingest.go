@@ -3,7 +3,6 @@ package pkg
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
+// IngestSBOM ingests a SBOM file or directory into the storage backend.
 func IngestSBOM(sbomPath string, storage Storage[any]) error {
 	info, err := os.Stat(sbomPath)
 	if err != nil {
@@ -19,14 +19,13 @@ func IngestSBOM(sbomPath string, storage Storage[any]) error {
 	}
 
 	if info.IsDir() {
-		entries, err := ioutil.ReadDir(sbomPath)
+		entries, err := os.ReadDir(sbomPath)
 		if err != nil {
 			return fmt.Errorf("failed to read directory %s: %w", sbomPath, err)
 		}
 		for _, entry := range entries {
 			entryPath := filepath.Join(sbomPath, entry.Name())
-			err := IngestSBOM(entryPath, storage)
-			if err != nil {
+			if err := IngestSBOM(entryPath, storage); err != nil {
 				return fmt.Errorf("failed to ingest SBOM from path %s: %w", entryPath, err)
 			}
 		}
@@ -37,8 +36,18 @@ func IngestSBOM(sbomPath string, storage Storage[any]) error {
 	return nil
 }
 
+// processSBOMFile processes a SBOM file and adds it to the storage backend.
 func processSBOMFile(filePath string, storage Storage[any]) error {
+	if filePath == "" {
+		return fmt.Errorf("file path is empty")
+	}
+
+	_, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to stat file %s: %w", filePath, err)
+	}
 	sbomReader := reader.New()
+
 	document, err := sbomReader.ParseFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to parse SBOM file %s: %w", filePath, err)
@@ -49,6 +58,7 @@ func processSBOMFile(filePath string, storage Storage[any]) error {
 		graphNode, err := AddNode(storage, node.Type.String(), any(node), roaring.New(), roaring.New(), string(node.Purl()))
 		if err != nil {
 			if errors.Is(err, ErrNodeAlreadyExists) {
+				// TODO: Add a logger
 				fmt.Println("Skipping...")
 				continue
 			}
