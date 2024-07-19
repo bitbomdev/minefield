@@ -31,7 +31,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 
 	execute, err := pkg.ParseAndExecute(script, storage)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse and execute script: %w", err)
 	}
 	// Print dependencies
 	for _, depID := range execute.ToArray() {
@@ -45,22 +45,22 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 		if o.outputdir != "" {
 			data, err := json.MarshalIndent(node.Metadata, "", "	")
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to marshal node metadata: %w", err)
 			}
 			if _, err := os.Stat(o.outputdir); err != nil {
-				return err
+				return fmt.Errorf("output directory does not exist: %w", err)
 			}
 
 			filePath := filepath.Join(o.outputdir, pkg.SanitizeFilename(node.Name)+".json")
 			file, err := os.Create(filePath)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create file: %w", err)
 			}
 			defer file.Close()
 
 			_, err = file.Write(data)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to write data to file: %w", err)
 			}
 		}
 	}
