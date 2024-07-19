@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/bit-bom/bitbom/pkg"
@@ -52,7 +51,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 				return err
 			}
 
-			filePath := filepath.Join(o.outputdir, strconv.Itoa(int(node.Id))+".json")
+			filePath := filepath.Join(o.outputdir, pkg.SanitizeFilename(node.Name)+".json")
 			file, err := os.Create(filePath)
 			if err != nil {
 				return err
