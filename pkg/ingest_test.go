@@ -16,7 +16,7 @@ func TestIngestSBOM(t *testing.T) {
 	}{
 		{
 			name:     "default",
-			sbomPath: "../testdata/quicktest",
+			sbomPath: "../test",
 			want: func() map[uint32]*Node[any] {
 				bitmap1Child := roaring.New()
 				bitmap1Child.Add(2)

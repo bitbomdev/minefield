@@ -8,7 +8,7 @@ import (
 
 func TestParseAndExecute(t *testing.T) {
 	storage := GetStorageInstance("localhost:6379")
-	err := IngestSBOM("../testdata/quicktest", storage)
+	err := IngestSBOM("../test", storage)
 	if err != nil {
 		t.Fatal(err)
 	}
