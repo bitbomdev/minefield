@@ -10,6 +10,13 @@ import (
 
 var ErrNodeAlreadyExists = errors.New("node with name already exists")
 
+type Direction string
+
+const (
+	ParentDirection Direction = "parent"
+	ChildDirection  Direction = "child"
+)
+
 // Generic Node structure with metadata as generic type
 type Node[T any] struct {
 	Metadata   T               `json:"metadata"`
@@ -118,6 +125,9 @@ func (n *Node[T]) SetDependency(storage Storage[T], neighbor *Node[T]) error {
 	if n.Id == neighbor.Id {
 		return fmt.Errorf("cannot add self as dependency")
 	}
+	if storage == nil {
+		return fmt.Errorf("storage cannot be nil")
+	}
 
 	n.Child.Add(neighbor.Id)
 	neighbor.Parent.Add(n.Id)
@@ -131,9 +141,12 @@ func (n *Node[T]) SetDependency(storage Storage[T], neighbor *Node[T]) error {
 	return nil
 }
 
-func (n *Node[T]) queryBitmap(storage Storage[T], direction string) (*roaring.Bitmap, error) {
+func (n *Node[T]) queryBitmap(storage Storage[T], direction Direction) (*roaring.Bitmap, error) {
 	if n == nil {
 		return nil, fmt.Errorf("cannot query bitmap of nil node")
+	}
+	if storage == nil {
+		return nil, fmt.Errorf("storage cannot be nil")
 	}
 
 	result := roaring.New()
@@ -151,9 +164,9 @@ func (n *Node[T]) queryBitmap(storage Storage[T], direction string) (*roaring.Bi
 
 		var bitmap *roaring.Bitmap
 		switch direction {
-		case "child":
+		case ChildDirection:
 			bitmap = curNode.Child
-		case "parent":
+		case ParentDirection:
 			bitmap = curNode.Parent
 		default:
 			return nil, fmt.Errorf("invalid direction during query: %s", direction)
@@ -173,9 +186,9 @@ func (n *Node[T]) queryBitmap(storage Storage[T], direction string) (*roaring.Bi
 }
 
 func (n *Node[T]) QueryDependents(storage Storage[T]) (*roaring.Bitmap, error) {
-	return n.queryBitmap(storage, "parent")
+	return n.queryBitmap(storage, ParentDirection)
 }
 
 func (n *Node[T]) QueryDependencies(storage Storage[T]) (*roaring.Bitmap, error) {
-	return n.queryBitmap(storage, "child")
+	return n.queryBitmap(storage, ChildDirection)
 }

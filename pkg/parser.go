@@ -7,6 +7,7 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
+// ParseAndExecute parses and executes a script using the given storage backend.
 func ParseAndExecute[T any](script string, storage Storage[T]) (*roaring.Bitmap, error) {
 	var stack []*roaring.Bitmap
 	var operators []string
