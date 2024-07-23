@@ -46,8 +46,85 @@ func TestSetDependent(t *testing.T) {
 	assert.Contains(t, node2.Parent.ToArray(), node1.Id, "Expected node2 to have node1 as parent dependency")
 }
 
+func TestRandomGraphDependenciesWithCircles(t *testing.T) {
+	tests := []int{1000}
+	for _, n := range tests {
+		storage := NewMockStorage[string]()
+		nodes := make([]*Node[string], n)
+		expectedDependents := make(map[uint32][]uint32)
+		expectedDependencies := make(map[uint32][]uint32)
+
+		// Create nodes and set dependencies
+
+		for i := 0; i < n; i++ {
+			node, err := AddNode[string](storage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
+			assert.NoError(t, err)
+			nodes[i] = node
+		}
+
+		// Set random dependencies, allowing circles
+		rand.Seed(time.Now().UnixNano())
+
+		m := map[int][]int{}
+
+		for i := 0; i < n; i++ {
+			possibleDeps := rand.Perm(n)                       // Generate a random permutation of indices [0, n-1]
+			for j := 0; j < 15 && j < len(possibleDeps); j++ { // Each node has up to 15 random dependencies
+				targetIndex := possibleDeps[j]
+				if targetIndex != i { // Avoid self-dependency
+					err := nodes[i].SetDependency(storage, nodes[targetIndex])
+					assert.NoError(t, err)
+					m[int(nodes[i].Id)] = append(m[int(nodes[i].Id)], int(nodes[targetIndex].Id))
+				}
+			}
+		}
+
+		// Precompute expected results for QueryDependentsNoCache and QueryDependenciesNoCache
+		for _, node := range nodes {
+			dependents, err := node.QueryDependentsNoCache(storage)
+			assert.NoError(t, err)
+			expectedDependents[node.GetID()] = dependents.ToArray()
+
+			dependencies, err := node.QueryDependenciesNoCache(storage)
+			assert.NoError(t, err)
+			expectedDependencies[node.GetID()] = dependencies.ToArray()
+		}
+
+		start := time.Now()
+
+		// Cache the current state
+		err := Cache[string](storage)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.NoError(t, err)
+
+		t.Logf("Cache took %v for n = %v", time.Since(start), n)
+
+		// Benchmark QueryDependents, QueryDependencies and Cache
+		for _, node := range nodes {
+			dependents, err := node.QueryDependents(storage)
+			assert.NoError(t, err)
+			depArr := []uint32{}
+			if dependents != nil {
+				depArr = dependents.ToArray()
+			}
+			assert.Equal(t, expectedDependents[node.GetID()], depArr, fmt.Sprintf("Dependents of node %v", node.GetID()))
+
+			dependencies, err := node.QueryDependencies(storage)
+			assert.NoError(t, err)
+			depArr = []uint32{}
+			if dependencies != nil {
+				depArr = dependencies.ToArray()
+			}
+			assert.Equal(t, expectedDependencies[node.GetID()], depArr, fmt.Sprintf("Dependencies of node %v", node.GetID()))
+		}
+	}
+}
+
 func TestRandomGraphDependenciesNoCircles(t *testing.T) {
-	tests := []int{5}
+	tests := []int{1000}
 	for _, n := range tests {
 		storage := NewMockStorage[string]()
 		nodes := make([]*Node[string], n)
