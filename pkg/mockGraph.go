@@ -46,7 +46,7 @@ func (m *MockStorage[T]) GetNode(id uint32) (*Node[T], error) {
 	defer m.mu.Unlock()
 	node, exists := m.nodes[id]
 	if !exists {
-		return nil, errors.New("node not found")
+		return nil, fmt.Errorf("node %v not found", id)
 	}
 	return node, nil
 }

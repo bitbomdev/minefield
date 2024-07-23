@@ -8,237 +8,8 @@ import (
 )
 
 type stackElm struct {
-	id   uint32
-	from uint32
-}
-
-type key struct {
-	id           uint32
-	visitedNodes *roaring.Bitmap
-	visited      map[uint32]*roaring.Bitmap
-}
-
-func findCycles[T any](storage Storage[T], direction string, startNode int, numOfNodes int) (*unionFind, error) {
-	totalVisited := map[uint32]bool{}
-
-	parents := make([]uint32, numOfNodes+1)
-	for i := 0; i < numOfNodes+1; i++ {
-		parents[i] = uint32(i)
-	}
-	uf := &unionFind{
-		count:   numOfNodes,
-		parents: parents,
-	}
-
-	for i := startNode; i <= numOfNodes; i++ {
-		if totalVisited[uint32(i)] {
-			continue
-		}
-
-		stack := []key{{uint32(i), roaring.New(), make(map[uint32]*roaring.Bitmap)}}
-
-		for len(stack) > 0 {
-			curElm := stack[len(stack)-1] // Get the top element of the stack
-			stack = stack[:len(stack)-1]
-			curNode, err := storage.GetNode(curElm.id) // Retrieve the current node from storage
-			if err != nil {
-				return nil, err
-			}
-
-			var nextNodes []uint32
-
-			if direction == "children" {
-				nextNodes = curNode.Child.ToArray()
-			} else {
-				nextNodes = curNode.Parent.ToArray()
-			}
-
-			visitedNodes := curElm.visitedNodes.Clone()
-
-			visitedNodes.Add(curElm.id)
-
-			if _, ok := curElm.visited[curElm.id]; ok {
-				curElm.visited[curElm.id].Xor(visitedNodes) // find the nodes in the cycle
-				curElm.visited[curElm.id].Add(curElm.id)
-
-				arr := curElm.visited[curElm.id].ToArray()
-				for i := 1; i < len(arr); i++ {
-					uf.Union(arr[i-1], arr[i])
-				}
-				uf.Union(arr[0], arr[len(arr)-1])
-
-				continue
-			} else {
-				totalVisited[curElm.id] = true
-
-				for _, node := range nextNodes {
-					newVisited := make(map[uint32]*roaring.Bitmap)
-					for k, v := range curElm.visited {
-						newVisited[k] = v
-					}
-
-					newVisited[curElm.id] = visitedNodes.Clone()
-					stack = append(stack, key{node, newVisited[curElm.id], newVisited})
-				}
-			}
-		}
-	}
-
-	return uf, nil
-}
-
-func buildNodeCacheMap[T any](storage Storage[T], uncachedNodes []uint32, direction string, uf *unionFind) (*NativeKeyManagement, error) {
-	alreadyCached := roaring.New() // Tracks nodes whose children have already been cached.
-	processed := roaring.New()     // Tracks nodes that are being processed, so we do not have to re-add nodes to the stack, we cannot use this when adding mustFinish nodes, since for those order matters
-	allChildAndParentsCached := roaring.New()
-
-	bm := NewNativeKeyManagement()
-
-	err := addCyclesToBindMap(uf, bm)
-	if err != nil {
-		return nil, err
-	}
-
-	curTodo := make(map[uint32]int)
-
-	for _, nodeID := range uncachedNodes {
-		stack := []stackElm{{nodeID, nodeID}} // Initialize stack with the current node to process
-		curTodo[nodeID] = 0
-		processed.Add(nodeID)
-
-		for len(stack) > 0 {
-			curElm := stack[len(stack)-1]              // Get the top element of the stack
-			curNode, err := storage.GetNode(curElm.id) // Retrieve the current node from storage
-			if err != nil {
-				return nil, err
-			}
-
-			if allChildAndParentsCached.Contains(curElm.id) {
-				stack = stack[:len(stack)-1] // Pop the current element from the stack if already cached
-				continue
-			}
-
-			var todoNodes, futureNodes []uint32 // Nodes that must be processed before and after the current node
-
-			if direction == "children" {
-				todoNodes = curNode.GetChildren().ToArray()  // Nodes that the current node relies on
-				futureNodes = curNode.GetParents().ToArray() // Nodes that rely on the current node
-			} else {
-				todoNodes = curNode.GetParents().ToArray()    // Nodes that rely on the current node
-				futureNodes = curNode.GetChildren().ToArray() // Nodes that the current node relies on
-			}
-
-			if curTodo[curElm.id] == len(todoNodes) { // No more nodes are needed to be processed to cache the current node
-				err = setBitmapValueWithChild(bm, curElm.from, curElm.id)
-				if err != nil {
-					return nil, err
-				}
-
-				stack = stack[:len(stack)-1] // This node is fully processed, pop from stack, no to-do nodes left
-				alreadyCachedAllParents := true
-				for _, futureNode := range futureNodes {
-					if !processed.Contains(futureNode) {
-						processed.Add(futureNode)
-						stack = append(stack, stackElm{futureNode, futureNode}) // Push new nodes to be processed onto the stack, now that all nodes that must be processed are done
-						curTodo[futureNode] = 0
-					}
-
-					if !alreadyCached.Contains(futureNode) {
-						alreadyCachedAllParents = false
-					}
-				}
-				alreadyCached.Add(curElm.id) // Mark the current node as cached
-				if alreadyCachedAllParents {
-					allChildAndParentsCached.Add(curElm.id)
-				}
-			} else if len(todoNodes) > 0 { // There are more nodes to be processed to cache the current node
-				todoID := uint32(0)
-
-				if curTodo[curElm.id] == len(todoNodes) {
-					todoID = todoNodes[curTodo[curElm.id]-1] // Get the next node to process
-				} else {
-					todoID = todoNodes[curTodo[curElm.id]] // Get the next node to process
-					curTodo[curElm.id] += 1
-				}
-
-				if alreadyCached.Contains(todoID) { // If the next node is already cached, we can add its cache to the current node's cache
-					err = setBitmapValueWithChild(bm, curElm.id, todoID)
-					if err != nil {
-						return nil, err
-					}
-				} else {
-					stack = append(stack, stackElm{todoID, curElm.id}) // Push the dependency to the stack to process its dependencies before curElm
-					if !processed.Contains(todoID) {
-						curTodo[todoID] = 0
-						processed.Add(todoID)
-					}
-				}
-			}
-		}
-	}
-
-	return bm, nil
-}
-
-// addCyclesToBindMap takes in a union find which contains all the cycles found in the graph and
-// a bind map which we use to store all children and parents for a given node.
-// This function takes the data from the union find and adds it to the bind map so that we can
-// initialize the bind map with all the cycles.
-func addCyclesToBindMap(uf *unionFind, bm *NativeKeyManagement) error {
-	parentToKeys := map[uint32][]string{}
-
-	for i := 1; i < len(uf.parents); i++ {
-		parentToKeys[uf.parents[i]] = append(parentToKeys[uf.parents[i]], strconv.Itoa(i))
-	}
-
-	for _, keysForAParent := range parentToKeys {
-		_, err := bm.BindKeys(keysForAParent)
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, keysForAParent := range parentToKeys {
-		for _, key := range keysForAParent {
-			got, err := bm.Get(key)
-			if err != nil {
-				return fmt.Errorf("error getting key from parents key, %w", err)
-			}
-
-			n, err := strconv.Atoi(key)
-			if err != nil {
-				return fmt.Errorf("error converting string to integer, %w", err)
-			}
-			got.Add(uint32(n))
-
-			err = bm.Set(key, got)
-			if err != nil {
-				return fmt.Errorf("error setting value for key %s, %w", key, err)
-			}
-		}
-	}
-	return nil
-}
-
-func setBitmapValueWithChild(bm *NativeKeyManagement, curElem, todoElem uint32) error {
-	curElemVal, err := bm.Get(strconv.Itoa(int(curElem)))
-	if err != nil {
-		return fmt.Errorf("error getting value for curElem keys from value %d, err: %v", curElem, err)
-	}
-
-	todoVal, err := bm.Get(strconv.Itoa(int(todoElem)))
-	if err != nil {
-		return fmt.Errorf("error getting value for curElem key %d, err: %v", todoElem, err)
-	}
-
-	curElemVal.Or(&todoVal)
-	curElemVal.Add(curElem)
-
-	err = bm.Set(strconv.Itoa(int(curElem)), curElemVal)
-	if err != nil {
-		return err
-	}
-	return nil
+	id        uint32
+	todoIndex int
 }
 
 func Cache[T any](storage Storage[T]) error {
@@ -252,22 +23,22 @@ func Cache[T any](storage Storage[T]) error {
 		return fmt.Errorf("error getting keys")
 	}
 
-	childUf, err := findCycles(storage, "children", 1, len(keys))
+	childSCC, err := findCycles(storage, "children", len(keys))
 	if err != nil {
 		return err
 	}
 
-	cachedChildren, err := buildNodeCacheMap(storage, uncachedNodes, "children", childUf)
+	cachedChildren, err := buildNodeCacheMap(storage, uncachedNodes, "children", childSCC)
 	if err != nil {
 		return err
 	}
 
-	parentUf, err := findCycles(storage, "parent", 1, len(keys))
+	parentSCC, err := findCycles(storage, "parent", len(keys))
 	if err != nil {
 		return err
 	}
 
-	cachedParents, err := buildNodeCacheMap(storage, uncachedNodes, "parents", parentUf)
+	cachedParents, err := buildNodeCacheMap(storage, uncachedNodes, "parents", parentSCC)
 	if err != nil {
 		return err
 	}
@@ -300,4 +71,224 @@ func Cache[T any](storage Storage[T]) error {
 	}
 
 	return storage.ClearCacheStack()
+}
+
+func findCycles[T any](storage Storage[T], direction string, numOfNodes int) (map[uint32]uint32, error) {
+	var stack []uint32
+	var tarjanDFS func(nodeID uint32) error
+
+	currentTarjanID := 0
+	nodeToTarjanID := map[uint32]uint32{}
+	lowLink := make(map[uint32]uint32)
+	inStack := roaring.New()
+
+	tarjanDFS = func(nodeID uint32) error {
+		currentNode, err := storage.GetNode(nodeID)
+		if err != nil {
+			return err
+		}
+
+		var nextNodes []uint32
+		if direction == "children" {
+			nextNodes = currentNode.Child.ToArray()
+		} else {
+			nextNodes = currentNode.Parent.ToArray()
+		}
+
+		currentTarjanID++
+		stack = append(stack, nodeID)
+		inStack.Add(nodeID)
+		nodeToTarjanID[nodeID] = uint32(currentTarjanID)
+		lowLink[nodeID] = uint32(currentTarjanID)
+
+		for _, nextNode := range nextNodes {
+			if _, visited := nodeToTarjanID[nextNode]; !visited {
+				if err := tarjanDFS(nextNode); err != nil {
+					return err
+				}
+				lowLink[nodeID] = min(lowLink[nodeID], lowLink[nextNode])
+			} else if inStack.Contains(nextNode) {
+				lowLink[nodeID] = min(lowLink[nodeID], nodeToTarjanID[nextNode])
+			}
+		}
+
+		if nodeToTarjanID[nodeID] == lowLink[nodeID] {
+			for len(stack) > 0 {
+				id := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				inStack.Remove(id)
+				lowLink[id] = nodeToTarjanID[nodeID]
+				if nodeID == id {
+					break
+				}
+			}
+		}
+		return nil
+	}
+
+	for id := 1; id < numOfNodes+1; id++ {
+		if _, visited := nodeToTarjanID[uint32(id)]; !visited {
+			if err := tarjanDFS(uint32(id)); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return lowLink, nil
+}
+
+func buildNodeCacheMap[T any](storage Storage[T], uncachedNodes []uint32, direction string, scc map[uint32]uint32) (*NativeKeyManagement, error) {
+	cache, children, parents := NewNativeKeyManagement(), NewNativeKeyManagement(), NewNativeKeyManagement()
+	alreadyCached := roaring.New()
+
+	err := addCyclesToBindMap[T](storage, scc, cache, children, parents)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, nodeID := range uncachedNodes {
+		stack := []stackElm{{nodeID, 0}}
+
+		for len(stack) > 0 {
+			curTodoIndex := stack[len(stack)-1].todoIndex
+			curNode, err := storage.GetNode(stack[len(stack)-1].id) // Retrieve the current node from storage
+			if err != nil {
+				return nil, err
+			}
+
+			if alreadyCached.Contains(curNode.Id) {
+				stack = stack[:len(stack)-1] // pop off the stack, this node is already cached
+				continue
+			}
+
+			todoNodes, futureNodes, err := getTodoAndFutureNodes[T](children, parents, curNode, direction)
+
+			if curTodoIndex == len(todoNodes) {
+				stack = stack[:len(stack)-1] // pop off the stack, this node is now fully cached
+				alreadyCached.Add(curNode.Id)
+
+				for _, futureNodeID := range futureNodes {
+					stack = append(stack, stackElm{id: futureNodeID, todoIndex: 0})
+				}
+			} else {
+				stack = append(stack[:len(stack)-1], stackElm{id: curNode.Id, todoIndex: curTodoIndex + 1}) // move the current node to its next todo node
+				if !(scc[curNode.Id] == scc[todoNodes[curTodoIndex]]) {
+					if alreadyCached.Contains(todoNodes[curTodoIndex]) {
+						if err := addToCache(cache, curNode.Id, todoNodes[curTodoIndex]); err != nil {
+							return nil, err
+						}
+					} else {
+						stack = append(stack, stackElm{id: todoNodes[curTodoIndex], todoIndex: 0})
+					}
+				}
+			}
+		}
+	}
+
+	return cache, nil
+}
+
+func getTodoAndFutureNodes[T any](children, parents *NativeKeyManagement, curNode *Node[T], direction string) ([]uint32, []uint32, error) {
+	var todoNodes, futureNodes []uint32
+
+	if direction == "children" {
+		todoNodesBitmap, err := children.Get(strconv.Itoa(int(curNode.Id)))
+		if err != nil {
+			return nil, nil, err
+		}
+		futureNodesBitmap, err := parents.Get(strconv.Itoa(int(curNode.Id)))
+		if err != nil {
+			return nil, nil, err
+		}
+		todoNodes, futureNodes = todoNodesBitmap.ToArray(), futureNodesBitmap.ToArray()
+	} else {
+		todoNodesBitmap, err := parents.Get(strconv.Itoa(int(curNode.Id)))
+		if err != nil {
+			return nil, nil, err
+		}
+		futureNodesBitmap, err := children.Get(strconv.Itoa(int(curNode.Id)))
+		if err != nil {
+			return nil, nil, err
+		}
+		todoNodes, futureNodes = todoNodesBitmap.ToArray(), futureNodesBitmap.ToArray()
+	}
+
+	return todoNodes, futureNodes, nil
+}
+
+// addCyclesToBindMap takes in a union find which contains all the cycles found in the graph and
+// a bind map which we use to store all children and parents for a given node.
+// This function takes the data from the union find and adds it to the bind map so that we can
+// initialize the bind map with all the cycles.
+func addCyclesToBindMap[T any](storage Storage[T], scc map[uint32]uint32, cache, children, parents *NativeKeyManagement) error {
+	parentToKeys := map[uint32][]string{}
+
+	for k, v := range scc {
+		parentToKeys[v] = append(parentToKeys[v], strconv.Itoa(int(k)))
+	}
+
+	for _, keysForAParent := range parentToKeys {
+		if _, err := cache.BindKeys(keysForAParent); err != nil {
+			return err
+		}
+		if _, err := children.BindKeys(keysForAParent); err != nil {
+			return err
+		}
+		if _, err := parents.BindKeys(keysForAParent); err != nil {
+			return err
+		}
+
+		keycache := roaring.New()
+		childrenCache, parentCache := roaring.New(), roaring.New()
+		for _, key := range keysForAParent {
+			intkey, err := strconv.Atoi(key)
+			if err != nil {
+				return err
+			}
+
+			node, err := storage.GetNode(uint32(intkey))
+			if err != nil {
+				return err
+			}
+
+			childrenCache.Or(node.Child)
+			parentCache.Or(node.Parent)
+			keycache.Add(uint32(intkey))
+
+		}
+		if len(keysForAParent) > 0 {
+			if err := cache.Set(keysForAParent[0], *keycache); err != nil {
+				return fmt.Errorf("error setting value for key in cache %s, %w", keysForAParent[0], err)
+			}
+			if err := children.Set(keysForAParent[0], *childrenCache); err != nil {
+				return fmt.Errorf("error setting value for key in grouped children relationship%s, %w", keysForAParent[0], err)
+			}
+			if err := parents.Set(keysForAParent[0], *parentCache); err != nil {
+				return fmt.Errorf("error setting value for key in grouped parent relationship%s, %w", keysForAParent[0], err)
+			}
+		}
+
+	}
+	return nil
+}
+
+func addToCache(bm *NativeKeyManagement, curElem, todoElem uint32) error {
+	curElemVal, err := bm.Get(strconv.Itoa(int(curElem)))
+	if err != nil {
+		return fmt.Errorf("error getting value for curElem keys from value %d, err: %v", curElem, err)
+	}
+
+	todoVal, err := bm.Get(strconv.Itoa(int(todoElem)))
+	if err != nil {
+		return fmt.Errorf("error getting value for curElem key %d, err: %v", todoElem, err)
+	}
+
+	curElemVal.Or(&todoVal)
+	curElemVal.Add(curElem)
+
+	err = bm.Set(strconv.Itoa(int(curElem)), curElemVal)
+	if err != nil {
+		return err
+	}
+	return nil
 }
