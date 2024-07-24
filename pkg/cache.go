@@ -23,22 +23,22 @@ func Cache[T any](storage Storage[T]) error {
 		return fmt.Errorf("error getting keys")
 	}
 
-	childSCC, err := findCycles(storage, "children", len(keys))
+	childSCC, err := findCycles(storage, ChildDirection, len(keys))
 	if err != nil {
 		return err
 	}
 
-	cachedChildren, err := buildCache(storage, uncachedNodes, "children", childSCC)
+	cachedChildren, err := buildCache(storage, uncachedNodes, ChildDirection, childSCC)
 	if err != nil {
 		return err
 	}
 
-	parentSCC, err := findCycles(storage, "parent", len(keys))
+	parentSCC, err := findCycles(storage, ParentDirection, len(keys))
 	if err != nil {
 		return err
 	}
 
-	cachedParents, err := buildCache(storage, uncachedNodes, "parents", parentSCC)
+	cachedParents, err := buildCache(storage, uncachedNodes, ParentDirection, parentSCC)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func Cache[T any](storage Storage[T]) error {
 	return storage.ClearCacheStack()
 }
 
-func findCycles[T any](storage Storage[T], direction string, numOfNodes int) (map[uint32]uint32, error) {
+func findCycles[T any](storage Storage[T], direction Direction, numOfNodes int) (map[uint32]uint32, error) {
 	var stack []uint32
 	var tarjanDFS func(nodeID uint32) error
 
@@ -89,7 +89,7 @@ func findCycles[T any](storage Storage[T], direction string, numOfNodes int) (ma
 		}
 
 		var nextNodes []uint32
-		if direction == "children" {
+		if direction == ChildDirection {
 			nextNodes = currentNode.Child.ToArray()
 		} else {
 			nextNodes = currentNode.Parent.ToArray()
@@ -137,7 +137,7 @@ func findCycles[T any](storage Storage[T], direction string, numOfNodes int) (ma
 	return lowLink, nil
 }
 
-func buildCache[T any](storage Storage[T], uncachedNodes []uint32, direction string, scc map[uint32]uint32) (*NativeKeyManagement, error) {
+func buildCache[T any](storage Storage[T], uncachedNodes []uint32, direction Direction, scc map[uint32]uint32) (*NativeKeyManagement, error) {
 	cache, children, parents := NewNativeKeyManagement(), NewNativeKeyManagement(), NewNativeKeyManagement()
 	alreadyCached := roaring.New()
 
@@ -154,7 +154,7 @@ func buildCache[T any](storage Storage[T], uncachedNodes []uint32, direction str
 	return cache, nil
 }
 
-func cacheDFS[T any](storage Storage[T], nodeID uint32, direction string, scc map[uint32]uint32, alreadyCached *roaring.Bitmap, cache, children, parents *NativeKeyManagement) error {
+func cacheDFS[T any](storage Storage[T], nodeID uint32, direction Direction, scc map[uint32]uint32, alreadyCached *roaring.Bitmap, cache, children, parents *NativeKeyManagement) error {
 	curNode, err := storage.GetNode(nodeID) // Retrieve the current node from storage
 	if err != nil {
 		return err
@@ -189,10 +189,10 @@ func cacheDFS[T any](storage Storage[T], nodeID uint32, direction string, scc ma
 	return nil
 }
 
-func getTodoAndFutureNodes[T any](children, parents *NativeKeyManagement, curNode *Node[T], direction string) ([]uint32, []uint32, error) {
+func getTodoAndFutureNodes[T any](children, parents *NativeKeyManagement, curNode *Node[T], direction Direction) ([]uint32, []uint32, error) {
 	var todoNodes, futureNodes []uint32
 
-	if direction == "children" {
+	if direction == ChildDirection {
 		todoNodesBitmap, err := children.Get(strconv.Itoa(int(curNode.Id)))
 		if err != nil {
 			return nil, nil, err

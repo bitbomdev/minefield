@@ -12,16 +12,23 @@ import (
 
 var ErrNodeAlreadyExists = errors.New("node with name already exists")
 
+type Direction string
+
+const (
+	ParentDirection Direction = "parent"
+	ChildDirection  Direction = "child"
+)
+
 // Generic Node structure with metadata as generic type
 type Node[T any] struct {
-	Id         uint32          `json:"Id"`
-	Type       string          `json:"type"`
-	Name       string          `json:"name"`
 	Metadata   T               `json:"metadata"`
 	Child      *roaring.Bitmap `json:"child"`
 	Parent     *roaring.Bitmap `json:"parent"`
+	Type       string          `json:"type"`
+	Name       string          `json:"name"`
 	ChildData  []byte          `json:"childData"`
 	ParentData []byte          `json:"parentData"`
+	Id         uint32          `json:"Id"`
 }
 
 type NodeCache struct {
@@ -50,19 +57,19 @@ func NewNodeCache(id uint32, allParents, allChildren *roaring.Bitmap) *NodeCache
 func (n *Node[T]) MarshalJSON() ([]byte, error) {
 	childData, err := n.Child.ToBytes()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to convert child bitmap to bytes: %w", err)
 	}
 	parentData, err := n.Parent.ToBytes()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to convert parent bitmap to bytes: %w", err)
 	}
 	return json.Marshal(&struct {
-		ID         uint32 `json:"Id"`
+		Metadata   T      `json:"metadata"`
 		Type       string `json:"type"`
 		Name       string `json:"name"`
-		Metadata   T      `json:"metadata"`
 		ChildData  []byte `json:"childData"`
 		ParentData []byte `json:"parentData"`
+		ID         uint32 `json:"Id"`
 	}{
 		ID:         n.Id,
 		Type:       n.Type,
@@ -78,15 +85,15 @@ func (n *Node[T]) MarshalJSON() ([]byte, error) {
 // This takes the "ChildData" and "ParentData" fields and unmarshal them from bytes into roaring bitmaps.
 func (n *Node[T]) UnmarshalJSON(data []byte) error {
 	aux := &struct {
-		ID         uint32 `json:"Id"`
+		Metadata   T      `json:"metadata"`
 		Type       string `json:"type"`
 		Name       string `json:"name"`
-		Metadata   T      `json:"metadata"`
 		ChildData  []byte `json:"childData"`
 		ParentData []byte `json:"parentData"`
+		ID         uint32 `json:"Id"`
 	}{}
 	if err := json.Unmarshal(data, aux); err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal node data: %w", err)
 	}
 	n.Id = aux.ID
 	n.Type = aux.Type
@@ -95,10 +102,10 @@ func (n *Node[T]) UnmarshalJSON(data []byte) error {
 	n.Child = roaring.New()
 	n.Parent = roaring.New()
 	if _, err := n.Child.FromBuffer(aux.ChildData); err != nil {
-		return err
+		return fmt.Errorf("failed to convert child data from buffer: %w", err)
 	}
 	if _, err := n.Parent.FromBuffer(aux.ParentData); err != nil {
-		return err
+		return fmt.Errorf("failed to convert parent data from buffer: %w", err)
 	}
 	return nil
 }
@@ -111,7 +118,7 @@ func AddNode[T any](storage Storage[T], _type string, metadata T, name string) (
 	} else {
 		ID, err = storage.GenerateID()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to generate ID: %w", err)
 		}
 	}
 
@@ -129,7 +136,7 @@ func AddNode[T any](storage Storage[T], _type string, metadata T, name string) (
 		allChildren: roaring.New(),
 	}
 	if err := storage.SaveNode(n); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to save node: %w", err)
 	}
 	if err := storage.SaveCache(nCache); err != nil {
 		return nil, err
@@ -140,23 +147,26 @@ func AddNode[T any](storage Storage[T], _type string, metadata T, name string) (
 // SetDependency now uses generic types for metadata
 func (n *Node[T]) SetDependency(storage Storage[T], neighbor *Node[T]) error {
 	if n == nil {
-		return errors.New("cannot add dependency to nil node")
+		return fmt.Errorf("cannot add dependency to nil node")
 	}
 	if neighbor == nil {
-		return errors.New("cannot add dependency to nil node")
+		return fmt.Errorf("cannot add dependency to nil node")
 	}
 	if n.Id == neighbor.Id {
-		return errors.New("cannot add self as dependency")
+		return fmt.Errorf("cannot add self as dependency")
+	}
+	if storage == nil {
+		return fmt.Errorf("storage cannot be nil")
 	}
 
 	n.Child.Add(neighbor.Id)
 	neighbor.Parent.Add(n.Id)
 
 	if err := storage.SaveNode(n); err != nil {
-		return err
+		return fmt.Errorf("failed to save node: %w", err)
 	}
 	if err := storage.SaveNode(neighbor); err != nil {
-		return err
+		return fmt.Errorf("failed to save neighbor node: %w", err)
 	}
 	if err := storage.AddNodeToCachedStack(n.Id); err != nil {
 		return err
@@ -168,9 +178,12 @@ func (n *Node[T]) SetDependency(storage Storage[T], neighbor *Node[T]) error {
 	return nil
 }
 
-func (n *Node[T]) queryBitmap(storage Storage[T], direction string) (*roaring.Bitmap, error) {
+func (n *Node[T]) queryBitmap(storage Storage[T], direction Direction) (*roaring.Bitmap, error) {
 	if n == nil {
-		return nil, errors.New("cannot query bitmap of nil node")
+		return nil, fmt.Errorf("cannot query bitmap of nil node")
+	}
+	if storage == nil {
+		return nil, fmt.Errorf("storage cannot be nil")
 	}
 
 	result := roaring.New()
@@ -188,19 +201,19 @@ func (n *Node[T]) queryBitmap(storage Storage[T], direction string) (*roaring.Bi
 
 		var bitmap *roaring.Bitmap
 		switch direction {
-		case "child":
+		case ChildDirection:
 			bitmap = curNode.Child
-		case "parent":
+		case ParentDirection:
 			bitmap = curNode.Parent
 		default:
-			return nil, fmt.Errorf("invalID direction during query: %s", direction)
+			return nil, fmt.Errorf("invalid direction during query: %s", direction)
 		}
 
 		result.Or(bitmap)
 		for _, nID := range bitmap.Clone().ToArray() {
 			node, err := storage.GetNode(nID)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to get node: %w", err)
 			}
 			queue = append(queue, node)
 		}
@@ -212,11 +225,11 @@ func (n *Node[T]) queryBitmap(storage Storage[T], direction string) (*roaring.Bi
 }
 
 func (n *Node[T]) QueryDependentsNoCache(storage Storage[T]) (*roaring.Bitmap, error) {
-	return n.queryBitmap(storage, "parent")
+	return n.queryBitmap(storage, ParentDirection)
 }
 
 func (n *Node[T]) QueryDependenciesNoCache(storage Storage[T]) (*roaring.Bitmap, error) {
-	return n.queryBitmap(storage, "child")
+	return n.queryBitmap(storage, ChildDirection)
 }
 
 // QueryDependents checks if all nodes are cached, if so find the dependents in the cache, if not find the dependents without searching the cache
