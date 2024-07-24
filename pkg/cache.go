@@ -28,7 +28,7 @@ func Cache[T any](storage Storage[T]) error {
 		return err
 	}
 
-	cachedChildren, err := buildNodeCacheMap(storage, uncachedNodes, "children", childSCC)
+	cachedChildren, err := buildCache(storage, uncachedNodes, "children", childSCC)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func Cache[T any](storage Storage[T]) error {
 		return err
 	}
 
-	cachedParents, err := buildNodeCacheMap(storage, uncachedNodes, "parents", parentSCC)
+	cachedParents, err := buildCache(storage, uncachedNodes, "parents", parentSCC)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func findCycles[T any](storage Storage[T], direction string, numOfNodes int) (ma
 	return lowLink, nil
 }
 
-func buildNodeCacheMap[T any](storage Storage[T], uncachedNodes []uint32, direction string, scc map[uint32]uint32) (*NativeKeyManagement, error) {
+func buildCache[T any](storage Storage[T], uncachedNodes []uint32, direction string, scc map[uint32]uint32) (*NativeKeyManagement, error) {
 	cache, children, parents := NewNativeKeyManagement(), NewNativeKeyManagement(), NewNativeKeyManagement()
 	alreadyCached := roaring.New()
 
@@ -147,45 +147,46 @@ func buildNodeCacheMap[T any](storage Storage[T], uncachedNodes []uint32, direct
 	}
 
 	for _, nodeID := range uncachedNodes {
-		stack := []stackElm{{nodeID, 0}}
+		if err := cacheDFS[T](storage, nodeID, direction, scc, alreadyCached, cache, children, parents); err != nil {
+			return nil, err
+		}
+	}
+	return cache, nil
+}
 
-		for len(stack) > 0 {
-			curTodoIndex := stack[len(stack)-1].todoIndex
-			curNode, err := storage.GetNode(stack[len(stack)-1].id) // Retrieve the current node from storage
-			if err != nil {
-				return nil, err
-			}
+func cacheDFS[T any](storage Storage[T], nodeID uint32, direction string, scc map[uint32]uint32, alreadyCached *roaring.Bitmap, cache, children, parents *NativeKeyManagement) error {
+	curNode, err := storage.GetNode(nodeID) // Retrieve the current node from storage
+	if err != nil {
+		return err
+	}
 
-			if alreadyCached.Contains(curNode.Id) {
-				stack = stack[:len(stack)-1] // pop off the stack, this node is already cached
-				continue
-			}
+	if alreadyCached.Contains(curNode.Id) {
+		return nil
+	}
 
-			todoNodes, futureNodes, err := getTodoAndFutureNodes[T](children, parents, curNode, direction)
-
-			if curTodoIndex == len(todoNodes) {
-				stack = stack[:len(stack)-1] // pop off the stack, this node is now fully cached
-				alreadyCached.Add(curNode.Id)
-
-				for _, futureNodeID := range futureNodes {
-					stack = append(stack, stackElm{id: futureNodeID, todoIndex: 0})
+	todoNodes, futureNodes, err := getTodoAndFutureNodes[T](children, parents, curNode, direction)
+	for _, id := range todoNodes {
+		if !(scc[curNode.Id] == scc[id]) {
+			if alreadyCached.Contains(id) {
+				if err := addToCache(cache, nodeID, id); err != nil {
+					return err
 				}
-			} else {
-				stack = append(stack[:len(stack)-1], stackElm{id: curNode.Id, todoIndex: curTodoIndex + 1}) // move the current node to its next todo node
-				if !(scc[curNode.Id] == scc[todoNodes[curTodoIndex]]) {
-					if alreadyCached.Contains(todoNodes[curTodoIndex]) {
-						if err := addToCache(cache, curNode.Id, todoNodes[curTodoIndex]); err != nil {
-							return nil, err
-						}
-					} else {
-						stack = append(stack, stackElm{id: todoNodes[curTodoIndex], todoIndex: 0})
-					}
-				}
+			} else if err := cacheDFS[T](storage, id, direction, scc, alreadyCached, cache, children, parents); err != nil {
+				return err
 			}
 		}
 	}
 
-	return cache, nil
+	alreadyCached.Add(nodeID)
+
+	// We have to iterate through the future nodes
+	for _, id := range futureNodes {
+		if err := cacheDFS[T](storage, id, direction, scc, alreadyCached, cache, children, parents); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func getTodoAndFutureNodes[T any](children, parents *NativeKeyManagement, curNode *Node[T], direction string) ([]uint32, []uint32, error) {
@@ -254,8 +255,9 @@ func addCyclesToBindMap[T any](storage Storage[T], scc map[uint32]uint32, cache,
 			childrenCache.Or(node.Child)
 			parentCache.Or(node.Parent)
 			keycache.Add(uint32(intkey))
-
 		}
+		childrenCache.AndNot(keycache)
+		parentCache.AndNot(keycache)
 		if len(keysForAParent) > 0 {
 			if err := cache.Set(keysForAParent[0], *keycache); err != nil {
 				return fmt.Errorf("error setting value for key in cache %s, %w", keysForAParent[0], err)

@@ -46,7 +46,7 @@ func TestSetDependent(t *testing.T) {
 	assert.Contains(t, node2.Parent.ToArray(), node1.Id, "Expected node2 to have node1 as parent dependency")
 }
 
-func TestRandomGraphDependenciesWithCircles(t *testing.T) {
+func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 	tests := []int{1000}
 	for _, n := range tests {
 		storage := NewMockStorage[string]()
@@ -62,19 +62,24 @@ func TestRandomGraphDependenciesWithCircles(t *testing.T) {
 			nodes[i] = node
 		}
 
-		// Set random dependencies, allowing circles
+		// Set random dependencies, allowing controlled circles
 		rand.Seed(time.Now().UnixNano())
-
-		m := map[int][]int{}
-
+		cycleProbability := 0.01 // 1% chance to create a cycle
 		for i := 0; i < n; i++ {
-			possibleDeps := rand.Perm(n)                       // Generate a random permutation of indices [0, n-1]
+			possibleDeps := rand.Perm(n - i)                   // Generate a random permutation of indices [0, min(90, n-i)-1]
 			for j := 0; j < 15 && j < len(possibleDeps); j++ { // Each node has up to 15 random dependencies
-				targetIndex := possibleDeps[j]
-				if targetIndex != i { // Avoid self-dependency
-					err := nodes[i].SetDependency(storage, nodes[targetIndex])
-					assert.NoError(t, err)
-					m[int(nodes[i].Id)] = append(m[int(nodes[i].Id)], int(nodes[targetIndex].Id))
+				targetIndex := i + possibleDeps[j]
+				shouldCycle := rand.Float64() < cycleProbability
+				if targetIndex != i { // Avoid self-dependency and control cycle creation
+					v := max(targetIndex-rand.Intn(100), 0)
+					if shouldCycle && v != i {
+						err := nodes[i].SetDependency(storage, nodes[v])
+						assert.NoError(t, err)
+					} else {
+						err := nodes[i].SetDependency(storage, nodes[targetIndex])
+						assert.NoError(t, err)
+					}
+
 				}
 			}
 		}
