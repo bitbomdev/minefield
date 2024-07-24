@@ -25,22 +25,22 @@ func TestIngestSBOM(t *testing.T) {
 				bitmap2Parent.Add(1)
 
 				return map[uint32]*Node[any]{
-					1: &Node[any]{
+					1: {
 						Id:   1,
 						Type: "PACKAGE",
 						Name: "pkg:generic/dep1@1.0.0",
 					},
-					2: &Node[any]{
+					2: {
 						Id:   2,
 						Type: "PACKAGE",
 						Name: "pkg:generic/dep2@1.0.0",
 					},
-					3: &Node[any]{
+					3: {
 						Id:   3,
 						Type: "PACKAGE",
 						Name: "pkg:generic/lib-A@1.0.0",
 					},
-					4: &Node[any]{
+					4: {
 						Id:   4,
 						Type: "PACKAGE",
 						Name: "pkg:generic/lib-B@1.0.0",

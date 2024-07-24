@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/RoaringBitmap/roaring"
 	"github.com/protobom/protobom/pkg/reader"
 	"github.com/protobom/protobom/pkg/sbom"
 )
@@ -55,7 +54,7 @@ func processSBOMFile(filePath string, storage Storage[any]) error {
 	nameToNodeID := map[string]uint32{}
 
 	for _, node := range document.GetNodeList().GetNodes() {
-		graphNode, err := AddNode(storage, node.Type.String(), any(node), roaring.New(), roaring.New(), string(node.Purl()))
+		graphNode, err := AddNode(storage, node.Type.String(), any(node), string(node.Purl()))
 		if err != nil {
 			if errors.Is(err, ErrNodeAlreadyExists) {
 				// TODO: Add a logger
