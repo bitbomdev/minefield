@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"github.com/RoaringBitmap/roaring"
+	"github.com/bit-bom/bitbom/pkg/ingest"
 )
 
 func TestParseAndExecute(t *testing.T) {
 	storage := GetStorageInstance("localhost:6379")
-	err := IngestSBOM("../test", storage)
+	err := ingest.SBOM("../test", storage)
 	if err != nil {
 		t.Fatal(err)
 	}

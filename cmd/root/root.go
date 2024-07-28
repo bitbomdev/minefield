@@ -1,10 +1,10 @@
 package root
 
 import (
-	"github.com/spf13/cobra"
 	"github.com/bit-bom/bitbom/cmd/allKeys"
 	"github.com/bit-bom/bitbom/cmd/ingest"
 	"github.com/bit-bom/bitbom/cmd/query"
+	"github.com/spf13/cobra"
 )
 
 type options struct{}

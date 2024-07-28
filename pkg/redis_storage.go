@@ -12,18 +12,18 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-type RedisStorage[T any] struct {
+type RedisStorage struct {
 	client *redis.Client
 }
 
-func NewRedisStorage[T any](addr string) *RedisStorage[T] {
+func NewRedisStorage(addr string) *RedisStorage {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: addr,
 	})
-	return &RedisStorage[T]{client: rdb}
+	return &RedisStorage{client: rdb}
 }
 
-func (r *RedisStorage[T]) SaveNode(node *Node[T]) error {
+func (r *RedisStorage) SaveNode(node *Node) error {
 	data, err := node.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("failed to marshal node: %w", err)
@@ -40,19 +40,19 @@ func (r *RedisStorage[T]) SaveNode(node *Node[T]) error {
 	return nil
 }
 
-func (r *RedisStorage[T]) GetNode(id uint32) (*Node[T], error) {
+func (r *RedisStorage) GetNode(id uint32) (*Node, error) {
 	data, err := r.client.Get(context.Background(), fmt.Sprintf("node:%d", id)).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node data: %w", err)
 	}
-	var node Node[T]
+	var node Node
 	if err := node.UnmarshalJSON([]byte(data)); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal node data: %w", err)
 	}
 	return &node, nil
 }
 
-func (r *RedisStorage[T]) GetAllKeys() ([]uint32, error) {
+func (r *RedisStorage) GetAllKeys() ([]uint32, error) {
 	keys, err := r.client.Keys(context.Background(), "node:*").Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all keys: %w", err)
@@ -72,7 +72,7 @@ func (r *RedisStorage[T]) GetAllKeys() ([]uint32, error) {
 	return returnedKeys, nil
 }
 
-func (r *RedisStorage[T]) SaveCache(cache *NodeCache) error {
+func (r *RedisStorage) SaveCache(cache *NodeCache) error {
 	data, err := json.Marshal(cache)
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (r *RedisStorage[T]) SaveCache(cache *NodeCache) error {
 }
 
 // ToBeCached returns all nodes that haven't been cached
-func (r *RedisStorage[T]) ToBeCached() ([]uint32, error) {
+func (r *RedisStorage) ToBeCached() ([]uint32, error) {
 	data, err := r.client.Get(context.Background(), "toBeCached").Result()
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func (r *RedisStorage[T]) ToBeCached() ([]uint32, error) {
 	return toBeCached, nil
 }
 
-func (r *RedisStorage[T]) AddNodeToCachedStack(id uint32) error {
+func (r *RedisStorage) AddNodeToCachedStack(id uint32) error {
 	var toBeCached []uint32
 
 	data, err := r.client.Get(context.Background(), "toBeCached").Result()
@@ -115,7 +115,7 @@ func (r *RedisStorage[T]) AddNodeToCachedStack(id uint32) error {
 	return r.client.Set(context.Background(), "toBeCached", setData, 0).Err()
 }
 
-func (r *RedisStorage[T]) ClearCacheStack() error {
+func (r *RedisStorage) ClearCacheStack() error {
 	var toBeCached []uint32
 	setData, err := json.Marshal(toBeCached)
 	if err != nil {
@@ -125,7 +125,7 @@ func (r *RedisStorage[T]) ClearCacheStack() error {
 	return r.client.Set(context.Background(), "toBeCached", setData, 0).Err()
 }
 
-func (r *RedisStorage[T]) GetCache(id uint32) (*NodeCache, error) {
+func (r *RedisStorage) GetCache(id uint32) (*NodeCache, error) {
 	data, err := r.client.Get(context.Background(), fmt.Sprintf("cacheHelper:%d", id)).Result()
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func (r *RedisStorage[T]) GetCache(id uint32) (*NodeCache, error) {
 	return &nodeCache, nil
 }
 
-func (r *RedisStorage[T]) SetDependency(nodeID, neighborID uint32) error {
+func (r *RedisStorage) SetDependency(nodeID, neighborID uint32) error {
 	node, err := r.GetNode(nodeID)
 	if err != nil {
 		return fmt.Errorf("failed to get node: %w", err)
@@ -149,7 +149,7 @@ func (r *RedisStorage[T]) SetDependency(nodeID, neighborID uint32) error {
 	return node.SetDependency(r, neighbor)
 }
 
-func (r *RedisStorage[T]) QueryDependents(nodeID uint32) (*roaring.Bitmap, error) {
+func (r *RedisStorage) QueryDependents(nodeID uint32) (*roaring.Bitmap, error) {
 	node, err := r.GetNode(nodeID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node: %w", err)
@@ -157,7 +157,7 @@ func (r *RedisStorage[T]) QueryDependents(nodeID uint32) (*roaring.Bitmap, error
 	return node.QueryDependents(r)
 }
 
-func (r *RedisStorage[T]) QueryDependencies(nodeID uint32) (*roaring.Bitmap, error) {
+func (r *RedisStorage) QueryDependencies(nodeID uint32) (*roaring.Bitmap, error) {
 	node, err := r.GetNode(nodeID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node: %w", err)
@@ -165,7 +165,7 @@ func (r *RedisStorage[T]) QueryDependencies(nodeID uint32) (*roaring.Bitmap, err
 	return node.QueryDependencies(r)
 }
 
-func (r *RedisStorage[T]) GenerateID() (uint32, error) {
+func (r *RedisStorage) GenerateID() (uint32, error) {
 	id, err := r.client.Incr(context.Background(), "node_id_counter").Result()
 	if err != nil {
 		return 0, fmt.Errorf("failed to generate ID: %w", err)
@@ -173,7 +173,7 @@ func (r *RedisStorage[T]) GenerateID() (uint32, error) {
 	return uint32(id), nil
 }
 
-func (r *RedisStorage[T]) NameToID(name string) (uint32, error) {
+func (r *RedisStorage) NameToID(name string) (uint32, error) {
 	id, err := r.client.Get(context.Background(), fmt.Sprint("name_to_id:", name)).Result()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get ID from name: %w", err)
@@ -185,7 +185,7 @@ func (r *RedisStorage[T]) NameToID(name string) (uint32, error) {
 	return uint32(n), nil
 }
 
-func (r *RedisStorage[T]) IDToName(id uint32) (string, error) {
+func (r *RedisStorage) IDToName(id uint32) (string, error) {
 	name, err := r.client.Get(context.Background(), fmt.Sprint("id_to_name:", id)).Result()
 	if err != nil {
 		return "", fmt.Errorf("failed to get name from ID: %w", err)

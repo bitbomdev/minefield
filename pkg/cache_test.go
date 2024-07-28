@@ -10,7 +10,7 @@ import (
 func Test_findCycles(t *testing.T) {
 	logger := log.Default()
 
-	storage := NewMockStorage[string]()
+	storage := NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "1")
 	assert.NoError(t, err)
 	node2, err := AddNode(storage, "type2", "metadata2", "2")
@@ -18,7 +18,7 @@ func Test_findCycles(t *testing.T) {
 	err = node1.SetDependency(storage, node2)
 	assert.NoError(t, err)
 
-	got, err := findCycles[string](storage, "children", 2)
+	got, err := findCycles(storage, "children", 2)
 	if err != nil {
 		logger.Fatalf("error finding cycles, storage %v, err %v", storage, err)
 		return
@@ -30,7 +30,7 @@ func Test_findCycles(t *testing.T) {
 func Test_findCycles_With_Cycles(t *testing.T) {
 	logger := log.Default()
 
-	storage := NewMockStorage[string]()
+	storage := NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "1")
 	assert.NoError(t, err)
 	node2, err := AddNode(storage, "type2", "metadata2", "2")
@@ -45,7 +45,7 @@ func Test_findCycles_With_Cycles(t *testing.T) {
 	err = node3.SetDependency(storage, node1)
 	assert.NoError(t, err)
 
-	got, err := findCycles[string](storage, "children", 3)
+	got, err := findCycles(storage, "children", 3)
 	if err != nil {
 		logger.Fatalf("error finding cycles, storage %v, err %v", storage, err)
 		return

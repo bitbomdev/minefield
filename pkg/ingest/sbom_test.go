@@ -1,30 +1,31 @@
-package pkg
+package ingest
 
 import (
 	"sort"
 	"testing"
 
 	"github.com/RoaringBitmap/roaring"
+	"github.com/bit-bom/bitbom/pkg"
 )
 
 func TestIngestSBOM(t *testing.T) {
 	tests := []struct {
 		name     string
 		sbomPath string
-		want     map[uint32]*Node[any]
+		want     map[uint32]*pkg.Node
 		wantErr  bool
 	}{
 		{
 			name:     "default",
-			sbomPath: "../test",
-			want: func() map[uint32]*Node[any] {
+			sbomPath: "../../test",
+			want: func() map[uint32]*pkg.Node {
 				bitmap1Child := roaring.New()
 				bitmap1Child.Add(2)
 
 				bitmap2Parent := roaring.New()
 				bitmap2Parent.Add(1)
 
-				return map[uint32]*Node[any]{
+				return map[uint32]*pkg.Node{
 					1: {
 						Id:   1,
 						Type: "PACKAGE",
@@ -51,9 +52,9 @@ func TestIngestSBOM(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			storage := NewMockStorage[any]()
-			if err := IngestSBOM(test.sbomPath, storage); test.wantErr != (err != nil) {
-				t.Errorf("IngestSBOM() error = %v, wantErr = %v", err, test.wantErr)
+			storage := pkg.NewMockStorage()
+			if err := SBOM(test.sbomPath, storage); test.wantErr != (err != nil) {
+				t.Errorf("Sbom() error = %v, wantErr = %v", err, test.wantErr)
 			}
 
 			keys, err := storage.GetAllKeys()
@@ -71,7 +72,7 @@ func TestIngestSBOM(t *testing.T) {
 					t.Fatalf("Failed to get node, %v", err)
 				}
 
-				if !node.nodeEquals(test.want[key]) {
+				if !nodeEquals(node, test.want[key]) {
 					t.Fatalf("expected node %v, got %v", test.want[key], node)
 				}
 			}
@@ -79,7 +80,7 @@ func TestIngestSBOM(t *testing.T) {
 	}
 }
 
-func (n *Node[T]) nodeEquals(n2 *Node[T]) bool {
+func nodeEquals(n, n2 *pkg.Node) bool {
 	if ((n == nil || n2 == nil) && n != n2) ||
 		(n != nil && (n.Id != n2.Id || n.Type != n2.Type)) {
 		return false
