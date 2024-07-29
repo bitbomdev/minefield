@@ -7,20 +7,15 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
-type stackElm struct {
-	id        uint32
-	todoIndex int
-}
-
 func Cache[T any](storage Storage[T]) error {
+
 	uncachedNodes, err := storage.ToBeCached()
 	if err != nil {
 		return err
 	}
-
 	keys, err := storage.GetAllKeys()
 	if err != nil {
-		return fmt.Errorf("error getting keys")
+		return fmt.Errorf("error getting keys: %w", err)
 	}
 
 	childSCC, err := findCycles(storage, ChildDirection, len(keys))

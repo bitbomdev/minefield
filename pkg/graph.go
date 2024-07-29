@@ -168,13 +168,6 @@ func (n *Node[T]) SetDependency(storage Storage[T], neighbor *Node[T]) error {
 	if err := storage.SaveNode(neighbor); err != nil {
 		return fmt.Errorf("failed to save neighbor node: %w", err)
 	}
-	if err := storage.AddNodeToCachedStack(n.Id); err != nil {
-		return err
-	}
-	if err := storage.AddNodeToCachedStack(neighbor.Id); err != nil {
-		return err
-	}
-
 	return nil
 }
 

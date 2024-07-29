@@ -70,6 +70,9 @@ func (m *MockStorage[T]) SaveCache(cache *NodeCache) error {
 		m.cache = map[uint32]*NodeCache{}
 	}
 	m.cache[cache.nodeID] = cache
+	if err := m.AddNodeToCachedStack(cache.nodeID); err != nil {
+		return err
+	}
 	return nil
 }
 
