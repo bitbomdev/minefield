@@ -11,9 +11,9 @@ import (
 func TestVulnerabilities(t *testing.T) {
 	storage := pkg.NewMockStorage()
 	// Add mock nodes to storage
-	_, err := pkg.AddNode(storage, "PACKAGE", "metadata1", "pkg:golang/github.com/golang/go")
+	_, err := pkg.AddNode(storage, "PACKAGE", "metadata1", "pkg:golang/stdlib")
 	assert.NoError(t, err)
-	_, err = pkg.AddNode(storage, "PACKAGE", "metadata2", "pkg:cargo/github/rust-lang/rust")
+	_, err = pkg.AddNode(storage, "PACKAGE", "metadata2", "pkg:golang/github/docker/docker@19.0.0")
 	assert.NoError(t, err)
 
 	err = Vulnerabilities(storage)
@@ -29,17 +29,21 @@ func TestGetPURLEcosystem(t *testing.T) {
 	tests := []struct {
 		purl     string
 		expected Ecosystem
+		wantErr  bool
 	}{
-		{"pkg:golang/github.com/pkg/errors@v0.9.1", EcosystemGo},
-		{"pkg:npm/lodash@4.17.20", EcosystemNPM},
-		{"pkg:deb/debian/curl@7.68.0-1ubuntu2.6", EcosystemDebian},
-		{"pkg:hex/phoenix@1.5.7", EcosystemHex},
+		{"pkg:golang/github.com/pkg/errors@v0.9.1", EcosystemGo, false},
+		{"pkg:npm/lodash@4.17.20", EcosystemNPM, false},
+		{"pkg:deb/debian/curl@7.68.0-1ubuntu2.6", EcosystemDebian, false},
+		{"pkg:hex/phoenix@1.5.7", EcosystemHex, false},
 	}
 
 	for _, test := range tests {
 		purl, err := packageurl.FromString(test.purl)
 		assert.NoError(t, err)
-		ecosystem := getPURLEcosystem(purl)
+		ecosystem, err := getPURLEcosystem(purl)
+		if (err != nil) != test.wantErr {
+			t.Fatalf("getPURLEcosystem(%s) error = %v, wantErr %v", test.purl, err, test.wantErr)
+		}
 		assert.Equal(t, test.expected, ecosystem)
 	}
 }

@@ -148,7 +148,7 @@ func PURLToPackageQuery(purl string) (Query, error) {
 			// Debian and Alpine repeats their namespace in PURL, so don't add it to the name
 			name = parsedPURL.Name
 		default:
-			name = parsedPURL.Namespace + ":" + parsedPURL.Name
+			name = parsedPURL.Namespace + "/" + parsedPURL.Name
 		}
 	}
 
