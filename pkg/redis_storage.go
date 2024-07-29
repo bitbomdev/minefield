@@ -77,6 +77,9 @@ func (r *RedisStorage[T]) SaveCache(cache *NodeCache) error {
 	if err != nil {
 		return err
 	}
+	if err := r.AddNodeToCachedStack(cache.nodeID); err != nil {
+		return err
+	}
 	return r.client.Set(context.Background(), fmt.Sprintf("cacheHelper:%d", cache.nodeID), data, 0).Err()
 }
 
@@ -84,6 +87,9 @@ func (r *RedisStorage[T]) SaveCache(cache *NodeCache) error {
 func (r *RedisStorage[T]) ToBeCached() ([]uint32, error) {
 	data, err := r.client.Get(context.Background(), "toBeCached").Result()
 	if err != nil {
+		if strings.Contains(err.Error(), "redis: nil") {
+			return []uint32{}, nil
+		}
 		return nil, err
 	}
 	var toBeCached []uint32
