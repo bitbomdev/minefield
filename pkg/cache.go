@@ -12,10 +12,9 @@ func Cache(storage Storage) error {
 	if err != nil {
 		return err
 	}
-
 	keys, err := storage.GetAllKeys()
 	if err != nil {
-		return fmt.Errorf("error getting keys")
+		return fmt.Errorf("error getting keys: %w", err)
 	}
 
 	childSCC, err := findCycles(storage, ChildDirection, len(keys))
