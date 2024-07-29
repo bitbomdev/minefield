@@ -1,5 +1,7 @@
 package ingest
 
+// Based on the osv-scanner's query code to OSV.dev
+
 import (
 	"bytes"
 	"encoding/json"

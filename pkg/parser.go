@@ -60,6 +60,9 @@ func ParseAndExecute(script string, storage Storage) (*roaring.Bitmap, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to query dependents for node ID %d: %w", nodeID, err)
 			}
+			if bitmap == nil {
+				continue
+			}
 
 			for _, id := range bitmap.ToArray() {
 				node, err := storage.GetNode(id)
