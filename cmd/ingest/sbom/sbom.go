@@ -13,7 +13,6 @@ type options struct{}
 func (o *options) AddFlags(_ *cobra.Command) {}
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
-	// Assuming args[0] is the SBOM file path
 	sbomPath := args[0]
 
 	// Get the storage instance (assuming a function GetStorageInstance exists)

@@ -13,7 +13,6 @@ type options struct{}
 func (o *options) AddFlags(_ *cobra.Command) {}
 
 func (o *options) Run(_ *cobra.Command, _ []string) error {
-	// Get the storage instance (assuming a function GetStorageInstance exists)
 	storage := pkg.GetStorageInstance("localhost:6379")
 
 	// Ingest SBOM
