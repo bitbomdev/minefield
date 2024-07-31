@@ -42,41 +42,47 @@ func TestParseAndExecute(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		script  string
-		want    *roaring.Bitmap
-		wantErr bool
+		name            string
+		script          string
+		defaultNodeName string
+		want            *roaring.Bitmap
+		wantErr         bool
 	}{
 		{
-			name:   "Simple dependents query",
-			script: "dependents PACKAGE pkg:generic/dep1@1.0.0",
-			want:   roaring.BitmapOf(1, 2),
+			name:            "Simple dependents query",
+			script:          "dependents PACKAGE pkg:generic/dep1@1.0.0",
+			want:            roaring.BitmapOf(1, 2),
+			defaultNodeName: "",
 		},
 		{
-			name:   "Simple dependencies query",
-			script: "dependencies PACKAGE pkg:generic/lib-A@1.0.0",
-			want:   roaring.BitmapOf(3, 4),
+			name:            "Simple dependencies query",
+			script:          "dependencies PACKAGE pkg:generic/lib-A@1.0.0",
+			want:            roaring.BitmapOf(3, 4),
+			defaultNodeName: "",
 		},
 		{
-			name:    "Invalid token",
-			script:  "invalid PACKAGE pkg:generic/lib-A@1.0.0",
-			wantErr: true,
+			name:            "Invalid token",
+			script:          "invalid PACKAGE pkg:generic/lib-A@1.0.0",
+			wantErr:         true,
+			defaultNodeName: "",
 		},
 		{
-			name:   "Combine dependents and dependencies with OR",
-			script: "dependents PACKAGE pkg:generic/dep1@1.0.0 or dependencies PACKAGE pkg:generic/dep1@1.0.0",
-			want:   roaring.BitmapOf(1, 2, 4),
+			name:            "Combine dependents and dependencies with OR",
+			script:          "dependents PACKAGE pkg:generic/dep1@1.0.0 or dependencies PACKAGE pkg:generic/dep1@1.0.0",
+			want:            roaring.BitmapOf(1, 2, 4),
+			defaultNodeName: "",
 		},
 		{
-			name:    "Mismatched parentheses",
-			script:  "dependents PACKAGE pkg:generic/lib-A@1.0.0 ]",
-			wantErr: true,
+			name:            "Mismatched parentheses",
+			script:          "dependents PACKAGE pkg:generic/lib-A@1.0.0 ]",
+			wantErr:         true,
+			defaultNodeName: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ParseAndExecute(tt.script, storage)
+			result, err := ParseAndExecute(tt.script, storage, tt.defaultNodeName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseAndExecute() error = %v, wantErr %v", err, tt.wantErr)
 				return

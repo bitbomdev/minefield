@@ -3,12 +3,13 @@ package weightedNACD
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/bit-bom/bitbom/pkg"
 	"github.com/bit-bom/bitbom/pkg/weightedNACD"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"os"
-	"strconv"
 )
 
 type options struct {
@@ -42,6 +43,16 @@ func (o *options) validateWeights(weights *weightedNACD.Weights) error {
 }
 
 func (o *options) Run(_ *cobra.Command, _ []string) error {
+	storage := pkg.GetStorageInstance("localhost:6379")
+
+	uncachedNodes, err := storage.ToBeCached()
+	if err != nil {
+		return err
+	}
+	if len(uncachedNodes) != 0 {
+		return fmt.Errorf("cannot use sorted leaderboards without caching")
+	}
+
 	file, err := os.Open(o.weightsFile)
 	if err != nil {
 		return fmt.Errorf("failed to open weights file: %w", err)
@@ -56,8 +67,6 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 	if err := o.validateWeights(&weights); err != nil {
 		return err
 	}
-
-	storage := pkg.GetStorageInstance("localhost:6379")
 
 	results, err := weightedNACD.WeightedNACD(storage, weights)
 	if err != nil {

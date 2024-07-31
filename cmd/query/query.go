@@ -29,7 +29,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	// Get the storage instance (assuming a function GetStorageInstance exists)
 	storage := pkg.GetStorageInstance("localhost:6379")
 
-	execute, err := pkg.ParseAndExecute(script, storage)
+	execute, err := pkg.ParseAndExecute(script, storage, "")
 	if err != nil {
 		return fmt.Errorf("failed to parse and execute script: %w", err)
 	}
@@ -40,7 +40,6 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 			fmt.Println("Failed to get name for ID", depID, ":", err)
 			continue
 		}
-		fmt.Println(node.Type, node.Name)
 
 		if o.outputdir != "" {
 			data, err := json.MarshalIndent(node.Metadata, "", "	")
@@ -73,6 +72,7 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "query [script]",
 		Short:             "Query dependencies and dependents of a project",
+		Args:              cobra.ExactArgs(1),
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}
