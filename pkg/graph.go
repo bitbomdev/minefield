@@ -10,25 +10,28 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
-var ErrNodeAlreadyExists = errors.New("node with name already exists")
+var (
+	ErrNodeAlreadyExists = errors.New("node with name already exists")
+	ErrSelfDependency    = errors.New("cannot add self as dependency")
+)
 
 type Direction string
 
 const (
-	ParentDirection Direction = "parent"
-	ChildDirection  Direction = "child"
+	ParentsDirection  Direction = "parents"
+	ChildrenDirection Direction = "children"
 )
 
 // Generic Node structure with metadata as generic type
-type Node[T any] struct {
-	Metadata   T               `json:"metadata"`
-	Child      *roaring.Bitmap `json:"child"`
-	Parent     *roaring.Bitmap `json:"parent"`
+type Node struct {
+	Metadata   any             `json:"metadata"`
+	Children   *roaring.Bitmap `json:"child"`
+	Parents    *roaring.Bitmap `json:"parent"`
 	Type       string          `json:"type"`
 	Name       string          `json:"name"`
 	ChildData  []byte          `json:"childData"`
 	ParentData []byte          `json:"parentData"`
-	Id         uint32          `json:"Id"`
+	ID         uint32          `json:"ID"`
 }
 
 type NodeCache struct {
@@ -37,11 +40,11 @@ type NodeCache struct {
 	allChildren *roaring.Bitmap
 }
 
-func (n *Node[T]) GetID() uint32 { return n.Id }
+func (n *Node) GetID() uint32 { return n.ID }
 
-func (n *Node[T]) GetChildren() *roaring.Bitmap { return n.Child }
+func (n *Node) GetChildren() *roaring.Bitmap { return n.Children }
 
-func (n *Node[T]) GetParents() *roaring.Bitmap { return n.Parent }
+func (n *Node) GetParents() *roaring.Bitmap { return n.Parents }
 
 func NewNodeCache(id uint32, allParents, allChildren *roaring.Bitmap) *NodeCache {
 	return &NodeCache{
@@ -51,27 +54,72 @@ func NewNodeCache(id uint32, allParents, allChildren *roaring.Bitmap) *NodeCache
 	}
 }
 
+// MarshalJSON is a custom JSON marshalling method for NodeCache.
+// It converts the roaring bitmaps to byte slices for JSON serialization.
+func (nc *NodeCache) MarshalJSON() ([]byte, error) {
+	allParentsData, err := nc.allParents.ToBytes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert allParents bitmap to bytes: %w", err)
+	}
+	allChildrenData, err := nc.allChildren.ToBytes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert allChildren bitmap to bytes: %w", err)
+	}
+	return json.Marshal(&struct {
+		NodeID          uint32 `json:"nodeID"`
+		AllParentsData  []byte `json:"allParentsData"`
+		AllChildrenData []byte `json:"allChildrenData"`
+	}{
+		NodeID:          nc.nodeID,
+		AllParentsData:  allParentsData,
+		AllChildrenData: allChildrenData,
+	})
+}
+
+// UnmarshalJSON is a custom JSON unmarshalling method for NodeCache.
+// It converts the byte slices back to roaring bitmaps after JSON deserialization.
+func (nc *NodeCache) UnmarshalJSON(data []byte) error {
+	aux := &struct {
+		NodeID          uint32 `json:"nodeID"`
+		AllParentsData  []byte `json:"allParentsData"`
+		AllChildrenData []byte `json:"allChildrenData"`
+	}{}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return fmt.Errorf("failed to unmarshal NodeCache data: %w", err)
+	}
+	nc.nodeID = aux.NodeID
+	nc.allParents = roaring.New()
+	nc.allChildren = roaring.New()
+	if _, err := nc.allParents.FromBuffer(aux.AllParentsData); err != nil {
+		return fmt.Errorf("failed to convert allParents data from buffer: %w", err)
+	}
+	if _, err := nc.allChildren.FromBuffer(aux.AllChildrenData); err != nil {
+		return fmt.Errorf("failed to convert allChildren data from buffer: %w", err)
+	}
+	return nil
+}
+
 // MarshalJSON is a custom JSON marshalling tool.
 // Roaring bitmaps can't be marshaled directly, so we need to call the roaring bitmaps function to convert the bitmaps to an []byte
-// This takes the roaring bitmaps "Child" and "Parent" and converts them to byte slices called "ChildData" and "ParentData".
-func (n *Node[T]) MarshalJSON() ([]byte, error) {
-	childData, err := n.Child.ToBytes()
+// This takes the roaring bitmaps "Children" and "Parents" and converts them to byte slices called "ChildData" and "ParentData".
+func (n *Node) MarshalJSON() ([]byte, error) {
+	childData, err := n.Children.ToBytes()
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert child bitmap to bytes: %w", err)
 	}
-	parentData, err := n.Parent.ToBytes()
+	parentData, err := n.Parents.ToBytes()
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert parent bitmap to bytes: %w", err)
 	}
 	return json.Marshal(&struct {
-		Metadata   T      `json:"metadata"`
+		Metadata   any    `json:"metadata"`
 		Type       string `json:"type"`
 		Name       string `json:"name"`
 		ChildData  []byte `json:"childData"`
 		ParentData []byte `json:"parentData"`
-		ID         uint32 `json:"Id"`
+		ID         uint32 `json:"ID"`
 	}{
-		ID:         n.Id,
+		ID:         n.ID,
 		Type:       n.Type,
 		Name:       n.Name,
 		Metadata:   n.Metadata,
@@ -83,35 +131,35 @@ func (n *Node[T]) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON is a custom JSON unmarshalling tool.
 // We store the roaring bitmaps as a byte slice, so we need to unmarshal them, and then convert them from []byte to roaring.Bitmap.
 // This takes the "ChildData" and "ParentData" fields and unmarshal them from bytes into roaring bitmaps.
-func (n *Node[T]) UnmarshalJSON(data []byte) error {
+func (n *Node) UnmarshalJSON(data []byte) error {
 	aux := &struct {
-		Metadata   T      `json:"metadata"`
+		Metadata   any    `json:"metadata"`
 		Type       string `json:"type"`
 		Name       string `json:"name"`
 		ChildData  []byte `json:"childData"`
 		ParentData []byte `json:"parentData"`
-		ID         uint32 `json:"Id"`
+		ID         uint32 `json:"ID"`
 	}{}
 	if err := json.Unmarshal(data, aux); err != nil {
 		return fmt.Errorf("failed to unmarshal node data: %w", err)
 	}
-	n.Id = aux.ID
+	n.ID = aux.ID
 	n.Type = aux.Type
 	n.Name = aux.Name
 	n.Metadata = aux.Metadata
-	n.Child = roaring.New()
-	n.Parent = roaring.New()
-	if _, err := n.Child.FromBuffer(aux.ChildData); err != nil {
+	n.Children = roaring.New()
+	n.Parents = roaring.New()
+	if _, err := n.Children.FromBuffer(aux.ChildData); err != nil {
 		return fmt.Errorf("failed to convert child data from buffer: %w", err)
 	}
-	if _, err := n.Parent.FromBuffer(aux.ParentData); err != nil {
+	if _, err := n.Parents.FromBuffer(aux.ParentData); err != nil {
 		return fmt.Errorf("failed to convert parent data from buffer: %w", err)
 	}
 	return nil
 }
 
 // AddNode becomes generic in terms of metadata
-func AddNode[T any](storage Storage[T], _type string, metadata T, name string) (*Node[T], error) {
+func AddNode(storage Storage, _type string, metadata any, name string) (*Node, error) {
 	var ID uint32
 	if id, err := storage.NameToID(name); err == nil {
 		return storage.GetNode(id)
@@ -122,13 +170,13 @@ func AddNode[T any](storage Storage[T], _type string, metadata T, name string) (
 		}
 	}
 
-	n := &Node[T]{
-		Id:       ID,
+	n := &Node{
+		ID:       ID,
 		Type:     _type,
 		Name:     name,
 		Metadata: metadata,
-		Child:    roaring.New(),
-		Parent:   roaring.New(),
+		Children: roaring.New(),
+		Parents:  roaring.New(),
 	}
 	nCache := &NodeCache{
 		nodeID:      ID,
@@ -145,22 +193,22 @@ func AddNode[T any](storage Storage[T], _type string, metadata T, name string) (
 }
 
 // SetDependency now uses generic types for metadata
-func (n *Node[T]) SetDependency(storage Storage[T], neighbor *Node[T]) error {
+func (n *Node) SetDependency(storage Storage, neighbor *Node) error {
 	if n == nil {
 		return fmt.Errorf("cannot add dependency to nil node")
 	}
 	if neighbor == nil {
 		return fmt.Errorf("cannot add dependency to nil node")
 	}
-	if n.Id == neighbor.Id {
-		return fmt.Errorf("cannot add self as dependency")
+	if n.ID == neighbor.ID {
+		return ErrSelfDependency
 	}
 	if storage == nil {
 		return fmt.Errorf("storage cannot be nil")
 	}
 
-	n.Child.Add(neighbor.Id)
-	neighbor.Parent.Add(n.Id)
+	n.Children.Add(neighbor.ID)
+	neighbor.Parents.Add(n.ID)
 
 	if err := storage.SaveNode(n); err != nil {
 		return fmt.Errorf("failed to save node: %w", err)
@@ -171,7 +219,7 @@ func (n *Node[T]) SetDependency(storage Storage[T], neighbor *Node[T]) error {
 	return nil
 }
 
-func (n *Node[T]) queryBitmap(storage Storage[T], direction Direction) (*roaring.Bitmap, error) {
+func (n *Node) queryBitmap(storage Storage, direction Direction) (*roaring.Bitmap, error) {
 	if n == nil {
 		return nil, fmt.Errorf("cannot query bitmap of nil node")
 	}
@@ -181,23 +229,23 @@ func (n *Node[T]) queryBitmap(storage Storage[T], direction Direction) (*roaring
 
 	result := roaring.New()
 	visited := make(map[uint32]bool)
-	queue := []*Node[T]{n}
+	queue := []*Node{n}
 
 	for len(queue) > 0 {
 		curNode := queue[0]
 		queue = queue[1:]
 
-		if visited[curNode.Id] {
+		if visited[curNode.ID] {
 			continue
 		}
-		visited[curNode.Id] = true
+		visited[curNode.ID] = true
 
 		var bitmap *roaring.Bitmap
 		switch direction {
-		case ChildDirection:
-			bitmap = curNode.Child
-		case ParentDirection:
-			bitmap = curNode.Parent
+		case ChildrenDirection:
+			bitmap = curNode.Children
+		case ParentsDirection:
+			bitmap = curNode.Parents
 		default:
 			return nil, fmt.Errorf("invalid direction during query: %s", direction)
 		}
@@ -212,21 +260,21 @@ func (n *Node[T]) queryBitmap(storage Storage[T], direction Direction) (*roaring
 		}
 	}
 
-	result.Remove(n.Id)
+	result.Remove(n.ID)
 
 	return result, nil
 }
 
-func (n *Node[T]) QueryDependentsNoCache(storage Storage[T]) (*roaring.Bitmap, error) {
-	return n.queryBitmap(storage, ParentDirection)
+func (n *Node) QueryDependentsNoCache(storage Storage) (*roaring.Bitmap, error) {
+	return n.queryBitmap(storage, ParentsDirection)
 }
 
-func (n *Node[T]) QueryDependenciesNoCache(storage Storage[T]) (*roaring.Bitmap, error) {
-	return n.queryBitmap(storage, ChildDirection)
+func (n *Node) QueryDependenciesNoCache(storage Storage) (*roaring.Bitmap, error) {
+	return n.queryBitmap(storage, ChildrenDirection)
 }
 
 // QueryDependents checks if all nodes are cached, if so find the dependents in the cache, if not find the dependents without searching the cache
-func (n *Node[T]) QueryDependents(storage Storage[T]) (*roaring.Bitmap, error) {
+func (n *Node) QueryDependents(storage Storage) (*roaring.Bitmap, error) {
 	uncachedNodes, err := storage.ToBeCached()
 	if err != nil {
 		return nil, err
@@ -235,7 +283,7 @@ func (n *Node[T]) QueryDependents(storage Storage[T]) (*roaring.Bitmap, error) {
 		return n.QueryDependentsNoCache(storage)
 	}
 
-	nCache, err := storage.GetCache(n.Id)
+	nCache, err := storage.GetCache(n.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +291,7 @@ func (n *Node[T]) QueryDependents(storage Storage[T]) (*roaring.Bitmap, error) {
 	return nCache.allParents, nil
 }
 
-func (n *Node[T]) QueryDependencies(storage Storage[T]) (*roaring.Bitmap, error) {
+func (n *Node) QueryDependencies(storage Storage) (*roaring.Bitmap, error) {
 	uncachedNodes, err := storage.ToBeCached()
 	if err != nil {
 		return nil, err
@@ -252,7 +300,7 @@ func (n *Node[T]) QueryDependencies(storage Storage[T]) (*roaring.Bitmap, error)
 		return n.QueryDependenciesNoCache(storage)
 	}
 
-	nCache, err := storage.GetCache(n.Id)
+	nCache, err := storage.GetCache(n.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +308,7 @@ func (n *Node[T]) QueryDependencies(storage Storage[T]) (*roaring.Bitmap, error)
 	return nCache.allChildren, nil
 }
 
-func GenerateDOT[T any](storage Storage[T]) (string, error) {
+func GenerateDOT(storage Storage) (string, error) {
 	keys, err := storage.GetAllKeys()
 	if err != nil {
 		return "", err
@@ -282,7 +330,7 @@ func GenerateDOT[T any](storage Storage[T]) (string, error) {
 		dotBuilder.WriteString(fmt.Sprintf("%d [label=\"%s\"];\n", node.GetID(), label))
 
 		// Add edges for children
-		for _, childID := range node.Child.ToArray() {
+		for _, childID := range node.Children.ToArray() {
 			dotBuilder.WriteString(fmt.Sprintf("%d -> %d;\n", node.GetID(), childID))
 		}
 	}
@@ -290,7 +338,7 @@ func GenerateDOT[T any](storage Storage[T]) (string, error) {
 	return dotBuilder.String(), nil
 }
 
-func RenderGraph[T any](storage Storage[T]) error {
+func RenderGraph(storage Storage) error {
 	dotString, err := GenerateDOT(storage)
 	if err != nil {
 		return err

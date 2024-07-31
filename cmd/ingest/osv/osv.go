@@ -1,9 +1,10 @@
-package allKeys
+package osv
 
 import (
 	"fmt"
 
 	"github.com/bit-bom/bitbom/pkg"
+	"github.com/bit-bom/bitbom/pkg/ingest"
 	"github.com/spf13/cobra"
 )
 
@@ -14,29 +15,20 @@ func (o *options) AddFlags(_ *cobra.Command) {}
 func (o *options) Run(_ *cobra.Command, _ []string) error {
 	storage := pkg.GetStorageInstance("localhost:6379")
 
-	keys, err := storage.GetAllKeys()
-	if err != nil {
-		return fmt.Errorf("failed to query keys: %w", err)
+	// Ingest SBOM
+	if err := ingest.Vulnerabilities(storage); err != nil {
+		return fmt.Errorf("failed to ingest SBOM: %w", err)
 	}
 
-	// Print dependencies
-	for _, key := range keys {
-		node, err := storage.GetNode(key)
-		if err != nil {
-			fmt.Println("Failed to get name for ID:", err)
-			continue
-		}
-		fmt.Println(node.ID)
-	}
-
+	fmt.Println("Vulnerabilities ingested successfully")
 	return nil
 }
 
 func New() *cobra.Command {
 	o := &options{}
 	cmd := &cobra.Command{
-		Use:               "keys",
-		Short:             "returns all keys",
+		Use:               "osv",
+		Short:             "Ingest vulnerabilities into the storage",
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}

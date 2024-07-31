@@ -10,17 +10,17 @@ import (
 )
 
 func TestAddNode(t *testing.T) {
-	storage := NewMockStorage[string]()
+	storage := NewMockStorage()
 	node, err := AddNode(storage, "type1", "metadata1", "name1")
 
 	assert.NoError(t, err)
-	pulledNode, err := storage.GetNode(node.Id)
+	pulledNode, err := storage.GetNode(node.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, node, pulledNode, "Expected 1 node")
 }
 
 func TestSetDependency(t *testing.T) {
-	storage := NewMockStorage[string]()
+	storage := NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "name1")
 	assert.NoError(t, err, "Expected no error")
 	node2, err := AddNode(storage, "type2", "metadata2", "name2")
@@ -29,12 +29,12 @@ func TestSetDependency(t *testing.T) {
 	err = node1.SetDependency(storage, node2)
 
 	assert.NoError(t, err)
-	assert.Contains(t, node1.Child.ToArray(), node2.Id, "Expected node1 to have node2 as child dependency")
-	assert.Contains(t, node2.Parent.ToArray(), node1.Id, "Expected node2 to have node1 as parent dependency")
+	assert.Contains(t, node1.Children.ToArray(), node2.ID, "Expected node1 to have node2 as child dependency")
+	assert.Contains(t, node2.Parents.ToArray(), node1.ID, "Expected node2 to have node1 as parent dependency")
 }
 
 func TestSetDependent(t *testing.T) {
-	storage := NewMockStorage[string]()
+	storage := NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "name1")
 	assert.NoError(t, err, "Expected no error")
 	node2, err := AddNode(storage, "type2", "metadata2", "name2")
@@ -43,21 +43,21 @@ func TestSetDependent(t *testing.T) {
 	err = node1.SetDependency(storage, node2)
 
 	assert.NoError(t, err)
-	assert.Contains(t, node2.Parent.ToArray(), node1.Id, "Expected node2 to have node1 as parent dependency")
+	assert.Contains(t, node2.Parents.ToArray(), node1.ID, "Expected node2 to have node1 as parent dependency")
 }
 
 func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 	tests := []int{1000}
 	for _, n := range tests {
-		storage := NewMockStorage[string]()
-		nodes := make([]*Node[string], n)
+		storage := NewMockStorage()
+		nodes := make([]*Node, n)
 		expectedDependents := make(map[uint32][]uint32)
 		expectedDependencies := make(map[uint32][]uint32)
 
 		// Create nodes and set dependencies
 
 		for i := 0; i < n; i++ {
-			node, err := AddNode[string](storage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
+			node, err := AddNode(storage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
 			assert.NoError(t, err)
 			nodes[i] = node
 		}
@@ -98,7 +98,7 @@ func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 		start := time.Now()
 
 		// Cache the current state
-		err := Cache[string](storage)
+		err := Cache(storage)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -131,15 +131,15 @@ func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 	tests := []int{1000}
 	for _, n := range tests {
-		storage := NewMockStorage[string]()
-		nodes := make([]*Node[string], n)
+		storage := NewMockStorage()
+		nodes := make([]*Node, n)
 		expectedDependents := make(map[uint32][]uint32)
 		expectedDependencies := make(map[uint32][]uint32)
 
 		// Create nodes and set dependencies
 
 		for i := 0; i < n; i++ {
-			node, err := AddNode[string](storage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
+			node, err := AddNode(storage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
 			assert.NoError(t, err)
 			nodes[i] = node
 		}
@@ -156,7 +156,7 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 				if targetIndex < n {
 					err := nodes[i].SetDependency(storage, nodes[targetIndex])
 					assert.NoError(t, err)
-					m[int(nodes[i].Id)] = append(m[int(nodes[i].Id)], int(nodes[targetIndex].Id))
+					m[int(nodes[i].ID)] = append(m[int(nodes[i].ID)], int(nodes[targetIndex].ID))
 				}
 			}
 		}
@@ -175,7 +175,7 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 		start := time.Now()
 
 		// Cache the current state
-		err := Cache[string](storage)
+		err := Cache(storage)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -206,13 +206,13 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 }
 
 func TestComplexCircularDependency(t *testing.T) {
-	storage := NewMockStorage[string]()
-	nodes := make([]*Node[string], 13)
+	storage := NewMockStorage()
+	nodes := make([]*Node, 13)
 	var err error
 
 	// Create nodes
 	for i := 0; i < 13; i++ {
-		nodes[i], err = AddNode[string](storage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
+		nodes[i], err = AddNode(storage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
 		assert.NoError(t, err, "Expected no error")
 	}
 
@@ -259,7 +259,7 @@ func TestComplexCircularDependency(t *testing.T) {
 	err = nodes[12].SetDependency(storage, nodes[10])
 	assert.NoError(t, err)
 
-	if err := Cache[string](storage); err != nil {
+	if err := Cache(storage); err != nil {
 		t.Fatal(err)
 	}
 
@@ -270,26 +270,24 @@ func TestComplexCircularDependency(t *testing.T) {
 		dependentsNoCache, err := node.QueryDependentsNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependents")
 		assert.Equal(t, dependentsNoCache.ToArray(), dependents.ToArray(), "Cached and non-cached dependents should match")
-		t.Logf("Dependents of node%d: %v", node.GetID(), dependents.ToArray())
 
 		dependencies, err := node.QueryDependencies(storage)
 		assert.NoError(t, err, "Expected no error when querying cached dependencies")
 		dependenciesNoCache, err := node.QueryDependenciesNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependencies")
 		assert.Equal(t, dependenciesNoCache.ToArray(), dependencies.ToArray(), "Cached and non-cached dependencies should match")
-		t.Logf("Dependencies of node%d: %v", node.GetID(), dependencies.ToArray())
 	}
 	assert.NoError(t, err)
 }
 
 func TestSimpleCircle(t *testing.T) {
-	storage := NewMockStorage[string]()
-	nodes := make([]*Node[string], 3)
+	storage := NewMockStorage()
+	nodes := make([]*Node, 3)
 	var err error
 
 	// Create nodes
 	for i := 0; i < 3; i++ {
-		nodes[i], err = AddNode[string](storage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
+		nodes[i], err = AddNode(storage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
 		assert.NoError(t, err, "Expected no error")
 	}
 
@@ -301,7 +299,7 @@ func TestSimpleCircle(t *testing.T) {
 	err = nodes[2].SetDependency(storage, nodes[0])
 	assert.NoError(t, err)
 
-	if err := Cache[string](storage); err != nil {
+	if err := Cache(storage); err != nil {
 		t.Fatal(err)
 	}
 
@@ -314,25 +312,23 @@ func TestSimpleCircle(t *testing.T) {
 		dependentsNoCache, err := node.QueryDependentsNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependents")
 		assert.Equal(t, dependentsNoCache.ToArray(), dependents.ToArray(), "Cached and non-cached dependents should match")
-		t.Logf("Dependents of node%d: %v", node.GetID(), dependents.ToArray())
 
 		dependencies, err := node.QueryDependencies(storage)
 		assert.NoError(t, err, "Expected no error when querying cached dependencies")
 		dependenciesNoCache, err := node.QueryDependenciesNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependencies")
 		assert.Equal(t, dependenciesNoCache.ToArray(), dependencies.ToArray(), "Cached and non-cached dependencies should match")
-		t.Logf("Dependencies of node%d: %v", node.GetID(), dependencies.ToArray())
 	}
 }
 
 func TestIntermediateSimpleCircles(t *testing.T) {
-	storage := NewMockStorage[string]()
-	nodes := make([]*Node[string], 6)
+	storage := NewMockStorage()
+	nodes := make([]*Node, 6)
 	var err error
 
 	// Create nodes
 	for i := 0; i < 6; i++ {
-		nodes[i], err = AddNode[string](storage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
+		nodes[i], err = AddNode(storage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
 		assert.NoError(t, err, "Expected no error")
 	}
 
@@ -358,7 +354,7 @@ func TestIntermediateSimpleCircles(t *testing.T) {
 	// err = nodes[5].SetDependency(storage, nodes[0])
 	// assert.NoError(t, err)
 
-	if err := Cache[string](storage); err != nil {
+	if err := Cache(storage); err != nil {
 		t.Fatal(err)
 	}
 
@@ -371,13 +367,11 @@ func TestIntermediateSimpleCircles(t *testing.T) {
 		dependentsNoCache, err := node.QueryDependentsNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependents")
 		assert.Equal(t, dependentsNoCache.ToArray(), dependents.ToArray(), "Cached and non-cached dependents should match")
-		t.Logf("Dependents of node%d: %v", node.GetID(), dependents.ToArray())
 
 		dependencies, err := node.QueryDependencies(storage)
 		assert.NoError(t, err, "Expected no error when querying cached dependencies")
 		dependenciesNoCache, err := node.QueryDependenciesNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependencies")
 		assert.Equal(t, dependenciesNoCache.ToArray(), dependencies.ToArray(), "Cached and non-cached dependencies should match")
-		t.Logf("Dependencies of node%d: %v", node.GetID(), dependencies.ToArray())
 	}
 }

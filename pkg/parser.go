@@ -8,7 +8,7 @@ import (
 )
 
 // ParseAndExecute parses and executes a script using the given storage backend.
-func ParseAndExecute[T any](script string, storage Storage[T]) (*roaring.Bitmap, error) {
+func ParseAndExecute(script string, storage Storage) (*roaring.Bitmap, error) {
 	var stack []*roaring.Bitmap
 	var operators []string
 
@@ -60,6 +60,9 @@ func ParseAndExecute[T any](script string, storage Storage[T]) (*roaring.Bitmap,
 			if err != nil {
 				return nil, fmt.Errorf("failed to query dependents for node ID %d: %w", nodeID, err)
 			}
+			if bitmap == nil {
+				continue
+			}
 
 			for _, id := range bitmap.ToArray() {
 				node, err := storage.GetNode(id)
@@ -87,7 +90,9 @@ func ParseAndExecute[T any](script string, storage Storage[T]) (*roaring.Bitmap,
 			if err != nil {
 				return nil, fmt.Errorf("failed to query dependencies for node ID %d: %w", nodeID, err)
 			}
-
+			if bitmap == nil {
+				continue
+			}
 			for _, id := range bitmap.ToArray() {
 				node, err := storage.GetNode(id)
 				if err != nil {

@@ -8,7 +8,35 @@ import (
 
 func TestParseAndExecute(t *testing.T) {
 	storage := GetStorageInstance("localhost:6379")
-	err := IngestSBOM("../test", storage)
+	node1, err := AddNode(storage, "PACKAGE", nil, "pkg:generic/lib-A@1.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	node2, err := AddNode(storage, "PACKAGE", nil, "pkg:generic/lib-B@1.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	node3, err := AddNode(storage, "PACKAGE", nil, "pkg:generic/dep1@1.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	node4, err := AddNode(storage, "PACKAGE", nil, "pkg:generic/dep2@1.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = node1.SetDependency(storage, node3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = node2.SetDependency(storage, node3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = node3.SetDependency(storage, node4)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,12 +50,12 @@ func TestParseAndExecute(t *testing.T) {
 		{
 			name:   "Simple dependents query",
 			script: "dependents PACKAGE pkg:generic/dep1@1.0.0",
-			want:   roaring.BitmapOf(3, 4),
+			want:   roaring.BitmapOf(1, 2),
 		},
 		{
 			name:   "Simple dependencies query",
 			script: "dependencies PACKAGE pkg:generic/lib-A@1.0.0",
-			want:   roaring.BitmapOf(1, 2),
+			want:   roaring.BitmapOf(3, 4),
 		},
 		{
 			name:    "Invalid token",
@@ -37,7 +65,7 @@ func TestParseAndExecute(t *testing.T) {
 		{
 			name:   "Combine dependents and dependencies with OR",
 			script: "dependents PACKAGE pkg:generic/dep1@1.0.0 or dependencies PACKAGE pkg:generic/dep1@1.0.0",
-			want:   roaring.BitmapOf(2, 3, 4),
+			want:   roaring.BitmapOf(1, 2, 4),
 		},
 		{
 			name:    "Mismatched parentheses",
@@ -48,7 +76,7 @@ func TestParseAndExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ParseAndExecute[any](tt.script, storage)
+			result, err := ParseAndExecute(tt.script, storage)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseAndExecute() error = %v, wantErr %v", err, tt.wantErr)
 				return
