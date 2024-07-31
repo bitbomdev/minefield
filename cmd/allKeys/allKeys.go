@@ -2,8 +2,11 @@ package allKeys
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/bit-bom/bitbom/pkg"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -20,14 +23,19 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 	}
 
 	// Print dependencies
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Type", "ID"})
+
 	for _, key := range keys {
 		node, err := storage.GetNode(key)
 		if err != nil {
 			fmt.Println("Failed to get name for ID:", err)
 			continue
 		}
-		fmt.Println(node.ID)
+		table.Append([]string{node.Name, node.Type, strconv.Itoa(int(node.ID))})
 	}
+
+	table.Render()
 
 	return nil
 }
