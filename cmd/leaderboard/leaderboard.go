@@ -2,6 +2,7 @@ package leaderboard
 
 import (
 	"github.com/bit-bom/bitbom/cmd/leaderboard/allKeys"
+	"github.com/bit-bom/bitbom/cmd/leaderboard/custom"
 	"github.com/bit-bom/bitbom/cmd/leaderboard/weightedNACD"
 	"github.com/spf13/cobra"
 )
@@ -24,6 +25,7 @@ func New() *cobra.Command {
 
 	cmd.AddCommand(allKeys.New())
 	cmd.AddCommand(weightedNACD.New())
+	cmd.AddCommand(custom.New())
 
 	return cmd
 }

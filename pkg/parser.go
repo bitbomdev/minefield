@@ -8,7 +8,7 @@ import (
 )
 
 // ParseAndExecute parses and executes a script using the given storage backend.
-func ParseAndExecute(script string, storage Storage) (*roaring.Bitmap, error) {
+func ParseAndExecute(script string, storage Storage, defaultNodeName string) (*roaring.Bitmap, error) {
 	var stack []*roaring.Bitmap
 	var operators []string
 
@@ -47,16 +47,26 @@ func ParseAndExecute(script string, storage Storage) (*roaring.Bitmap, error) {
 	for tokenIndex := 0; tokenIndex < len(tokens); tokenIndex++ {
 		token := tokens[tokenIndex]
 		switch {
-		case strings.HasPrefix(token, "dependents"):
+		case strings.HasPrefix(token, "dependents") || strings.HasPrefix(token, "dependencies"):
+			dir := token
 			tokenIndex++
 			nodeTypeQueried := tokens[tokenIndex]
-			tokenIndex++
-			token = tokens[tokenIndex]
+			if defaultNodeName != "" {
+				token = defaultNodeName
+			} else {
+				tokenIndex++
+				token = tokens[tokenIndex]
+			}
 			nodeID, err := storage.NameToID(token)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get node ID for name %s: %w", token, err)
 			}
-			bitmap, err := storage.QueryDependents(nodeID)
+			var bitmap *roaring.Bitmap
+			if strings.TrimSpace(dir) == "dependents" {
+				bitmap, err = storage.QueryDependents(nodeID)
+			} else {
+				bitmap, err = storage.QueryDependencies(nodeID)
+			}
 			if err != nil {
 				return nil, fmt.Errorf("failed to query dependents for node ID %d: %w", nodeID, err)
 			}
@@ -64,35 +74,6 @@ func ParseAndExecute(script string, storage Storage) (*roaring.Bitmap, error) {
 				continue
 			}
 
-			for _, id := range bitmap.ToArray() {
-				node, err := storage.GetNode(id)
-				if err != nil {
-					return nil, err
-				}
-
-				if node.Type != nodeTypeQueried {
-					bitmap.Remove(id)
-				}
-			}
-
-			stack = append(stack, bitmap)
-
-		case strings.HasPrefix(token, "dependencies"):
-			tokenIndex++
-			nodeTypeQueried := tokens[tokenIndex]
-			tokenIndex++
-			token = tokens[tokenIndex]
-			nodeID, err := storage.NameToID(token)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get node ID for name %s: %w", token, err)
-			}
-			bitmap, err := storage.QueryDependencies(nodeID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to query dependencies for node ID %d: %w", nodeID, err)
-			}
-			if bitmap == nil {
-				continue
-			}
 			for _, id := range bitmap.ToArray() {
 				node, err := storage.GetNode(id)
 				if err != nil {
