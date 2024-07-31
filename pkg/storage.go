@@ -9,7 +9,6 @@ import (
 // Storage is the interface that wraps the methods for a storage backend.
 type Storage interface {
 	NameToID(name string) (uint32, error)
-	IDToName(id uint32) (string, error)
 	SaveNode(node *Node) error
 	GetNode(id uint32) (*Node, error)
 	GetAllKeys() ([]uint32, error)

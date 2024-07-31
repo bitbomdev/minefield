@@ -13,7 +13,6 @@ type MockStorage struct {
 	dependencies map[uint32]*roaring.Bitmap
 	dependents   map[uint32]*roaring.Bitmap
 	nameToID     map[string]uint32
-	idToName     map[uint32]string
 	idCounter    uint32
 	fullyCached  bool
 	mu           sync.Mutex
@@ -27,7 +26,6 @@ func NewMockStorage() *MockStorage {
 		dependencies: make(map[uint32]*roaring.Bitmap),
 		dependents:   make(map[uint32]*roaring.Bitmap),
 		nameToID:     make(map[string]uint32),
-		idToName:     make(map[uint32]string),
 		idCounter:    0,
 	}
 }
@@ -35,9 +33,8 @@ func NewMockStorage() *MockStorage {
 func (m *MockStorage) SaveNode(node *Node) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.nameToID[node.Name] = node.Id
-	m.idToName[node.Id] = node.Name
-	m.nodes[node.Id] = node
+	m.nameToID[node.Name] = node.ID
+	m.nodes[node.ID] = node
 	return nil
 }
 
@@ -149,13 +146,4 @@ func (m *MockStorage) NameToID(name string) (uint32, error) {
 		return 0, errors.New("node with name not found")
 	}
 	return m.nameToID[name], nil
-}
-
-func (m *MockStorage) IDToName(id uint32) (string, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if _, exists := m.idToName[id]; !exists {
-		return "", errors.New("node with id not found")
-	}
-	return m.idToName[id], nil
 }

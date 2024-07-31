@@ -14,7 +14,7 @@ func TestAddNode(t *testing.T) {
 	node, err := AddNode(storage, "type1", "metadata1", "name1")
 
 	assert.NoError(t, err)
-	pulledNode, err := storage.GetNode(node.Id)
+	pulledNode, err := storage.GetNode(node.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, node, pulledNode, "Expected 1 node")
 }
@@ -29,8 +29,8 @@ func TestSetDependency(t *testing.T) {
 	err = node1.SetDependency(storage, node2)
 
 	assert.NoError(t, err)
-	assert.Contains(t, node1.Child.ToArray(), node2.Id, "Expected node1 to have node2 as child dependency")
-	assert.Contains(t, node2.Parent.ToArray(), node1.Id, "Expected node2 to have node1 as parent dependency")
+	assert.Contains(t, node1.Children.ToArray(), node2.ID, "Expected node1 to have node2 as child dependency")
+	assert.Contains(t, node2.Parents.ToArray(), node1.ID, "Expected node2 to have node1 as parent dependency")
 }
 
 func TestSetDependent(t *testing.T) {
@@ -43,7 +43,7 @@ func TestSetDependent(t *testing.T) {
 	err = node1.SetDependency(storage, node2)
 
 	assert.NoError(t, err)
-	assert.Contains(t, node2.Parent.ToArray(), node1.Id, "Expected node2 to have node1 as parent dependency")
+	assert.Contains(t, node2.Parents.ToArray(), node1.ID, "Expected node2 to have node1 as parent dependency")
 }
 
 func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
@@ -156,7 +156,7 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 				if targetIndex < n {
 					err := nodes[i].SetDependency(storage, nodes[targetIndex])
 					assert.NoError(t, err)
-					m[int(nodes[i].Id)] = append(m[int(nodes[i].Id)], int(nodes[targetIndex].Id))
+					m[int(nodes[i].ID)] = append(m[int(nodes[i].ID)], int(nodes[targetIndex].ID))
 				}
 			}
 		}
@@ -270,14 +270,12 @@ func TestComplexCircularDependency(t *testing.T) {
 		dependentsNoCache, err := node.QueryDependentsNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependents")
 		assert.Equal(t, dependentsNoCache.ToArray(), dependents.ToArray(), "Cached and non-cached dependents should match")
-		t.Logf("Dependents of node%d: %v", node.GetID(), dependents.ToArray())
 
 		dependencies, err := node.QueryDependencies(storage)
 		assert.NoError(t, err, "Expected no error when querying cached dependencies")
 		dependenciesNoCache, err := node.QueryDependenciesNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependencies")
 		assert.Equal(t, dependenciesNoCache.ToArray(), dependencies.ToArray(), "Cached and non-cached dependencies should match")
-		t.Logf("Dependencies of node%d: %v", node.GetID(), dependencies.ToArray())
 	}
 	assert.NoError(t, err)
 }
@@ -314,14 +312,12 @@ func TestSimpleCircle(t *testing.T) {
 		dependentsNoCache, err := node.QueryDependentsNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependents")
 		assert.Equal(t, dependentsNoCache.ToArray(), dependents.ToArray(), "Cached and non-cached dependents should match")
-		t.Logf("Dependents of node%d: %v", node.GetID(), dependents.ToArray())
 
 		dependencies, err := node.QueryDependencies(storage)
 		assert.NoError(t, err, "Expected no error when querying cached dependencies")
 		dependenciesNoCache, err := node.QueryDependenciesNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependencies")
 		assert.Equal(t, dependenciesNoCache.ToArray(), dependencies.ToArray(), "Cached and non-cached dependencies should match")
-		t.Logf("Dependencies of node%d: %v", node.GetID(), dependencies.ToArray())
 	}
 }
 
@@ -371,13 +367,11 @@ func TestIntermediateSimpleCircles(t *testing.T) {
 		dependentsNoCache, err := node.QueryDependentsNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependents")
 		assert.Equal(t, dependentsNoCache.ToArray(), dependents.ToArray(), "Cached and non-cached dependents should match")
-		t.Logf("Dependents of node%d: %v", node.GetID(), dependents.ToArray())
 
 		dependencies, err := node.QueryDependencies(storage)
 		assert.NoError(t, err, "Expected no error when querying cached dependencies")
 		dependenciesNoCache, err := node.QueryDependenciesNoCache(storage)
 		assert.NoError(t, err, "Expected no error when querying non-cached dependencies")
 		assert.Equal(t, dependenciesNoCache.ToArray(), dependencies.ToArray(), "Cached and non-cached dependencies should match")
-		t.Logf("Dependencies of node%d: %v", node.GetID(), dependencies.ToArray())
 	}
 }

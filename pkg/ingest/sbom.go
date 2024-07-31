@@ -64,7 +64,7 @@ func processSBOMFile(filePath string, storage pkg.Storage) error {
 			}
 			return fmt.Errorf("failed to add node: %w", err)
 		}
-		nameToNodeID[string(node.Purl())] = graphNode.Id
+		nameToNodeID[string(node.Purl())] = graphNode.ID
 	}
 
 	err = addDependency(document, storage, nameToNodeID)

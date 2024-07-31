@@ -3,8 +3,8 @@ package allKeys
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/bit-bom/bitbom/pkg"
+	"github.com/spf13/cobra"
 )
 
 type options struct{}
@@ -21,12 +21,12 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 
 	// Print dependencies
 	for _, key := range keys {
-		name, err := storage.IDToName(key)
+		node, err := storage.GetNode(key)
 		if err != nil {
 			fmt.Println("Failed to get name for ID:", err)
 			continue
 		}
-		fmt.Println(name)
+		fmt.Println(node.ID)
 	}
 
 	return nil

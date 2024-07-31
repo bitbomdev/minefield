@@ -27,22 +27,22 @@ func TestIngestSBOM(t *testing.T) {
 
 				return map[uint32]*pkg.Node{
 					1: {
-						Id:   1,
+						ID:   1,
 						Type: "PACKAGE",
 						Name: "pkg:generic/dep1@1.0.0",
 					},
 					2: {
-						Id:   2,
+						ID:   2,
 						Type: "PACKAGE",
 						Name: "pkg:generic/dep2@1.0.0",
 					},
 					3: {
-						Id:   3,
+						ID:   3,
 						Type: "PACKAGE",
 						Name: "pkg:generic/lib-A@1.0.0",
 					},
 					4: {
-						Id:   4,
+						ID:   4,
 						Type: "PACKAGE",
 						Name: "pkg:generic/lib-B@1.0.0",
 					},
@@ -82,7 +82,7 @@ func TestIngestSBOM(t *testing.T) {
 
 func nodeEquals(n, n2 *pkg.Node) bool {
 	if ((n == nil || n2 == nil) && n != n2) ||
-		(n != nil && (n.Id != n2.Id || n.Type != n2.Type)) {
+		(n != nil && (n.ID != n2.ID || n.Type != n2.Type)) {
 		return false
 	}
 	return true

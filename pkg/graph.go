@@ -18,20 +18,20 @@ var (
 type Direction string
 
 const (
-	ParentDirection Direction = "parent"
-	ChildDirection  Direction = "child"
+	ParentsDirection  Direction = "parents"
+	ChildrenDirection Direction = "children"
 )
 
 // Generic Node structure with metadata as generic type
 type Node struct {
 	Metadata   any             `json:"metadata"`
-	Child      *roaring.Bitmap `json:"child"`
-	Parent     *roaring.Bitmap `json:"parent"`
+	Children   *roaring.Bitmap `json:"child"`
+	Parents    *roaring.Bitmap `json:"parent"`
 	Type       string          `json:"type"`
 	Name       string          `json:"name"`
 	ChildData  []byte          `json:"childData"`
 	ParentData []byte          `json:"parentData"`
-	Id         uint32          `json:"Id"`
+	ID         uint32          `json:"ID"`
 }
 
 type NodeCache struct {
@@ -40,11 +40,11 @@ type NodeCache struct {
 	allChildren *roaring.Bitmap
 }
 
-func (n *Node) GetID() uint32 { return n.Id }
+func (n *Node) GetID() uint32 { return n.ID }
 
-func (n *Node) GetChildren() *roaring.Bitmap { return n.Child }
+func (n *Node) GetChildren() *roaring.Bitmap { return n.Children }
 
-func (n *Node) GetParents() *roaring.Bitmap { return n.Parent }
+func (n *Node) GetParents() *roaring.Bitmap { return n.Parents }
 
 func NewNodeCache(id uint32, allParents, allChildren *roaring.Bitmap) *NodeCache {
 	return &NodeCache{
@@ -54,15 +54,60 @@ func NewNodeCache(id uint32, allParents, allChildren *roaring.Bitmap) *NodeCache
 	}
 }
 
+// MarshalJSON is a custom JSON marshalling method for NodeCache.
+// It converts the roaring bitmaps to byte slices for JSON serialization.
+func (nc *NodeCache) MarshalJSON() ([]byte, error) {
+	allParentsData, err := nc.allParents.ToBytes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert allParents bitmap to bytes: %w", err)
+	}
+	allChildrenData, err := nc.allChildren.ToBytes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert allChildren bitmap to bytes: %w", err)
+	}
+	return json.Marshal(&struct {
+		NodeID          uint32 `json:"nodeID"`
+		AllParentsData  []byte `json:"allParentsData"`
+		AllChildrenData []byte `json:"allChildrenData"`
+	}{
+		NodeID:          nc.nodeID,
+		AllParentsData:  allParentsData,
+		AllChildrenData: allChildrenData,
+	})
+}
+
+// UnmarshalJSON is a custom JSON unmarshalling method for NodeCache.
+// It converts the byte slices back to roaring bitmaps after JSON deserialization.
+func (nc *NodeCache) UnmarshalJSON(data []byte) error {
+	aux := &struct {
+		NodeID          uint32 `json:"nodeID"`
+		AllParentsData  []byte `json:"allParentsData"`
+		AllChildrenData []byte `json:"allChildrenData"`
+	}{}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return fmt.Errorf("failed to unmarshal NodeCache data: %w", err)
+	}
+	nc.nodeID = aux.NodeID
+	nc.allParents = roaring.New()
+	nc.allChildren = roaring.New()
+	if _, err := nc.allParents.FromBuffer(aux.AllParentsData); err != nil {
+		return fmt.Errorf("failed to convert allParents data from buffer: %w", err)
+	}
+	if _, err := nc.allChildren.FromBuffer(aux.AllChildrenData); err != nil {
+		return fmt.Errorf("failed to convert allChildren data from buffer: %w", err)
+	}
+	return nil
+}
+
 // MarshalJSON is a custom JSON marshalling tool.
 // Roaring bitmaps can't be marshaled directly, so we need to call the roaring bitmaps function to convert the bitmaps to an []byte
-// This takes the roaring bitmaps "Child" and "Parent" and converts them to byte slices called "ChildData" and "ParentData".
+// This takes the roaring bitmaps "Children" and "Parents" and converts them to byte slices called "ChildData" and "ParentData".
 func (n *Node) MarshalJSON() ([]byte, error) {
-	childData, err := n.Child.ToBytes()
+	childData, err := n.Children.ToBytes()
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert child bitmap to bytes: %w", err)
 	}
-	parentData, err := n.Parent.ToBytes()
+	parentData, err := n.Parents.ToBytes()
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert parent bitmap to bytes: %w", err)
 	}
@@ -72,9 +117,9 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 		Name       string `json:"name"`
 		ChildData  []byte `json:"childData"`
 		ParentData []byte `json:"parentData"`
-		ID         uint32 `json:"Id"`
+		ID         uint32 `json:"ID"`
 	}{
-		ID:         n.Id,
+		ID:         n.ID,
 		Type:       n.Type,
 		Name:       n.Name,
 		Metadata:   n.Metadata,
@@ -93,21 +138,21 @@ func (n *Node) UnmarshalJSON(data []byte) error {
 		Name       string `json:"name"`
 		ChildData  []byte `json:"childData"`
 		ParentData []byte `json:"parentData"`
-		ID         uint32 `json:"Id"`
+		ID         uint32 `json:"ID"`
 	}{}
 	if err := json.Unmarshal(data, aux); err != nil {
 		return fmt.Errorf("failed to unmarshal node data: %w", err)
 	}
-	n.Id = aux.ID
+	n.ID = aux.ID
 	n.Type = aux.Type
 	n.Name = aux.Name
 	n.Metadata = aux.Metadata
-	n.Child = roaring.New()
-	n.Parent = roaring.New()
-	if _, err := n.Child.FromBuffer(aux.ChildData); err != nil {
+	n.Children = roaring.New()
+	n.Parents = roaring.New()
+	if _, err := n.Children.FromBuffer(aux.ChildData); err != nil {
 		return fmt.Errorf("failed to convert child data from buffer: %w", err)
 	}
-	if _, err := n.Parent.FromBuffer(aux.ParentData); err != nil {
+	if _, err := n.Parents.FromBuffer(aux.ParentData); err != nil {
 		return fmt.Errorf("failed to convert parent data from buffer: %w", err)
 	}
 	return nil
@@ -126,12 +171,12 @@ func AddNode(storage Storage, _type string, metadata any, name string) (*Node, e
 	}
 
 	n := &Node{
-		Id:       ID,
+		ID:       ID,
 		Type:     _type,
 		Name:     name,
 		Metadata: metadata,
-		Child:    roaring.New(),
-		Parent:   roaring.New(),
+		Children: roaring.New(),
+		Parents:  roaring.New(),
 	}
 	nCache := &NodeCache{
 		nodeID:      ID,
@@ -155,15 +200,15 @@ func (n *Node) SetDependency(storage Storage, neighbor *Node) error {
 	if neighbor == nil {
 		return fmt.Errorf("cannot add dependency to nil node")
 	}
-	if n.Id == neighbor.Id {
+	if n.ID == neighbor.ID {
 		return ErrSelfDependency
 	}
 	if storage == nil {
 		return fmt.Errorf("storage cannot be nil")
 	}
 
-	n.Child.Add(neighbor.Id)
-	neighbor.Parent.Add(n.Id)
+	n.Children.Add(neighbor.ID)
+	neighbor.Parents.Add(n.ID)
 
 	if err := storage.SaveNode(n); err != nil {
 		return fmt.Errorf("failed to save node: %w", err)
@@ -190,17 +235,17 @@ func (n *Node) queryBitmap(storage Storage, direction Direction) (*roaring.Bitma
 		curNode := queue[0]
 		queue = queue[1:]
 
-		if visited[curNode.Id] {
+		if visited[curNode.ID] {
 			continue
 		}
-		visited[curNode.Id] = true
+		visited[curNode.ID] = true
 
 		var bitmap *roaring.Bitmap
 		switch direction {
-		case ChildDirection:
-			bitmap = curNode.Child
-		case ParentDirection:
-			bitmap = curNode.Parent
+		case ChildrenDirection:
+			bitmap = curNode.Children
+		case ParentsDirection:
+			bitmap = curNode.Parents
 		default:
 			return nil, fmt.Errorf("invalid direction during query: %s", direction)
 		}
@@ -215,17 +260,17 @@ func (n *Node) queryBitmap(storage Storage, direction Direction) (*roaring.Bitma
 		}
 	}
 
-	result.Remove(n.Id)
+	result.Remove(n.ID)
 
 	return result, nil
 }
 
 func (n *Node) QueryDependentsNoCache(storage Storage) (*roaring.Bitmap, error) {
-	return n.queryBitmap(storage, ParentDirection)
+	return n.queryBitmap(storage, ParentsDirection)
 }
 
 func (n *Node) QueryDependenciesNoCache(storage Storage) (*roaring.Bitmap, error) {
-	return n.queryBitmap(storage, ChildDirection)
+	return n.queryBitmap(storage, ChildrenDirection)
 }
 
 // QueryDependents checks if all nodes are cached, if so find the dependents in the cache, if not find the dependents without searching the cache
@@ -238,7 +283,7 @@ func (n *Node) QueryDependents(storage Storage) (*roaring.Bitmap, error) {
 		return n.QueryDependentsNoCache(storage)
 	}
 
-	nCache, err := storage.GetCache(n.Id)
+	nCache, err := storage.GetCache(n.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +300,7 @@ func (n *Node) QueryDependencies(storage Storage) (*roaring.Bitmap, error) {
 		return n.QueryDependenciesNoCache(storage)
 	}
 
-	nCache, err := storage.GetCache(n.Id)
+	nCache, err := storage.GetCache(n.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +330,7 @@ func GenerateDOT(storage Storage) (string, error) {
 		dotBuilder.WriteString(fmt.Sprintf("%d [label=\"%s\"];\n", node.GetID(), label))
 
 		// Add edges for children
-		for _, childID := range node.Child.ToArray() {
+		for _, childID := range node.Children.ToArray() {
 			dotBuilder.WriteString(fmt.Sprintf("%d -> %d;\n", node.GetID(), childID))
 		}
 	}

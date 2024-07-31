@@ -20,22 +20,22 @@ func Cache(storage Storage) error {
 		return fmt.Errorf("error getting keys: %w", err)
 	}
 
-	childSCC, err := findCycles(storage, ChildDirection, len(keys))
+	childSCC, err := findCycles(storage, ChildrenDirection, len(keys))
 	if err != nil {
 		return err
 	}
 
-	cachedChildren, err := buildCache(storage, uncachedNodes, ChildDirection, childSCC)
+	cachedChildren, err := buildCache(storage, uncachedNodes, ChildrenDirection, childSCC)
 	if err != nil {
 		return err
 	}
 
-	parentSCC, err := findCycles(storage, ParentDirection, len(keys))
+	parentSCC, err := findCycles(storage, ParentsDirection, len(keys))
 	if err != nil {
 		return err
 	}
 
-	cachedParents, err := buildCache(storage, uncachedNodes, ParentDirection, parentSCC)
+	cachedParents, err := buildCache(storage, uncachedNodes, ParentsDirection, parentSCC)
 	if err != nil {
 		return err
 	}
@@ -86,10 +86,10 @@ func findCycles(storage Storage, direction Direction, numOfNodes int) (map[uint3
 		}
 
 		var nextNodes []uint32
-		if direction == ChildDirection {
-			nextNodes = currentNode.Child.ToArray()
+		if direction == ChildrenDirection {
+			nextNodes = currentNode.Children.ToArray()
 		} else {
-			nextNodes = currentNode.Parent.ToArray()
+			nextNodes = currentNode.Parents.ToArray()
 		}
 
 		currentTarjanID++
@@ -157,13 +157,13 @@ func cacheDFS(storage Storage, nodeID uint32, direction Direction, scc map[uint3
 		return err
 	}
 
-	if alreadyCached.Contains(curNode.Id) {
+	if alreadyCached.Contains(curNode.ID) {
 		return nil
 	}
 
 	todoNodes, futureNodes, err := getTodoAndFutureNodes(children, parents, curNode, direction)
 	for _, id := range todoNodes {
-		if !(scc[curNode.Id] == scc[id]) {
+		if !(scc[curNode.ID] == scc[id]) {
 			if alreadyCached.Contains(id) {
 				if err := addToCache(cache, nodeID, id); err != nil {
 					return err
@@ -189,22 +189,22 @@ func cacheDFS(storage Storage, nodeID uint32, direction Direction, scc map[uint3
 func getTodoAndFutureNodes(children, parents *NativeKeyManagement, curNode *Node, direction Direction) ([]uint32, []uint32, error) {
 	var todoNodes, futureNodes []uint32
 
-	if direction == ChildDirection {
-		todoNodesBitmap, err := children.Get(strconv.Itoa(int(curNode.Id)))
+	if direction == ChildrenDirection {
+		todoNodesBitmap, err := children.Get(strconv.Itoa(int(curNode.ID)))
 		if err != nil {
 			return nil, nil, err
 		}
-		futureNodesBitmap, err := parents.Get(strconv.Itoa(int(curNode.Id)))
+		futureNodesBitmap, err := parents.Get(strconv.Itoa(int(curNode.ID)))
 		if err != nil {
 			return nil, nil, err
 		}
 		todoNodes, futureNodes = todoNodesBitmap.ToArray(), futureNodesBitmap.ToArray()
 	} else {
-		todoNodesBitmap, err := parents.Get(strconv.Itoa(int(curNode.Id)))
+		todoNodesBitmap, err := parents.Get(strconv.Itoa(int(curNode.ID)))
 		if err != nil {
 			return nil, nil, err
 		}
-		futureNodesBitmap, err := children.Get(strconv.Itoa(int(curNode.Id)))
+		futureNodesBitmap, err := children.Get(strconv.Itoa(int(curNode.ID)))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -249,8 +249,8 @@ func addCyclesToBindMap(storage Storage, scc map[uint32]uint32, cache, children,
 				return err
 			}
 
-			childrenCache.Or(node.Child)
-			parentCache.Or(node.Parent)
+			childrenCache.Or(node.Children)
+			parentCache.Or(node.Parents)
 			keycache.Add(uint32(intkey))
 		}
 		childrenCache.AndNot(keycache)
