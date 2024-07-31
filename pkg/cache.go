@@ -274,7 +274,7 @@ func addCyclesToBindMap(storage Storage, scc map[uint32]uint32, cache, children,
 func addToCache(bm *NativeKeyManagement, curElem, todoElem uint32) error {
 	curElemVal, err := bm.Get(strconv.Itoa(int(curElem)))
 	if err != nil {
-		return fmt.Errorf("error getting value for curElem keys from value %d, err: %v", curElem, err)
+		return fmt.Errorf("error getting value for curElem key from value %d, err: %v", curElem, err)
 	}
 
 	todoVal, err := bm.Get(strconv.Itoa(int(todoElem)))
