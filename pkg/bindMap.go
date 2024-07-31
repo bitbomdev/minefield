@@ -29,12 +29,12 @@ func NewNativeKeyManagement() *NativeKeyManagement {
 	}
 }
 
-// BindKeys binds a group of keys to a single hash key.
+// BindKeys binds a group of leaderboard to a single hash key.
 func (nkm *NativeKeyManagement) BindKeys(keys []string) (string, error) {
 	keyString := ""
-	// We are not summing up all keys in their non-hashed form to avoid collisions.
-	// For example, binding the keys 'a' and 'b' together would result in the same hash as binding 'ab' by itself.
-	// In this situation, we will not be able to distinguish between the two groups of keys.
+	// We are not summing up all leaderboard in their non-hashed form to avoid collisions.
+	// For example, binding the leaderboard 'a' and 'b' together would result in the same hash as binding 'ab' by itself.
+	// In this situation, we will not be able to distinguish between the two groups of leaderboard.
 	for _, k := range keys {
 		keyString += fmt.Sprint(sha256.Sum256([]byte(k)))
 	}
@@ -93,7 +93,7 @@ func (nkm *NativeKeyManagement) GetAllKeysAndValues() ([]string, []roaring.Bitma
 		} else {
 			value2, exists := nkm.store.data[key]
 			if !exists {
-				return nil, nil, fmt.Errorf("value not found for key: %s while getting all keys", key)
+				return nil, nil, fmt.Errorf("value not found for key: %s while getting all leaderboard", key)
 			}
 			values = append(values, value2)
 		}

@@ -35,8 +35,8 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 func New() *cobra.Command {
 	o := &options{}
 	cmd := &cobra.Command{
-		Use:               "keys",
-		Short:             "returns all keys",
+		Use:               "allKeys",
+		Short:             "returns all the keys in a random order",
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}
