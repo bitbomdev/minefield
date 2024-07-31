@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/bit-bom/bitbom/pkg"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -34,12 +36,17 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to parse and execute script: %w", err)
 	}
 	// Print dependencies
-	for _, depID := range execute.ToArray() {
-		node, err := storage.GetNode(depID)
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Type", "ID"})
+
+	for _, key := range execute.ToArray() {
+		node, err := storage.GetNode(key)
 		if err != nil {
-			fmt.Println("Failed to get name for ID", depID, ":", err)
+			fmt.Println("Failed to get name for ID:", err)
 			continue
 		}
+
+		table.Append([]string{node.Name, node.Type, strconv.Itoa(int(node.ID))})
 
 		if o.outputdir != "" {
 			data, err := json.MarshalIndent(node.Metadata, "", "	")
@@ -63,6 +70,8 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 			}
 		}
 	}
+
+	table.Render()
 
 	return nil
 }
