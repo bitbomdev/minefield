@@ -7,7 +7,7 @@ build:
 
 # Test target
 test: docker-up
-	go test -v ./...
+	go test -v -coverprofile=coverage.out ./...
 
 # Clean target
 clean:
@@ -28,4 +28,7 @@ docker-down: clean-redis
 docker-logs:
 	docker-compose logs -f
 
-all: build test # Build and test the project
+docker-build:
+	docker build -t ghcr.io/bit-bom/minefield:latest .
+
+all: build test docker-build 
