@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     permissions:
       contents: read  
@@ -27,6 +27,9 @@ jobs:
 
       - name: Build
         run: make build
+
+      - name: Docker
+        run: make docker-build
 
       - name: Test
         run: make test
