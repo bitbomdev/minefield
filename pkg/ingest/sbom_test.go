@@ -4,7 +4,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/RoaringBitmap/roaring"
 	"github.com/bit-bom/bitbom/pkg"
 )
 
@@ -18,36 +17,28 @@ func TestIngestSBOM(t *testing.T) {
 		{
 			name:     "default",
 			sbomPath: "../../test",
-			want: func() map[uint32]*pkg.Node {
-				bitmap1Child := roaring.New()
-				bitmap1Child.Add(2)
-
-				bitmap2Parent := roaring.New()
-				bitmap2Parent.Add(1)
-
-				return map[uint32]*pkg.Node{
-					1: {
-						ID:   1,
-						Type: "PACKAGE",
-						Name: "pkg:generic/dep1@1.0.0",
-					},
-					2: {
-						ID:   2,
-						Type: "PACKAGE",
-						Name: "pkg:generic/dep2@1.0.0",
-					},
-					3: {
-						ID:   3,
-						Type: "PACKAGE",
-						Name: "pkg:generic/lib-A@1.0.0",
-					},
-					4: {
-						ID:   4,
-						Type: "PACKAGE",
-						Name: "pkg:generic/lib-B@1.0.0",
-					},
-				}
-			}(),
+			want: map[uint32]*pkg.Node{
+				1: {
+					ID:   1,
+					Type: "PACKAGE",
+					Name: "pkg:generic/dep1@1.0.0",
+				},
+				2: {
+					ID:   2,
+					Type: "PACKAGE",
+					Name: "pkg:generic/dep2@1.0.0",
+				},
+				3: {
+					ID:   3,
+					Type: "PACKAGE",
+					Name: "pkg:generic/lib-A@1.0.0",
+				},
+				4: {
+					ID:   4,
+					Type: "PACKAGE",
+					Name: "pkg:generic/lib-B@1.0.0",
+				},
+			},
 		},
 	}
 	for _, test := range tests {

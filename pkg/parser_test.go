@@ -25,6 +25,10 @@ func TestParseAndExecute(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if err := Cache(storage); err != nil {
+		t.Fatal(err)
+	}
+
 	err = node1.SetDependency(storage, node3)
 	if err != nil {
 		t.Fatal(err)

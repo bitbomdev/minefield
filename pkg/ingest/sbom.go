@@ -55,7 +55,12 @@ func processSBOMFile(filePath string, storage pkg.Storage) error {
 	nameToNodeID := map[string]uint32{}
 
 	for _, node := range document.GetNodeList().GetNodes() {
-		graphNode, err := pkg.AddNode(storage, node.Type.String(), any(node), string(node.Purl()))
+		purl := string(node.Purl())
+		if purl == "" {
+			purl = fmt.Sprintf("pkg:generic/%s@%s", node.Name, node.Version)
+		}
+
+		graphNode, err := pkg.AddNode(storage, node.Type.String(), any(node), purl)
 		if err != nil {
 			if errors.Is(err, pkg.ErrNodeAlreadyExists) {
 				// TODO: Add a logger
@@ -64,7 +69,7 @@ func processSBOMFile(filePath string, storage pkg.Storage) error {
 			}
 			return fmt.Errorf("failed to add node: %w", err)
 		}
-		nameToNodeID[string(node.Purl())] = graphNode.ID
+		nameToNodeID[purl] = graphNode.ID
 	}
 
 	err = addDependency(document, storage, nameToNodeID)
@@ -79,14 +84,23 @@ func processSBOMFile(filePath string, storage pkg.Storage) error {
 func addDependency(document *sbom.Document, storage pkg.Storage, nameToNodeID map[string]uint32) error {
 	for _, edge := range document.GetNodeList().GetEdges() {
 		fromProtoNode := document.GetNodeList().GetNodeByID(edge.From)
-		fromNode, err := storage.GetNode(nameToNodeID[string(fromProtoNode.Purl())])
+		fromPurl := string(fromProtoNode.Purl())
+		if fromPurl == "" {
+			fromPurl = fmt.Sprintf("pkg:generic/%s@%s", fromProtoNode.Name, fromProtoNode.Version)
+		}
+		fromNode, err := storage.GetNode(nameToNodeID[fromPurl])
 		if err != nil {
 			return fmt.Errorf("failed to get node: %w", err)
 		}
 		for _, to := range edge.To {
 			toProtoNode := document.GetNodeList().GetNodeByID(to)
 
-			toNode, err := storage.GetNode(nameToNodeID[string(toProtoNode.Purl())])
+			toPurl := string(toProtoNode.Purl())
+			if toPurl == "" {
+				toPurl = fmt.Sprintf("pkg:generic/%s@%s", toProtoNode.Name, toProtoNode.Version)
+			}
+
+			toNode, err := storage.GetNode(nameToNodeID[toPurl])
 			if err != nil {
 				return fmt.Errorf("failed to get node: %w", err)
 			}

@@ -7,21 +7,15 @@
       "component": {
         "type": "application",
         "name": "dep1",
-        "version": "1.0.0",
-        "purl": "pkg:generic/dep1@1.0.0"
+        "version": "1.0.0"
       }
     },
   "components": [
     {
       "type": "library",
       "name": "dep2",
-      "version": "1.0.0",
-      "purl": "pkg:generic/dep2@1.0.0"
+      "version": "1.0.0"
     }
-  ],
-    "dependencies": [
-      {
-        "ref": "pkg:generic/dep1@1.0.0"
-      }
-    ]
+  ]
+
   }
