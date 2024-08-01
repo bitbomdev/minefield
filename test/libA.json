@@ -7,8 +7,7 @@
     "component": {
       "type": "library",
       "name": "lib-A",
-      "version": "1.0.0",
-      "purl": "pkg:generic/lib-A@1.0.0"
+      "version": "1.0.0"
     }
   },
   "components": [
@@ -16,11 +15,6 @@
       "type": "library",
       "name": "dep1",
       "version": "1.0.0"
-    }
-  ],
-  "dependencies": [
-    {
-      "ref": "pkg:generic/lib-A@1.0.0"
     }
   ]
 }

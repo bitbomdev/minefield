@@ -16,10 +16,6 @@
       "name": "dep2",
       "version": "1.0.0"
     }
-  ],
-    "dependencies": [
-      {
-        "ref": "pkg:generic/dep1@1.0.0"
-      }
-    ]
+  ]
+
   }
