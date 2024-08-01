@@ -101,11 +101,3 @@ func (nkm *NativeKeyManagement) GetAllKeysAndValues() ([]string, []roaring.Bitma
 
 	return keys, values, nil
 }
-
-func (nkm *NativeKeyManagement) PrintAllKeys() {
-	for key, hashKey := range nkm.keyMap {
-		bitmap := nkm.store.data[hashKey]
-		fmt.Println(key, ":", bitmap.ToArray())
-	}
-	fmt.Println("-------------------")
-}

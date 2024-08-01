@@ -61,11 +61,15 @@ func ParseAndExecute(script string, storage Storage, defaultNodeName string) (*r
 			if err != nil {
 				return nil, fmt.Errorf("failed to get node ID for name %s: %w", token, err)
 			}
+			node, err := storage.GetNode(nodeID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get node for id %v: %w", nodeID, err)
+			}
 			var bitmap *roaring.Bitmap
 			if strings.TrimSpace(dir) == "dependents" {
-				bitmap, err = storage.QueryDependents(nodeID)
+				bitmap, err = node.QueryDependents(storage)
 			} else {
-				bitmap, err = storage.QueryDependencies(nodeID)
+				bitmap, err = node.QueryDependencies(storage)
 			}
 			if err != nil {
 				return nil, fmt.Errorf("failed to query dependents for node ID %d: %w", nodeID, err)

@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/RoaringBitmap/roaring"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -146,46 +145,4 @@ func (r *RedisStorage) GetCache(nodeID uint32) (*NodeCache, error) {
 		return nil, fmt.Errorf("failed to unmarshal cache data: %w", err)
 	}
 	return &cache, nil
-}
-
-func (r *RedisStorage) SetDependency(nodeID uint32, dependencyID uint32) error {
-	node, err := r.GetNode(nodeID)
-	if err != nil {
-		return fmt.Errorf("failed to get node %d: %w", nodeID, err)
-	}
-
-	dep, err := r.GetNode(dependencyID)
-	if err != nil {
-		return fmt.Errorf("failed to get dependency node %d: %w", dependencyID, err)
-	}
-
-	if err := node.SetDependency(r, dep); err != nil {
-		return fmt.Errorf("failed to set dependency: %w", err)
-	}
-	return nil
-}
-
-func (r *RedisStorage) QueryDependents(nodeID uint32) (*roaring.Bitmap, error) {
-	node, err := r.GetNode(nodeID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get node %d: %w", nodeID, err)
-	}
-
-	dependents, err := node.QueryDependents(r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query dependents: %w", err)
-	}
-	return dependents, nil
-}
-
-func (r *RedisStorage) QueryDependencies(nodeID uint32) (*roaring.Bitmap, error) {
-	node, err := r.GetNode(nodeID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get node %d: %w", nodeID, err)
-	}
-	dependencies, err := node.QueryDependencies(r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query dependencies: %w", err)
-	}
-	return dependencies, nil
 }

@@ -40,12 +40,6 @@ type NodeCache struct {
 	allChildren *roaring.Bitmap
 }
 
-func (n *Node) GetID() uint32 { return n.ID }
-
-func (n *Node) GetChildren() *roaring.Bitmap { return n.Children }
-
-func (n *Node) GetParents() *roaring.Bitmap { return n.Parents }
-
 func NewNodeCache(id uint32, allParents, allChildren *roaring.Bitmap) *NodeCache {
 	return &NodeCache{
 		nodeID:      id,
@@ -327,11 +321,11 @@ func GenerateDOT(storage Storage) (string, error) {
 
 		// Add the node with a label that includes type and additional metadata if needed
 		label := fmt.Sprintf("%s\\nMetadata: %v", node.Type, node.Metadata)
-		dotBuilder.WriteString(fmt.Sprintf("%d [label=\"%s\"];\n", node.GetID(), label))
+		dotBuilder.WriteString(fmt.Sprintf("%d [label=\"%s\"];\n", node.ID, label))
 
 		// Add edges for children
 		for _, childID := range node.Children.ToArray() {
-			dotBuilder.WriteString(fmt.Sprintf("%d -> %d;\n", node.GetID(), childID))
+			dotBuilder.WriteString(fmt.Sprintf("%d -> %d;\n", node.ID, childID))
 		}
 	}
 	dotBuilder.WriteString("}\n")

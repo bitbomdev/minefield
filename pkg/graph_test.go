@@ -1,11 +1,13 @@
 package pkg
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/RoaringBitmap/roaring"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,11 +90,11 @@ func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 		for _, node := range nodes {
 			dependents, err := node.QueryDependentsNoCache(storage)
 			assert.NoError(t, err)
-			expectedDependents[node.GetID()] = dependents.ToArray()
+			expectedDependents[node.ID] = dependents.ToArray()
 
 			dependencies, err := node.QueryDependenciesNoCache(storage)
 			assert.NoError(t, err)
-			expectedDependencies[node.GetID()] = dependencies.ToArray()
+			expectedDependencies[node.ID] = dependencies.ToArray()
 		}
 
 		start := time.Now()
@@ -115,7 +117,7 @@ func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 			if dependents != nil {
 				depArr = dependents.ToArray()
 			}
-			assert.Equal(t, expectedDependents[node.GetID()], depArr, fmt.Sprintf("Dependents of node %v", node.GetID()))
+			assert.Equal(t, expectedDependents[node.ID], depArr, fmt.Sprintf("Dependents of node %v", node.ID))
 
 			dependencies, err := node.QueryDependencies(storage)
 			assert.NoError(t, err)
@@ -123,7 +125,7 @@ func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 			if dependencies != nil {
 				depArr = dependencies.ToArray()
 			}
-			assert.Equal(t, expectedDependencies[node.GetID()], depArr, fmt.Sprintf("Dependencies of node %v", node.GetID()))
+			assert.Equal(t, expectedDependencies[node.ID], depArr, fmt.Sprintf("Dependencies of node %v", node.ID))
 		}
 	}
 }
@@ -165,11 +167,11 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 		for _, node := range nodes {
 			dependents, err := node.QueryDependentsNoCache(storage)
 			assert.NoError(t, err)
-			expectedDependents[node.GetID()] = dependents.ToArray()
+			expectedDependents[node.ID] = dependents.ToArray()
 
 			dependencies, err := node.QueryDependenciesNoCache(storage)
 			assert.NoError(t, err)
-			expectedDependencies[node.GetID()] = dependencies.ToArray()
+			expectedDependencies[node.ID] = dependencies.ToArray()
 		}
 
 		start := time.Now()
@@ -192,7 +194,7 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 			if dependents != nil {
 				depArr = dependents.ToArray()
 			}
-			assert.Equal(t, expectedDependents[node.GetID()], depArr, fmt.Sprintf("Dependents of node %v", node.GetID()))
+			assert.Equal(t, expectedDependents[node.ID], depArr, fmt.Sprintf("Dependents of node %v", node.ID))
 
 			dependencies, err := node.QueryDependencies(storage)
 			assert.NoError(t, err)
@@ -200,7 +202,7 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 			if dependencies != nil {
 				depArr = dependencies.ToArray()
 			}
-			assert.Equal(t, expectedDependencies[node.GetID()], depArr, fmt.Sprintf("Dependencies of node %v", node.GetID()))
+			assert.Equal(t, expectedDependencies[node.ID], depArr, fmt.Sprintf("Dependencies of node %v", node.ID))
 		}
 	}
 }
@@ -374,4 +376,56 @@ func TestIntermediateSimpleCircles(t *testing.T) {
 		assert.NoError(t, err, "Expected no error when querying non-cached dependencies")
 		assert.Equal(t, dependenciesNoCache.ToArray(), dependencies.ToArray(), "Cached and non-cached dependencies should match")
 	}
+}
+
+func TestNodeJSONMarshalUnmarshal(t *testing.T) {
+	// Create a test Node
+	node := &Node{
+		ID:       1,
+		Type:     "testType",
+		Name:     "testName",
+		Metadata: "testMetadata",
+		Children: roaring.New(),
+		Parents:  roaring.New(),
+	}
+	node.Children.AddMany([]uint32{5, 6, 7})
+	node.Parents.AddMany([]uint32{2, 3, 4})
+
+	// Test Node marshaling and unmarshaling
+	nodeJSON, err := json.Marshal(node)
+	assert.NoError(t, err, "Failed to marshal Node")
+
+	var unmarshaledNode Node
+	err = json.Unmarshal(nodeJSON, &unmarshaledNode)
+	assert.NoError(t, err, "Failed to unmarshal Node")
+
+	assert.Equal(t, node.ID, unmarshaledNode.ID)
+	assert.Equal(t, node.Type, unmarshaledNode.Type)
+	assert.Equal(t, node.Name, unmarshaledNode.Name)
+	assert.Equal(t, node.Metadata, unmarshaledNode.Metadata)
+	assert.True(t, node.Children.Equals(unmarshaledNode.Children))
+	assert.True(t, node.Parents.Equals(unmarshaledNode.Parents))
+}
+
+func TestNodeCacheJSONMarshalUnmarshal(t *testing.T) {
+	// Create a test NodeCache
+	nodeCache := &NodeCache{
+		nodeID:      1,
+		allParents:  roaring.New(),
+		allChildren: roaring.New(),
+	}
+	nodeCache.allParents.AddMany([]uint32{5, 6, 7})
+	nodeCache.allChildren.AddMany([]uint32{2, 3, 4})
+
+	// Test NodeCache marshaling and unmarshaling
+	nodeCacheJSON, err := json.Marshal(nodeCache)
+	assert.NoError(t, err, "Failed to marshal NodeCache")
+
+	var unmarshaledNodeCache NodeCache
+	err = json.Unmarshal(nodeCacheJSON, &unmarshaledNodeCache)
+	assert.NoError(t, err, "Failed to unmarshal NodeCache")
+
+	assert.Equal(t, nodeCache.nodeID, unmarshaledNodeCache.nodeID)
+	assert.True(t, nodeCache.allParents.Equals(unmarshaledNodeCache.allParents))
+	assert.True(t, nodeCache.allChildren.Equals(unmarshaledNodeCache.allChildren))
 }
