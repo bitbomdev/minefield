@@ -55,7 +55,12 @@ func processSBOMFile(filePath string, storage pkg.Storage) error {
 	nameToNodeID := map[string]uint32{}
 
 	for _, node := range document.GetNodeList().GetNodes() {
-		graphNode, err := pkg.AddNode(storage, node.Type.String(), any(node), string(node.Purl()))
+		purl := string(node.Purl())
+		if purl == "" {
+			purl = fmt.Sprintf("pkg:generic/%s@%s", node.Name, node.Version)
+		}
+
+		graphNode, err := pkg.AddNode(storage, node.Type.String(), any(node), purl)
 		if err != nil {
 			if errors.Is(err, pkg.ErrNodeAlreadyExists) {
 				// TODO: Add a logger
