@@ -100,38 +100,6 @@ func (m *MockStorage) GetCache(id uint32) (*NodeCache, error) {
 	return m.cache[id], nil
 }
 
-func (m *MockStorage) SetDependency(nodeID, neighborID uint32) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if _, exists := m.nodes[nodeID]; !exists {
-		return errors.New("node not found")
-	}
-	if _, exists := m.nodes[neighborID]; !exists {
-		return errors.New("neighbor node not found")
-	}
-	node := m.nodes[nodeID]
-	neighbor := m.nodes[neighborID]
-	return node.SetDependency(m, neighbor)
-}
-
-func (m *MockStorage) QueryDependents(nodeID uint32) (*roaring.Bitmap, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if _, exists := m.nodes[nodeID]; !exists {
-		return nil, fmt.Errorf("node does not exist")
-	}
-	return m.nodes[nodeID].QueryDependents(m)
-}
-
-func (m *MockStorage) QueryDependencies(nodeID uint32) (*roaring.Bitmap, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if _, exists := m.nodes[nodeID]; !exists {
-		return nil, fmt.Errorf("node does not exist")
-	}
-	return m.nodes[nodeID].QueryDependencies(m)
-}
-
 func (m *MockStorage) GenerateID() (uint32, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

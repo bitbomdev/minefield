@@ -2,8 +2,6 @@ package pkg
 
 import (
 	"sync"
-
-	"github.com/RoaringBitmap/roaring"
 )
 
 // Storage is the interface that wraps the methods for a storage backend.
@@ -17,9 +15,6 @@ type Storage interface {
 	AddNodeToCachedStack(id uint32) error
 	GetCache(id uint32) (*NodeCache, error)
 	ClearCacheStack() error
-	SetDependency(nodeID, neighborID uint32) error
-	QueryDependents(nodeID uint32) (*roaring.Bitmap, error)
-	QueryDependencies(nodeID uint32) (*roaring.Bitmap, error)
 	GenerateID() (uint32, error)
 }
 
