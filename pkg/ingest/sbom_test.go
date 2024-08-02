@@ -4,7 +4,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/bit-bom/bitbom/pkg"
+	"github.com/bit-bom/minefield/pkg"
 )
 
 func TestIngestSBOM(t *testing.T) {

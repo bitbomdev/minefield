@@ -2,9 +2,10 @@ package weightedNACD
 
 import (
 	"fmt"
-	"github.com/bit-bom/bitbom/pkg"
 	"math"
 	"sort"
+
+	"github.com/bit-bom/minefield/pkg"
 )
 
 const (

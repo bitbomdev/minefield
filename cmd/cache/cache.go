@@ -3,7 +3,7 @@ package cache
 import (
 	"fmt"
 
-	"github.com/bit-bom/bitbom/pkg"
+	"github.com/bit-bom/minefield/pkg"
 	"github.com/spf13/cobra"
 )
 

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bit-bom/bitbom/pkg"
+	"github.com/bit-bom/minefield/pkg"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )

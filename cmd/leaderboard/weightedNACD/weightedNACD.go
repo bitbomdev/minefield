@@ -6,8 +6,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/bit-bom/bitbom/pkg"
-	"github.com/bit-bom/bitbom/pkg/weightedNACD"
+	"github.com/bit-bom/minefield/pkg"
+	"github.com/bit-bom/minefield/pkg/weightedNACD"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
