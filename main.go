@@ -4,7 +4,7 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/bit-bom/bitbom/cmd/root"
+	"github.com/bit-bom/minefield/cmd/root"
 )
 
 func main() {

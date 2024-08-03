@@ -3,7 +3,7 @@ package ingest
 import (
 	"testing"
 
-	"github.com/bit-bom/bitbom/pkg"
+	"github.com/bit-bom/minefield/pkg"
 	"github.com/package-url/packageurl-go"
 	"github.com/stretchr/testify/assert"
 )

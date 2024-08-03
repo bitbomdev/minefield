@@ -1,4 +1,4 @@
-module github.com/bit-bom/bitbom
+module github.com/bit-bom/minefield
 
 go 1.22.5
 

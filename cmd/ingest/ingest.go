@@ -1,8 +1,8 @@
 package ingest
 
 import (
-	"github.com/bit-bom/bitbom/cmd/ingest/osv"
-	"github.com/bit-bom/bitbom/cmd/ingest/sbom"
+	"github.com/bit-bom/minefield/cmd/ingest/osv"
+	"github.com/bit-bom/minefield/cmd/ingest/sbom"
 	"github.com/spf13/cobra"
 )
 

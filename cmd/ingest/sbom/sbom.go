@@ -3,8 +3,8 @@ package sbom
 import (
 	"fmt"
 
-	"github.com/bit-bom/bitbom/pkg"
-	"github.com/bit-bom/bitbom/pkg/ingest"
+	"github.com/bit-bom/minefield/pkg"
+	"github.com/bit-bom/minefield/pkg/ingest"
 	"github.com/spf13/cobra"
 )
 

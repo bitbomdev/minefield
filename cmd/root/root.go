@@ -1,10 +1,10 @@
 package root
 
 import (
-	"github.com/bit-bom/bitbom/cmd/cache"
-	"github.com/bit-bom/bitbom/cmd/ingest"
-	"github.com/bit-bom/bitbom/cmd/leaderboard"
-	"github.com/bit-bom/bitbom/cmd/query"
+	"github.com/bit-bom/minefield/cmd/cache"
+	"github.com/bit-bom/minefield/cmd/ingest"
+	"github.com/bit-bom/minefield/cmd/leaderboard"
+	"github.com/bit-bom/minefield/cmd/query"
 	"github.com/spf13/cobra"
 )
 

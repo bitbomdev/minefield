@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/bit-bom/bitbom/pkg"
+	"github.com/bit-bom/minefield/pkg"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 )
