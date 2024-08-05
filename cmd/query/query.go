@@ -15,15 +15,12 @@ import (
 
 type options struct {
 	outputdir string
+	maxOutput int
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(
-		&o.outputdir,
-		"output-dir",
-		"",
-		"specify dir to write the output to",
-	)
+	cmd.Flags().StringVar(&o.outputdir, "output-dir", "", "specify dir to write the output to")
+	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
 }
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
@@ -39,7 +36,10 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Type", "ID"})
 
-	for _, key := range execute.ToArray() {
+	for index, key := range execute.ToArray() {
+		if index > o.maxOutput {
+			break
+		}
 		node, err := storage.GetNode(key)
 		if err != nil {
 			fmt.Println("Failed to get name for ID:", err)

@@ -14,12 +14,13 @@ import (
 
 type options struct {
 	weightsFile string
-	outputAll   bool
+
+	maxOutput   int
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.weightsFile, "weights", "cmd/leaderboard/weightedNACD/defaultWeights.json", "path to the JSON file with weights (optional, default weights will be used if not provided)")
-	cmd.Flags().BoolVar(&o.outputAll, "output-all", false, "output all nodes (default is to output top 10)")
+	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
 }
 
 func (o *options) validateWeights(weights *weightedNACD.Weights) error {
@@ -73,18 +74,14 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to calculate weighted NACD: %w", err)
 	}
 
-	// Determine the number of results to output
-	numResults := len(results)
-	if !o.outputAll && numResults > 10 {
-		numResults = 10
-	}
-
 	// Print results as a table
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Package", "Risk", "Criticality", "Likelihood"})
 
-	for i := 0; i < numResults; i++ {
-		result := results[i]
+	for index, result := range results {
+		if index > o.maxOutput {
+			break
+		}
 		node, err := storage.GetNode(result.Id)
 		if err != nil {
 			fmt.Println("Failed to get node for ID:", err)
