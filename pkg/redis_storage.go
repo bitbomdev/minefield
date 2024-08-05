@@ -146,3 +146,36 @@ func (r *RedisStorage) GetCache(nodeID uint32) (*NodeCache, error) {
 	}
 	return &cache, nil
 }
+
+func (r *RedisStorage) GetNodes(ids []uint32) (map[uint32]*Node, error) {
+	ctx := context.Background()
+	pipe := r.client.Pipeline()
+
+	cmds := make([]*redis.StringCmd, len(ids))
+	for i, id := range ids {
+		cmds[i] = pipe.Get(ctx, fmt.Sprintf("node:%d", id))
+	}
+
+	_, err := pipe.Exec(ctx)
+	if err != nil && err != redis.Nil {
+		return nil, fmt.Errorf("failed to get nodes: %w", err)
+	}
+
+	nodes := make(map[uint32]*Node, len(ids))
+	for i, cmd := range cmds {
+		data, err := cmd.Result()
+		if err == redis.Nil {
+			continue // Skip missing nodes
+		} else if err != nil {
+			return nil, fmt.Errorf("failed to get node data for ID %d: %w", ids[i], err)
+		}
+
+		var node Node
+		if err := node.UnmarshalJSON([]byte(data)); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal node data: %w", err)
+		}
+		nodes[ids[i]] = &node
+	}
+
+	return nodes, nil
+}

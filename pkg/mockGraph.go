@@ -115,3 +115,19 @@ func (m *MockStorage) NameToID(name string) (uint32, error) {
 	}
 	return m.nameToID[name], nil
 }
+
+func (m *MockStorage) GetNodes(ids []uint32) (map[uint32]*Node, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	nodes := make(map[uint32]*Node, len(ids))
+	for _, id := range ids {
+		node, exists := m.nodes[id]
+		if !exists {
+			continue // Skip missing nodes
+		}
+		nodes[id] = node
+	}
+
+	return nodes, nil
+}

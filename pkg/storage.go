@@ -9,6 +9,7 @@ type Storage interface {
 	NameToID(name string) (uint32, error)
 	SaveNode(node *Node) error
 	GetNode(id uint32) (*Node, error)
+	GetNodes(ids []uint32) (map[uint32]*Node, error)
 	GetAllKeys() ([]uint32, error)
 	SaveCache(cache *NodeCache) error
 	ToBeCached() ([]uint32, error)
