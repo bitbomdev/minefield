@@ -10,9 +10,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type options struct{}
+type options struct {
+	maxOutput int
+}
 
-func (o *options) AddFlags(_ *cobra.Command) {}
+func (o *options) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
+}
 
 func (o *options) Run(_ *cobra.Command, _ []string) error {
 	storage := pkg.GetStorageInstance("localhost:6379")
@@ -26,7 +30,10 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Type", "ID"})
 
-	for _, key := range keys {
+	for index, key := range keys {
+		if index > o.maxOutput {
+			break
+		}
 		node, err := storage.GetNode(key)
 		if err != nil {
 			fmt.Println("Failed to get name for ID:", err)

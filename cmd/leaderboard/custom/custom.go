@@ -12,7 +12,8 @@ import (
 )
 
 type options struct {
-	all bool
+	all      bool
+	maxOutput int
 }
 
 type query struct {
@@ -22,6 +23,7 @@ type query struct {
 
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&o.all, "all", false, "show the queries output for each node")
+	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
 }
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
@@ -54,6 +56,9 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 		}
 
 		execute, err := pkg.ParseAndExecute(args[0], storage, node.Name)
+		if err != nil {
+			return err
+		}
 
 		queries = append(queries, query{node: node, output: execute.ToArray()})
 	}
@@ -70,7 +75,10 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 		table.SetHeader([]string{"Name", "Type", "ID", "QueryLength"})
 	}
 
-	for _, q := range queries {
+	for index, q := range queries {
+		if index > o.maxOutput {
+			break
+		}
 		if o.all {
 			table.Append([]string{q.node.Name, q.node.Type, strconv.Itoa(int(q.node.ID)), fmt.Sprint(q.output)})
 		} else {
