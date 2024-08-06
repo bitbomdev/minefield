@@ -1,6 +1,36 @@
 # Minefield
 
-Minefield is a tool for graphing Software Bill of Materials (SBOMs) and other types of metadata in a highly extensible and efficient graph.
+BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s.
+
+## What is a Roaring Bitmap
+
+[Roaring bitmaps](https://github.com/RoaringBitmap/roaring) is a data structure that creates ginormous bitmaps.
+
+A regular bitmap is an extremely space efficient Set (Or in languages that don't use Sets, a `map[int] bool`). A Roaring Bitmap is pretty much a regular bitmap on steroids.
+
+For instance, 32-bit integer keys mean it can theoretically store up to 2^32 different values, i.e., around 4.29 billion (Or exactly 4294967296 integers) values in a very limited amount of space (This is stated in the [Roaring Bitmap specification](https://github.com/RoaringBitmap/RoaringFormatSpec?tab=readme-ov-file#standard-32-bit-roaring-bitmap)).
+
+## Overview of BitBom
+
+This sequence diagram provides a high-level overview of how Minefield operates from a user's perspective:
+
+This diagram illustrates the interactions between the user, Minefield, and its components, focusing on the data ingestion, caching, and querying processes.
+
+```mermaid
+sequenceDiagram
+   participant User
+   participant BitBom
+   participant Storage
+   participant Query
+   User->>BitBom: Ingest (SBOM, OSV...)
+   BitBom->>Storage: Store data
+   User->>BitBom: Cache Data
+   BitBom->>Storage: Cache data with Roaring Bitmaps
+   User->>BitBom: Run Query<br/>`query "dependents PACKAGE pkg:generic/dep2@1.0.0"`
+   BitBom->>Query: Execute query
+   Query->>Storage: Fetch data in O(1) time
+   Query->>User: Return query results
+```
 
 ## To start using Minefield
 
