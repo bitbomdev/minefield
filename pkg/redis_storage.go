@@ -179,3 +179,22 @@ func (r *RedisStorage) GetNodes(ids []uint32) (map[uint32]*Node, error) {
 
 	return nodes, nil
 }
+
+func (r *RedisStorage) SaveCaches(caches []*NodeCache) error {
+	ctx := context.Background()
+	pipe := r.client.Pipeline()
+
+	for _, cache := range caches {
+		data, err := cache.MarshalJSON()
+		if err != nil {
+			return fmt.Errorf("failed to marshal cache: %w", err)
+		}
+		pipe.Set(ctx, fmt.Sprintf("cache:%d", cache.nodeID), data, 0)
+	}
+
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to save caches: %w", err)
+	}
+	return nil
+}

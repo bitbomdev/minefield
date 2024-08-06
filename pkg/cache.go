@@ -3,13 +3,11 @@ package pkg
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/RoaringBitmap/roaring"
 )
 
 func Cache(storage Storage) error {
-	start := time.Now()
 	uncachedNodes, err := storage.ToBeCached()
 	if err != nil {
 		return err
@@ -53,6 +51,8 @@ func Cache(storage Storage) error {
 		return err
 	}
 
+	var caches []*NodeCache
+
 	for i := 0; i < len(cachedChildKeys); i++ {
 		childId := cachedChildKeys[i]
 		childIntId, err := strconv.Atoi(childId)
@@ -69,14 +69,12 @@ func Cache(storage Storage) error {
 		}
 		parentBindValue := tempValue.Clone()
 		parentBindValue.Remove(uint32(childIntId))
-
-		if err := storage.SaveCache(NewNodeCache(uint32(childIntId), parentBindValue, childBindValue)); err != nil {
-			return err
-		}
+		caches = append(caches, NewNodeCache(uint32(childIntId), parentBindValue, childBindValue))
 	}
 
-	fmt.Println("since", time.Since(start))
-
+	if err := storage.SaveCaches(caches); err != nil {
+		return err
+	}
 	return storage.ClearCacheStack()
 }
 
