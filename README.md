@@ -18,18 +18,27 @@ This diagram illustrates the interactions between the user, Minefield, and its c
 
 ```mermaid
 sequenceDiagram
-   participant User
-   participant BitBom
-   participant Storage
-   participant Query
-   User->>BitBom: Ingest (SBOM, OSV...)
-   BitBom->>Storage: Store data
-   User->>BitBom: Cache Data
-   BitBom->>Storage: Cache data with Roaring Bitmaps
-   User->>BitBom: Run Query<br/>`query "dependents PACKAGE pkg:generic/dep2@1.0.0"`
-   BitBom->>Query: Execute query
-   Query->>Storage: Fetch data in O(1) time
-   Query->>User: Return query results
+    participant User
+    participant BitBom
+    participant Storage
+    participant Query
+    rect rgb(204, 102, 0)
+        note right of User: Ingestion
+        User->>BitBom: Ingest (Either SBOM, OSV...)
+        BitBom->>Storage: Store data
+    end
+    rect rgb(0, 153, 76)
+        note right of User: Caching
+        User->>BitBom: Cache Data
+        BitBom->>Storage: Cache data with Roaring Bitmaps
+    end
+    rect rgb(102, 102, 255)
+        note right of User: Querying
+        User->>BitBom: Run Query<br/>query "dependents PACKAGE pkg:generic/dep2@1.0.0"
+        BitBom->>Query: Execute query
+        Query->Storage: Fetch data in O(1) time
+        Query->>User: Return query results
+    end
 ```
 
 ## To start using Minefield
