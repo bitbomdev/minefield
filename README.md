@@ -6,7 +6,7 @@ BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s.
 
 [Roaring bitmaps](https://github.com/RoaringBitmap/roaring) are a data structure that creates ginormous bitmaps.
 
-A regular bitmap is an extremely space efficient Set (Or in languages that don't use Sets, a `map[int] bool`). A Roaring Bitmap is pretty much a regular bitmap on steroids.
+A regular bitmap is an extremely space-efficient Set (Or in languages that don't use Sets, a `map[int] bool`). A Roaring Bitmap is a regular bitmap on steroids.
 
 For instance, 32-bit integer keys mean it can theoretically store up to 2^32 different values, i.e., around 4.29 billion (Or exactly 4294967296 integers) values in a very limited amount of space (This is stated in the [Roaring Bitmap specification](https://github.com/RoaringBitmap/RoaringFormatSpec?tab=readme-ov-file#standard-32-bit-roaring-bitmap)).
 
