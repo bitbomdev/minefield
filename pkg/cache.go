@@ -20,22 +20,28 @@ func Cache(storage Storage) error {
 		return fmt.Errorf("error getting keys: %w", err)
 	}
 
-	childSCC, err := findCycles(storage, ChildrenDirection, len(keys))
+	// Retrieve all nodes at once
+	allNodes, err := storage.GetNodes(keys)
+	if err != nil {
+		return fmt.Errorf("error getting all nodes: %w", err)
+	}
+
+	childSCC, err := findCycles(storage, ChildrenDirection, len(keys), allNodes)
 	if err != nil {
 		return err
 	}
 
-	cachedChildren, err := buildCache(storage, uncachedNodes, ChildrenDirection, childSCC)
+	cachedChildren, err := buildCache(storage, uncachedNodes, ChildrenDirection, childSCC, allNodes)
 	if err != nil {
 		return err
 	}
 
-	parentSCC, err := findCycles(storage, ParentsDirection, len(keys))
+	parentSCC, err := findCycles(storage, ParentsDirection, len(keys), allNodes)
 	if err != nil {
 		return err
 	}
 
-	cachedParents, err := buildCache(storage, uncachedNodes, ParentsDirection, parentSCC)
+	cachedParents, err := buildCache(storage, uncachedNodes, ParentsDirection, parentSCC, allNodes)
 	if err != nil {
 		return err
 	}
@@ -44,6 +50,8 @@ func Cache(storage Storage) error {
 	if err != nil {
 		return err
 	}
+
+	var caches []*NodeCache
 
 	for i := 0; i < len(cachedChildKeys); i++ {
 		childId := cachedChildKeys[i]
@@ -61,16 +69,16 @@ func Cache(storage Storage) error {
 		}
 		parentBindValue := tempValue.Clone()
 		parentBindValue.Remove(uint32(childIntId))
-
-		if err := storage.SaveCache(NewNodeCache(uint32(childIntId), parentBindValue, childBindValue)); err != nil {
-			return err
-		}
+		caches = append(caches, NewNodeCache(uint32(childIntId), parentBindValue, childBindValue))
 	}
 
+	if err := storage.SaveCaches(caches); err != nil {
+		return err
+	}
 	return storage.ClearCacheStack()
 }
 
-func findCycles(storage Storage, direction Direction, numOfNodes int) (map[uint32]uint32, error) {
+func findCycles(storage Storage, direction Direction, numOfNodes int, allNodes map[uint32]*Node) (map[uint32]uint32, error) {
 	var stack []uint32
 	var tarjanDFS func(nodeID uint32) error
 
@@ -80,10 +88,7 @@ func findCycles(storage Storage, direction Direction, numOfNodes int) (map[uint3
 	inStack := roaring.New()
 
 	tarjanDFS = func(nodeID uint32) error {
-		currentNode, err := storage.GetNode(nodeID)
-		if err != nil {
-			return err
-		}
+		currentNode := allNodes[nodeID]
 
 		var nextNodes []uint32
 		if direction == ChildrenDirection {
@@ -134,41 +139,42 @@ func findCycles(storage Storage, direction Direction, numOfNodes int) (map[uint3
 	return lowLink, nil
 }
 
-func buildCache(storage Storage, uncachedNodes []uint32, direction Direction, scc map[uint32]uint32) (*NativeKeyManagement, error) {
+func buildCache(storage Storage, uncachedNodes []uint32, direction Direction, scc map[uint32]uint32, allNodes map[uint32]*Node) (*NativeKeyManagement, error) {
 	cache, children, parents := NewNativeKeyManagement(), NewNativeKeyManagement(), NewNativeKeyManagement()
 	alreadyCached := roaring.New()
 
-	err := addCyclesToBindMap(storage, scc, cache, children, parents)
+	err := addCyclesToBindMap(storage, scc, cache, children, parents, allNodes)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, nodeID := range uncachedNodes {
-		if err := cacheDFS(storage, nodeID, direction, scc, alreadyCached, cache, children, parents); err != nil {
+		if err := cacheDFS(storage, nodeID, direction, scc, alreadyCached, cache, children, parents, allNodes); err != nil {
 			return nil, err
 		}
 	}
 	return cache, nil
 }
 
-func cacheDFS(storage Storage, nodeID uint32, direction Direction, scc map[uint32]uint32, alreadyCached *roaring.Bitmap, cache, children, parents *NativeKeyManagement) error {
-	curNode, err := storage.GetNode(nodeID) // Retrieve the current node from storage
-	if err != nil {
-		return err
-	}
+func cacheDFS(storage Storage, nodeID uint32, direction Direction, scc map[uint32]uint32, alreadyCached *roaring.Bitmap, cache, children, parents *NativeKeyManagement, allNodes map[uint32]*Node) error {
+	curNode := allNodes[nodeID]
 
 	if alreadyCached.Contains(curNode.ID) {
 		return nil
 	}
 
 	todoNodes, futureNodes, err := getTodoAndFutureNodes(children, parents, curNode, direction)
+	if err != nil {
+		return err
+	}
+
 	for _, id := range todoNodes {
 		if !(scc[curNode.ID] == scc[id]) {
 			if alreadyCached.Contains(id) {
 				if err := addToCache(cache, nodeID, id); err != nil {
 					return err
 				}
-			} else if err := cacheDFS(storage, id, direction, scc, alreadyCached, cache, children, parents); err != nil {
+			} else if err := cacheDFS(storage, id, direction, scc, alreadyCached, cache, children, parents, allNodes); err != nil {
 				return err
 			}
 		}
@@ -178,11 +184,62 @@ func cacheDFS(storage Storage, nodeID uint32, direction Direction, scc map[uint3
 
 	// We have to iterate through the future nodes
 	for _, id := range futureNodes {
-		if err := cacheDFS(storage, id, direction, scc, alreadyCached, cache, children, parents); err != nil {
+		if err := cacheDFS(storage, id, direction, scc, alreadyCached, cache, children, parents, allNodes); err != nil {
 			return err
 		}
 	}
 
+	return nil
+}
+
+func addCyclesToBindMap(storage Storage, scc map[uint32]uint32, cache, children, parents *NativeKeyManagement, allNodes map[uint32]*Node) error {
+	parentToKeys := map[uint32][]string{}
+
+	for k, v := range scc {
+		parentToKeys[v] = append(parentToKeys[v], strconv.Itoa(int(k)))
+	}
+
+	for _, keysForAParent := range parentToKeys {
+		if _, err := cache.BindKeys(keysForAParent); err != nil {
+			return err
+		}
+		if _, err := children.BindKeys(keysForAParent); err != nil {
+			return err
+		}
+		if _, err := parents.BindKeys(keysForAParent); err != nil {
+			return err
+		}
+
+		keycache := roaring.New()
+		childrenCache, parentCache := roaring.New(), roaring.New()
+		for _, key := range keysForAParent {
+			intkey, err := strconv.Atoi(key)
+			if err != nil {
+				return err
+			}
+
+			node := allNodes[uint32(intkey)]
+
+			childrenCache.Or(node.Children)
+			parentCache.Or(node.Parents)
+			keycache.Add(uint32(intkey))
+			keycache.Add(node.ID)
+		}
+		childrenCache.AndNot(keycache)
+		parentCache.AndNot(keycache)
+		if len(keysForAParent) > 0 {
+			if err := cache.Set(keysForAParent[0], *keycache); err != nil {
+				return fmt.Errorf("error setting value for key in cache %s, %w", keysForAParent[0], err)
+			}
+			if err := children.Set(keysForAParent[0], *childrenCache); err != nil {
+				return fmt.Errorf("error setting value for key in grouped children relationship%s, %w", keysForAParent[0], err)
+			}
+			if err := parents.Set(keysForAParent[0], *parentCache); err != nil {
+				return fmt.Errorf("error setting value for key in grouped parent relationship%s, %w", keysForAParent[0], err)
+			}
+		}
+
+	}
 	return nil
 }
 
@@ -212,63 +269,6 @@ func getTodoAndFutureNodes(children, parents *NativeKeyManagement, curNode *Node
 	}
 
 	return todoNodes, futureNodes, nil
-}
-
-// addCyclesToBindMap takes in a union find which contains all the cycles found in the graph and
-// a bind map which we use to store all children and parents for a given node.
-// This function takes the data from the union find and adds it to the bind map so that we can
-// initialize the bind map with all the cycles.
-func addCyclesToBindMap(storage Storage, scc map[uint32]uint32, cache, children, parents *NativeKeyManagement) error {
-	parentToKeys := map[uint32][]string{}
-
-	for k, v := range scc {
-		parentToKeys[v] = append(parentToKeys[v], strconv.Itoa(int(k)))
-	}
-
-	for _, keysForAParent := range parentToKeys {
-		if _, err := cache.BindKeys(keysForAParent); err != nil {
-			return err
-		}
-		if _, err := children.BindKeys(keysForAParent); err != nil {
-			return err
-		}
-		if _, err := parents.BindKeys(keysForAParent); err != nil {
-			return err
-		}
-
-		keycache := roaring.New()
-		childrenCache, parentCache := roaring.New(), roaring.New()
-		for _, key := range keysForAParent {
-			intkey, err := strconv.Atoi(key)
-			if err != nil {
-				return err
-			}
-
-			node, err := storage.GetNode(uint32(intkey))
-			if err != nil {
-				return err
-			}
-
-			childrenCache.Or(node.Children)
-			parentCache.Or(node.Parents)
-			keycache.Add(uint32(intkey))
-		}
-		childrenCache.AndNot(keycache)
-		parentCache.AndNot(keycache)
-		if len(keysForAParent) > 0 {
-			if err := cache.Set(keysForAParent[0], *keycache); err != nil {
-				return fmt.Errorf("error setting value for key in cache %s, %w", keysForAParent[0], err)
-			}
-			if err := children.Set(keysForAParent[0], *childrenCache); err != nil {
-				return fmt.Errorf("error setting value for key in grouped children relationship%s, %w", keysForAParent[0], err)
-			}
-			if err := parents.Set(keysForAParent[0], *parentCache); err != nil {
-				return fmt.Errorf("error setting value for key in grouped parent relationship%s, %w", keysForAParent[0], err)
-			}
-		}
-
-	}
-	return nil
 }
 
 func addToCache(bm *NativeKeyManagement, curElem, todoElem uint32) error {

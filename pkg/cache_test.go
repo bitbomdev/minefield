@@ -18,7 +18,10 @@ func Test_findCycles(t *testing.T) {
 	err = node1.SetDependency(storage, node2)
 	assert.NoError(t, err)
 
-	got, err := findCycles(storage, "children", 2)
+	allNodes, err := storage.GetNodes([]uint32{node1.ID, node2.ID})
+	assert.NoError(t, err)
+
+	got, err := findCycles(storage, "children", 2, allNodes)
 	if err != nil {
 		logger.Fatalf("error finding cycles, storage %v, err %v", storage, err)
 		return
@@ -45,7 +48,10 @@ func Test_findCycles_With_Cycles(t *testing.T) {
 	err = node3.SetDependency(storage, node1)
 	assert.NoError(t, err)
 
-	got, err := findCycles(storage, "children", 3)
+	allNodes, err := storage.GetNodes([]uint32{node1.ID, node2.ID, node3.ID})
+	assert.NoError(t, err)
+
+	got, err := findCycles(storage, "children", 3, allNodes)
 	if err != nil {
 		logger.Fatalf("error finding cycles, storage %v, err %v", storage, err)
 		return

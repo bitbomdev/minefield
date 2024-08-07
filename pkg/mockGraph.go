@@ -35,6 +35,7 @@ func (m *MockStorage) SaveNode(node *Node) error {
 	defer m.mu.Unlock()
 	m.nameToID[node.Name] = node.ID
 	m.nodes[node.ID] = node
+	m.toBeCached = append(m.toBeCached, node.ID)
 	return nil
 }
 
@@ -67,9 +68,6 @@ func (m *MockStorage) SaveCache(cache *NodeCache) error {
 		m.cache = map[uint32]*NodeCache{}
 	}
 	m.cache[cache.nodeID] = cache
-	if err := m.AddNodeToCachedStack(cache.nodeID); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -114,4 +112,32 @@ func (m *MockStorage) NameToID(name string) (uint32, error) {
 		return 0, errors.New("node with name not found")
 	}
 	return m.nameToID[name], nil
+}
+
+func (m *MockStorage) GetNodes(ids []uint32) (map[uint32]*Node, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	nodes := make(map[uint32]*Node, len(ids))
+	for _, id := range ids {
+		node, exists := m.nodes[id]
+		if !exists {
+			continue // Skip missing nodes
+		}
+		nodes[id] = node
+	}
+
+	return nodes, nil
+}
+
+func (m *MockStorage) SaveCaches(caches []*NodeCache) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, cache := range caches {
+		if m.cache == nil {
+			m.cache = map[uint32]*NodeCache{}
+		}
+		m.cache[cache.nodeID] = cache
+	}
+	return nil
 }
