@@ -29,6 +29,6 @@ docker-logs:
 	docker compose logs -f
 
 docker-build:
-	docker build -t ghcr.io/bit-bom/minefield:latest .
+	docker build -t ghcr.io/bitbomdev/minefield:latest .
 
 all: build test docker-build 
