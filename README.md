@@ -34,7 +34,7 @@ sequenceDiagram
     note right of User: Querying
     User->>BitBom: Run Query<br/>`query "dependents PACKAGE pkg:generic/dep2@1.0.0"`
     BitBom->>Query: Execute query
-    Query->Storage: Fetch data in O(1) time
+    Query->>Storage: Fetch data in O(1) time
     Query->>User: Return query results
 ```
 
