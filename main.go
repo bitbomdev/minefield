@@ -1,21 +1,21 @@
 package main
 
 import (
-	"os"
-	"runtime/debug"
-
 	"github.com/bit-bom/minefield/cmd/root"
+	"github.com/bit-bom/minefield/pkg"
+	"go.uber.org/fx"
 )
 
 func main() {
-	defer func() {
-		if r := recover(); r != nil {
-			debug.PrintStack()
-			os.Exit(1) //nolint:gocritic
-		}
-	}()
-	rootCmd := root.New()
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1) //nolint:gocritic
-	}
+	app := fx.New(
+		pkg.NewRedisStorageModule("localhost:6379"),
+		fx.Invoke(func(storage pkg.Storage) {
+			rootCmd := root.New(storage)
+			if err := rootCmd.Execute(); err != nil {
+				panic(err)
+			}
+		}),
+	)
+
+	app.Run()
 }

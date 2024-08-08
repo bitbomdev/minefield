@@ -11,6 +11,7 @@ require (
 	github.com/protobom/protobom v0.4.3
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
+	go.uber.org/fx v1.22.2
 )
 
 require (
@@ -33,6 +34,9 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spdx/tools-golang v0.5.5 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	go.uber.org/dig v1.18.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
+	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	sigs.k8s.io/release-utils v0.8.3 // indirect

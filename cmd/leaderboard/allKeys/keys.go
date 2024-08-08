@@ -11,6 +11,7 @@ import (
 )
 
 type options struct {
+	storage   pkg.Storage
 	maxOutput int
 }
 
@@ -19,9 +20,7 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 }
 
 func (o *options) Run(_ *cobra.Command, _ []string) error {
-	storage := pkg.GetStorageInstance("localhost:6379")
-
-	keys, err := storage.GetAllKeys()
+	keys, err := o.storage.GetAllKeys()
 	if err != nil {
 		return fmt.Errorf("failed to query keys: %w", err)
 	}
@@ -34,7 +33,7 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 		if index > o.maxOutput {
 			break
 		}
-		node, err := storage.GetNode(key)
+		node, err := o.storage.GetNode(key)
 		if err != nil {
 			fmt.Println("Failed to get name for ID:", err)
 			continue
@@ -47,8 +46,10 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func New() *cobra.Command {
-	o := &options{}
+func New(storage pkg.Storage) *cobra.Command {
+	o := &options{
+		storage: storage,
+	}
 	cmd := &cobra.Command{
 		Use:               "allKeys",
 		Short:             "returns all the keys in a random order",

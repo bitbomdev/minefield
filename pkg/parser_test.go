@@ -7,7 +7,8 @@ import (
 )
 
 func TestParseAndExecute(t *testing.T) {
-	storage := GetStorageInstance("localhost:6379")
+	storage := NewMockStorage()
+
 	node1, err := AddNode(storage, "PACKAGE", nil, "pkg:generic/lib-A@1.0.0")
 	if err != nil {
 		t.Fatal(err)
@@ -38,9 +39,6 @@ func TestParseAndExecute(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = node3.SetDependency(storage, node4)
-	if err != nil {
-		t.Fatal(err)
-	}
 	if err != nil {
 		t.Fatal(err)
 	}

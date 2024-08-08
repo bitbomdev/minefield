@@ -13,7 +13,7 @@ type RedisStorage struct {
 	client *redis.Client
 }
 
-func NewRedisStorage(addr string) *RedisStorage {
+func NewRedisStorage(addr string) Storage {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: addr,
 	})

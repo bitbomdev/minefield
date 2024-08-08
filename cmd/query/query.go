@@ -14,6 +14,7 @@ import (
 )
 
 type options struct {
+	storage   pkg.Storage
 	outputdir string
 	maxOutput int
 }
@@ -25,10 +26,8 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
 	script := strings.Join(args, " ")
-	// Get the storage instance (assuming a function GetStorageInstance exists)
-	storage := pkg.GetStorageInstance("localhost:6379")
 
-	execute, err := pkg.ParseAndExecute(script, storage, "")
+	execute, err := pkg.ParseAndExecute(script, o.storage, "")
 	if err != nil {
 		return fmt.Errorf("failed to parse and execute script: %w", err)
 	}
@@ -40,7 +39,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 		if index > o.maxOutput {
 			break
 		}
-		node, err := storage.GetNode(key)
+		node, err := o.storage.GetNode(key)
 		if err != nil {
 			fmt.Println("Failed to get name for ID:", err)
 			continue
@@ -76,8 +75,10 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func New() *cobra.Command {
-	o := &options{}
+func New(storage pkg.Storage) *cobra.Command {
+	o := &options{
+		storage: storage,
+	}
 	cmd := &cobra.Command{
 		Use:               "query [script]",
 		Short:             "Query dependencies and dependents of a project",

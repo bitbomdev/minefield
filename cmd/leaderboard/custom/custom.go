@@ -12,7 +12,8 @@ import (
 )
 
 type options struct {
-	all      bool
+	storage   pkg.Storage
+	all       bool
 	maxOutput int
 }
 
@@ -27,9 +28,7 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 }
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
-	storage := pkg.GetStorageInstance("localhost:6379")
-
-	uncachedNodes, err := storage.ToBeCached()
+	uncachedNodes, err := o.storage.ToBeCached()
 	if err != nil {
 		return err
 	}
@@ -37,7 +36,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot use sorted leaderboards without caching")
 	}
 
-	keys, err := storage.GetAllKeys()
+	keys, err := o.storage.GetAllKeys()
 	if err != nil {
 		return fmt.Errorf("failed to query keys: %w", err)
 	}
@@ -46,7 +45,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	queries := []query{}
 
 	for _, key := range keys {
-		node, err := storage.GetNode(key)
+		node, err := o.storage.GetNode(key)
 		if err != nil {
 			return err
 		}
@@ -55,7 +54,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 			continue
 		}
 
-		execute, err := pkg.ParseAndExecute(args[0], storage, node.Name)
+		execute, err := pkg.ParseAndExecute(args[0], o.storage, node.Name)
 		if err != nil {
 			return err
 		}
@@ -91,8 +90,10 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func New() *cobra.Command {
-	o := &options{}
+func New(storage pkg.Storage) *cobra.Command {
+	o := &options{
+		storage: storage,
+	}
 	cmd := &cobra.Command{
 		Use:               "custom [script]",
 		Short:             "returns all the keys based on the fed in script",
