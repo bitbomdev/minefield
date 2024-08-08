@@ -4,6 +4,7 @@ import (
 	"github.com/bit-bom/minefield/cmd/leaderboard/allKeys"
 	"github.com/bit-bom/minefield/cmd/leaderboard/custom"
 	"github.com/bit-bom/minefield/cmd/leaderboard/weightedNACD"
+	"github.com/bit-bom/minefield/pkg"
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +13,7 @@ type options struct{}
 func (o *options) AddFlags(_ *cobra.Command) {
 }
 
-func New() *cobra.Command {
+func New(storage pkg.Storage) *cobra.Command {
 	o := &options{}
 	cmd := &cobra.Command{
 		Use:               "leaderboard",
@@ -23,9 +24,9 @@ func New() *cobra.Command {
 
 	o.AddFlags(cmd)
 
-	cmd.AddCommand(allKeys.New())
-	cmd.AddCommand(weightedNACD.New())
-	cmd.AddCommand(custom.New())
+	cmd.AddCommand(allKeys.New(storage))
+	cmd.AddCommand(weightedNACD.New(storage))
+	cmd.AddCommand(custom.New(storage))
 
 	return cmd
 }

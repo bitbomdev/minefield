@@ -13,8 +13,8 @@ import (
 )
 
 type options struct {
+	storage     pkg.Storage
 	weightsFile string
-
 	maxOutput   int
 }
 
@@ -44,9 +44,7 @@ func (o *options) validateWeights(weights *weightedNACD.Weights) error {
 }
 
 func (o *options) Run(_ *cobra.Command, _ []string) error {
-	storage := pkg.GetStorageInstance("localhost:6379")
-
-	uncachedNodes, err := storage.ToBeCached()
+	uncachedNodes, err := o.storage.ToBeCached()
 	if err != nil {
 		return err
 	}
@@ -69,7 +67,7 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	results, err := weightedNACD.WeightedNACD(storage, weights)
+	results, err := weightedNACD.WeightedNACD(o.storage, weights)
 	if err != nil {
 		return fmt.Errorf("failed to calculate weighted NACD: %w", err)
 	}
@@ -82,7 +80,7 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 		if index > o.maxOutput {
 			break
 		}
-		node, err := storage.GetNode(result.Id)
+		node, err := o.storage.GetNode(result.Id)
 		if err != nil {
 			fmt.Println("Failed to get node for ID:", err)
 			continue
@@ -95,8 +93,10 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func New() *cobra.Command {
-	o := &options{}
+func New(storage pkg.Storage) *cobra.Command {
+	o := &options{
+		storage: storage,
+	}
 	cmd := &cobra.Command{
 		Use:   "weightedNACD",
 		Short: "calculates the risk of all packages",

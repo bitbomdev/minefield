@@ -5,6 +5,7 @@ import (
 	"github.com/bit-bom/minefield/cmd/ingest"
 	"github.com/bit-bom/minefield/cmd/leaderboard"
 	"github.com/bit-bom/minefield/cmd/query"
+	"github.com/bit-bom/minefield/pkg"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +14,7 @@ type options struct{}
 func (o *options) AddFlags(_ *cobra.Command) {
 }
 
-func New() *cobra.Command {
+func New(storage pkg.Storage) *cobra.Command {
 	o := &options{}
 	cmd := &cobra.Command{
 		Use:               "bitbom",
@@ -24,10 +25,10 @@ func New() *cobra.Command {
 
 	o.AddFlags(cmd)
 
-	cmd.AddCommand(query.New())
-	cmd.AddCommand(ingest.New())
-	cmd.AddCommand(cache.New())
-	cmd.AddCommand(leaderboard.New())
+	cmd.AddCommand(query.New(storage))
+	cmd.AddCommand(ingest.New(storage))
+	cmd.AddCommand(cache.New(storage))
+	cmd.AddCommand(leaderboard.New(storage))
 
 	return cmd
 }

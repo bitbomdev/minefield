@@ -8,15 +8,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type options struct{}
+type options struct {
+	storage pkg.Storage
+}
 
 func (o *options) AddFlags(_ *cobra.Command) {}
 
 func (o *options) Run(_ *cobra.Command, _ []string) error {
-	storage := pkg.GetStorageInstance("localhost:6379")
-
 	// Ingest SBOM
-	if err := ingest.Vulnerabilities(storage); err != nil {
+	if err := ingest.Vulnerabilities(o.storage); err != nil {
 		return fmt.Errorf("failed to ingest SBOM: %w", err)
 	}
 
@@ -24,8 +24,10 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func New() *cobra.Command {
-	o := &options{}
+func New(storage pkg.Storage) *cobra.Command {
+	o := &options{
+		storage: storage,
+	}
 	cmd := &cobra.Command{
 		Use:               "osv",
 		Short:             "Ingest vulnerabilities into the storage",

@@ -7,15 +7,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type options struct{}
+type options struct {
+	storage pkg.Storage
+}
 
 func (o *options) AddFlags(_ *cobra.Command) {}
 
 func (o *options) Run(_ *cobra.Command, _ []string) error {
-	// Get the storage instance (assuming a function GetStorageInstance exists)
-	storage := pkg.GetStorageInstance("localhost:6379")
-
-	if err := pkg.Cache(storage); err != nil {
+	if err := pkg.Cache(o.storage); err != nil {
 		return fmt.Errorf("failed to cache: %w", err)
 	}
 
@@ -23,8 +22,10 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func New() *cobra.Command {
-	o := &options{}
+func New(storage pkg.Storage) *cobra.Command {
+	o := &options{
+		storage: storage,
+	}
 	cmd := &cobra.Command{
 		Use:               "cache",
 		Short:             "Cache all nodes",

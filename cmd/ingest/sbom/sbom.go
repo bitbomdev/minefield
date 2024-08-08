@@ -8,18 +8,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type options struct{}
+type options struct {
+	storage pkg.Storage
+}
 
 func (o *options) AddFlags(_ *cobra.Command) {}
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
 	sbomPath := args[0]
 
-	// Get the storage instance (assuming a function GetStorageInstance exists)
-	storage := pkg.GetStorageInstance("localhost:6379")
-
 	// Ingest SBOM
-	if err := ingest.SBOM(sbomPath, storage); err != nil {
+	if err := ingest.SBOM(sbomPath, o.storage); err != nil {
 		return fmt.Errorf("failed to ingest SBOM: %w", err)
 	}
 
@@ -27,8 +26,10 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func New() *cobra.Command {
-	o := &options{}
+func New(storage pkg.Storage) *cobra.Command {
+	o := &options{
+		storage: storage,
+	}
 	cmd := &cobra.Command{
 		Use:               "sbom [sbomPath]",
 		Short:             "Ingest an SBOM into the storage",
