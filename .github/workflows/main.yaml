@@ -38,4 +38,4 @@ jobs:
 
       - name: Push Docker images
         run: |
-          docker push ghcr.io/bit-bom/minefield:latest
+          docker push ghcr.io/bitbomdev/minefield:latest
