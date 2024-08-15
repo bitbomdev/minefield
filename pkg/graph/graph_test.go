@@ -8,12 +8,11 @@ import (
 	"time"
 
 	"github.com/RoaringBitmap/roaring"
-	storage2 "github.com/bit-bom/minefield/pkg/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAddNode(t *testing.T) {
-	storage := storage2.NewMockStorage()
+	storage := NewMockStorage()
 	node, err := AddNode(storage, "type1", "metadata1", "name1")
 
 	assert.NoError(t, err)
@@ -23,7 +22,7 @@ func TestAddNode(t *testing.T) {
 }
 
 func TestSetDependency(t *testing.T) {
-	storage := storage2.NewMockStorage()
+	storage := NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "name1")
 	assert.NoError(t, err, "Expected no error")
 	node2, err := AddNode(storage, "type2", "metadata2", "name2")
@@ -37,7 +36,7 @@ func TestSetDependency(t *testing.T) {
 }
 
 func TestSetDependent(t *testing.T) {
-	storage := storage2.NewMockStorage()
+	storage := NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "name1")
 	assert.NoError(t, err, "Expected no error")
 	node2, err := AddNode(storage, "type2", "metadata2", "name2")
@@ -52,7 +51,7 @@ func TestSetDependent(t *testing.T) {
 func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 	tests := []int{1000}
 	for _, n := range tests {
-		storage := storage2.NewMockStorage()
+		storage := NewMockStorage()
 		nodes := make([]*Node, n)
 		expectedDependents := make(map[uint32][]uint32)
 		expectedDependencies := make(map[uint32][]uint32)
@@ -134,7 +133,7 @@ func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 	tests := []int{1000}
 	for _, n := range tests {
-		storage := storage2.NewMockStorage()
+		storage := NewMockStorage()
 		nodes := make([]*Node, n)
 		expectedDependents := make(map[uint32][]uint32)
 		expectedDependencies := make(map[uint32][]uint32)
@@ -209,7 +208,7 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 }
 
 func TestComplexCircularDependency(t *testing.T) {
-	storage := storage2.NewMockStorage()
+	storage := NewMockStorage()
 	nodes := make([]*Node, 13)
 	var err error
 
@@ -284,7 +283,7 @@ func TestComplexCircularDependency(t *testing.T) {
 }
 
 func TestSimpleCircle(t *testing.T) {
-	storage := storage2.NewMockStorage()
+	storage := NewMockStorage()
 	nodes := make([]*Node, 3)
 	var err error
 
@@ -325,7 +324,7 @@ func TestSimpleCircle(t *testing.T) {
 }
 
 func TestIntermediateSimpleCircles(t *testing.T) {
-	storage := storage2.NewMockStorage()
+	storage := NewMockStorage()
 	nodes := make([]*Node, 6)
 	var err error
 
@@ -354,7 +353,7 @@ func TestIntermediateSimpleCircles(t *testing.T) {
 	// Linking Circle 1 and Circle 2
 	err = nodes[2].SetDependency(storage, nodes[3])
 	assert.NoError(t, err)
-	// err = nodes[5].SetDependency(storage, nodes[0])
+	// err = nodes[5].SetDependency(storages, nodes[0])
 	// assert.NoError(t, err)
 
 	if err := Cache(storage); err != nil {

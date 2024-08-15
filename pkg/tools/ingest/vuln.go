@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/bit-bom/minefield/pkg/graph"
-	"github.com/bit-bom/minefield/pkg/storage"
 	"github.com/package-url/packageurl-go"
 )
 
@@ -64,7 +63,7 @@ var purlEcosystems = map[string]map[string]Ecosystem{
 }
 var ErrBadPurl = fmt.Errorf("bad purl")
 
-func Vulnerabilities(storage storage.Storage) error {
+func Vulnerabilities(storage graph.Storage) error {
 	keys, err := storage.GetAllKeys()
 	if err != nil {
 		return err

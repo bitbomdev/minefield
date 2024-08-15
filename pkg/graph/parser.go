@@ -5,11 +5,10 @@ import (
 	"strings"
 
 	"github.com/RoaringBitmap/roaring"
-	"github.com/bit-bom/minefield/pkg/storage"
 )
 
-// ParseAndExecute parses and executes a script using the given storage backend.
-func ParseAndExecute(script string, storage storage.Storage, defaultNodeName string) (*roaring.Bitmap, error) {
+// ParseAndExecute parses and executes a script using the given storages backend.
+func ParseAndExecute(script string, storage Storage, defaultNodeName string) (*roaring.Bitmap, error) {
 	var stack []*roaring.Bitmap
 	var operators []string
 

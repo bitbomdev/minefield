@@ -9,11 +9,10 @@ import (
 
 	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/bit-bom/minefield/pkg/graph"
-	"github.com/bit-bom/minefield/pkg/storage"
 )
 
-// IngestSBOM ingests a SBOM file or directory into the storage backend.
-func SBOM(sbomPath string, storage storage.Storage) error {
+// IngestSBOM ingests a SBOM file or directory into the storages backend.
+func SBOM(sbomPath string, storage graph.Storage) error {
 	info, err := os.Stat(sbomPath)
 	if err != nil {
 		return fmt.Errorf("error accessing path %s: %w", sbomPath, err)
@@ -37,8 +36,8 @@ func SBOM(sbomPath string, storage storage.Storage) error {
 	return nil
 }
 
-// processSBOMFile processes a SBOM file and adds it to the storage backend.
-func processSBOMFile(filePath string, storage storage.Storage) error {
+// processSBOMFile processes a SBOM file and adds it to the storages backend.
+func processSBOMFile(filePath string, storage graph.Storage) error {
 	if filePath == "" {
 		return fmt.Errorf("file path is empty")
 	}

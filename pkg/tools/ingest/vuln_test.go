@@ -4,14 +4,13 @@ import (
 	"testing"
 
 	"github.com/bit-bom/minefield/pkg/graph"
-	"github.com/bit-bom/minefield/pkg/storage"
 	"github.com/package-url/packageurl-go"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestVulnerabilities(t *testing.T) {
-	storage := storage.NewMockStorage()
-	// Add mock nodes to storage
+	storage := graph.NewMockStorage()
+	// Add mock nodes to storages
 	_, err := graph.AddNode(storage, "PACKAGE", "metadata1", "pkg:golang/stdlib")
 	assert.NoError(t, err)
 	_, err = graph.AddNode(storage, "PACKAGE", "metadata2", "pkg:golang/github/docker/docker@19.0.0")

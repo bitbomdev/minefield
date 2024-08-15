@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/RoaringBitmap/roaring"
-	"github.com/bit-bom/minefield/pkg/storage"
 )
 
 var (
@@ -154,7 +153,7 @@ func (n *Node) UnmarshalJSON(data []byte) error {
 }
 
 // AddNode becomes generic in terms of metadata
-func AddNode(storage storage.Storage, _type string, metadata any, name string) (*Node, error) {
+func AddNode(storage Storage, _type string, metadata any, name string) (*Node, error) {
 	var ID uint32
 	if id, err := storage.NameToID(name); err == nil {
 		return storage.GetNode(id)
@@ -188,7 +187,7 @@ func AddNode(storage storage.Storage, _type string, metadata any, name string) (
 }
 
 // SetDependency now uses generic types for metadata
-func (n *Node) SetDependency(storage storage.Storage, neighbor *Node) error {
+func (n *Node) SetDependency(storage Storage, neighbor *Node) error {
 	if n == nil {
 		return fmt.Errorf("cannot add dependency to nil node")
 	}
@@ -199,7 +198,7 @@ func (n *Node) SetDependency(storage storage.Storage, neighbor *Node) error {
 		return ErrSelfDependency
 	}
 	if storage == nil {
-		return fmt.Errorf("storage cannot be nil")
+		return fmt.Errorf("storages cannot be nil")
 	}
 
 	n.Children.Add(neighbor.ID)
@@ -214,12 +213,12 @@ func (n *Node) SetDependency(storage storage.Storage, neighbor *Node) error {
 	return nil
 }
 
-func (n *Node) queryBitmap(storage storage.Storage, direction Direction) (*roaring.Bitmap, error) {
+func (n *Node) queryBitmap(storage Storage, direction Direction) (*roaring.Bitmap, error) {
 	if n == nil {
 		return nil, fmt.Errorf("cannot query bitmap of nil node")
 	}
 	if storage == nil {
-		return nil, fmt.Errorf("storage cannot be nil")
+		return nil, fmt.Errorf("storages cannot be nil")
 	}
 
 	result := roaring.New()
@@ -260,16 +259,16 @@ func (n *Node) queryBitmap(storage storage.Storage, direction Direction) (*roari
 	return result, nil
 }
 
-func (n *Node) QueryDependentsNoCache(storage storage.Storage) (*roaring.Bitmap, error) {
+func (n *Node) QueryDependentsNoCache(storage Storage) (*roaring.Bitmap, error) {
 	return n.queryBitmap(storage, ParentsDirection)
 }
 
-func (n *Node) QueryDependenciesNoCache(storage storage.Storage) (*roaring.Bitmap, error) {
+func (n *Node) QueryDependenciesNoCache(storage Storage) (*roaring.Bitmap, error) {
 	return n.queryBitmap(storage, ChildrenDirection)
 }
 
 // QueryDependents checks if all nodes are cached, if so find the dependents in the cache, if not find the dependents without searching the cache
-func (n *Node) QueryDependents(storage storage.Storage) (*roaring.Bitmap, error) {
+func (n *Node) QueryDependents(storage Storage) (*roaring.Bitmap, error) {
 	uncachedNodes, err := storage.ToBeCached()
 	if err != nil {
 		return nil, err
@@ -286,7 +285,7 @@ func (n *Node) QueryDependents(storage storage.Storage) (*roaring.Bitmap, error)
 	return nCache.AllParents, nil
 }
 
-func (n *Node) QueryDependencies(storage storage.Storage) (*roaring.Bitmap, error) {
+func (n *Node) QueryDependencies(storage Storage) (*roaring.Bitmap, error) {
 	uncachedNodes, err := storage.ToBeCached()
 	if err != nil {
 		return nil, err
@@ -303,7 +302,7 @@ func (n *Node) QueryDependencies(storage storage.Storage) (*roaring.Bitmap, erro
 	return nCache.AllChildren, nil
 }
 
-func GenerateDOT(storage storage.Storage) (string, error) {
+func GenerateDOT(storage Storage) (string, error) {
 	keys, err := storage.GetAllKeys()
 	if err != nil {
 		return "", err
@@ -333,7 +332,7 @@ func GenerateDOT(storage storage.Storage) (string, error) {
 	return dotBuilder.String(), nil
 }
 
-func RenderGraph(storage storage.Storage) error {
+func RenderGraph(storage Storage) error {
 	dotString, err := GenerateDOT(storage)
 	if err != nil {
 		return err

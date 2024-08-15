@@ -1,4 +1,4 @@
-package graph
+package tools
 
 import "strings"
 

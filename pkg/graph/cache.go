@@ -5,10 +5,9 @@ import (
 	"strconv"
 
 	"github.com/RoaringBitmap/roaring"
-	"github.com/bit-bom/minefield/pkg/storage"
 )
 
-func Cache(storage storage.Storage) error {
+func Cache(storage Storage) error {
 	uncachedNodes, err := storage.ToBeCached()
 	if err != nil {
 		return err
@@ -79,7 +78,7 @@ func Cache(storage storage.Storage) error {
 	return storage.ClearCacheStack()
 }
 
-func findCycles(storage storage.Storage, direction Direction, numOfNodes int, allNodes map[uint32]*Node) (map[uint32]uint32, error) {
+func findCycles(storage Storage, direction Direction, numOfNodes int, allNodes map[uint32]*Node) (map[uint32]uint32, error) {
 	var stack []uint32
 	var tarjanDFS func(nodeID uint32) error
 
@@ -145,7 +144,7 @@ type stackElm struct {
 	todoIndex int
 }
 
-func buildCache(storage storage.Storage, uncachedNodes []uint32, direction Direction, scc map[uint32]uint32, allNodes map[uint32]*Node) (*NativeKeyManagement, error) {
+func buildCache(storage Storage, uncachedNodes []uint32, direction Direction, scc map[uint32]uint32, allNodes map[uint32]*Node) (*NativeKeyManagement, error) {
 	cache, children, parents := NewNativeKeyManagement(), NewNativeKeyManagement(), NewNativeKeyManagement()
 	alreadyCached := roaring.New()
 
@@ -198,7 +197,7 @@ func buildCache(storage storage.Storage, uncachedNodes []uint32, direction Direc
 	return cache, nil
 }
 
-func addCyclesToBindMap(storage storage.Storage, scc map[uint32]uint32, cache, children, parents *NativeKeyManagement, allNodes map[uint32]*Node) error {
+func addCyclesToBindMap(storage Storage, scc map[uint32]uint32, cache, children, parents *NativeKeyManagement, allNodes map[uint32]*Node) error {
 	parentToKeys := map[uint32][]string{}
 
 	for k, v := range scc {

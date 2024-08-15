@@ -1,4 +1,4 @@
-package storage
+package storages
 
 import (
 	"context"
@@ -52,7 +52,7 @@ func TestNameToID(t *testing.T) {
 func TestGetAllKeys(t *testing.T) {
 	r := setupTestRedis()
 	node1 := &graph.Node{ID: 1, Name: "node1", Children: roaring.New(), Parents: roaring.New()}
-	node2 := &graph.Node{ID: 1, Name: "node2", Children: roaring.New(), Parents: roaring.New()}
+	node2 := &graph.Node{ID: 2, Name: "node2", Children: roaring.New(), Parents: roaring.New()}
 	err := r.SaveNode(node1)
 	assert.NoError(t, err)
 	err = r.SaveNode(node2)

@@ -1,4 +1,4 @@
-package storage
+package storages
 
 import (
 	"context"
@@ -14,7 +14,7 @@ type RedisStorage struct {
 	client *redis.Client
 }
 
-func NewRedisStorage(addr string) Storage {
+func NewRedisStorage(addr string) graph.Storage {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: addr,
 	})

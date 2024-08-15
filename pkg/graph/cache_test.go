@@ -4,14 +4,13 @@ import (
 	"log"
 	"testing"
 
-	storage2 "github.com/bit-bom/minefield/pkg/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_findCycles(t *testing.T) {
 	logger := log.Default()
 
-	storage := storage2.NewMockStorage()
+	storage := NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "1")
 	assert.NoError(t, err)
 	node2, err := AddNode(storage, "type2", "metadata2", "2")
@@ -24,7 +23,7 @@ func Test_findCycles(t *testing.T) {
 
 	got, err := findCycles(storage, "children", 2, allNodes)
 	if err != nil {
-		logger.Fatalf("error finding cycles, storage %v, err %v", storage, err)
+		logger.Fatalf("error finding cycles, storages %v, err %v", storage, err)
 		return
 	}
 
@@ -34,7 +33,7 @@ func Test_findCycles(t *testing.T) {
 func Test_findCycles_With_Cycles(t *testing.T) {
 	logger := log.Default()
 
-	storage := storage2.NewMockStorage()
+	storage := NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "1")
 	assert.NoError(t, err)
 	node2, err := AddNode(storage, "type2", "metadata2", "2")
@@ -54,7 +53,7 @@ func Test_findCycles_With_Cycles(t *testing.T) {
 
 	got, err := findCycles(storage, "children", 3, allNodes)
 	if err != nil {
-		logger.Fatalf("error finding cycles, storage %v, err %v", storage, err)
+		logger.Fatalf("error finding cycles, storages %v, err %v", storage, err)
 		return
 	}
 

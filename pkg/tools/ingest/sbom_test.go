@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/bit-bom/minefield/pkg/graph"
-	"github.com/bit-bom/minefield/pkg/storage"
 )
 
 func TestIngestSBOM(t *testing.T) {
@@ -17,7 +16,7 @@ func TestIngestSBOM(t *testing.T) {
 	}{
 		{
 			name:     "default",
-			sbomPath: "../../test",
+			sbomPath: "../../../test",
 			want: map[uint32]*graph.Node{
 				1: {
 					ID:   1,
@@ -44,7 +43,7 @@ func TestIngestSBOM(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			storage := storage.NewMockStorage()
+			storage := graph.NewMockStorage()
 			if err := SBOM(test.sbomPath, storage); test.wantErr != (err != nil) {
 				t.Errorf("Sbom() error = %v, wantErr = %v", err, test.wantErr)
 			}

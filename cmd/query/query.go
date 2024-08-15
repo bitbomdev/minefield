@@ -9,13 +9,13 @@ import (
 	"strings"
 
 	"github.com/bit-bom/minefield/pkg/graph"
-	"github.com/bit-bom/minefield/pkg/storage"
+	"github.com/bit-bom/minefield/pkg/tools"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	storage   storage.Storage
+	storage   graph.Storage
 	outputdir string
 	maxOutput int
 }
@@ -57,7 +57,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 				return fmt.Errorf("output directory does not exist: %w", err)
 			}
 
-			filePath := filepath.Join(o.outputdir, graph.SanitizeFilename(node.Name)+".json")
+			filePath := filepath.Join(o.outputdir, tools.SanitizeFilename(node.Name)+".json")
 			file, err := os.Create(filePath)
 			if err != nil {
 				return fmt.Errorf("failed to create file: %w", err)
@@ -76,7 +76,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func New(storage storage.Storage) *cobra.Command {
+func New(storage graph.Storage) *cobra.Command {
 	o := &options{
 		storage: storage,
 	}
