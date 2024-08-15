@@ -30,7 +30,7 @@ func New(storage graph.Storage) *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:               "osv",
-		Short:             "Ingest vulnerabilities into the storages",
+		Short:             "Ingest vulnerabilities into storage",
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}

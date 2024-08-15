@@ -32,7 +32,7 @@ func New(storage graph.Storage) *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:               "sbom [sbomPath]",
-		Short:             "Ingest an SBOM into the storages",
+		Short:             "Ingest an SBOM into storage",
 		Args:              cobra.ExactArgs(1),
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
