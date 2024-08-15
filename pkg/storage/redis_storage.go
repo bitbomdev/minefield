@@ -1,4 +1,4 @@
-package pkg
+package storage
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -28,7 +29,7 @@ func (r *RedisStorage) GenerateID() (uint32, error) {
 	return uint32(id), nil
 }
 
-func (r *RedisStorage) SaveNode(node *Node) error {
+func (r *RedisStorage) SaveNode(node *graph.Node) error {
 	data, err := node.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("failed to marshal node: %w", err)
@@ -58,13 +59,13 @@ func (r *RedisStorage) NameToID(name string) (uint32, error) {
 	return uint32(idInt), nil
 }
 
-func (r *RedisStorage) GetNode(id uint32) (*Node, error) {
+func (r *RedisStorage) GetNode(id uint32) (*graph.Node, error) {
 	ctx := context.Background()
 	data, err := r.client.Get(ctx, fmt.Sprintf("node:%d", id)).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node data for ID %d: %w", id, err)
 	}
-	var node Node
+	var node graph.Node
 	if err := node.UnmarshalJSON([]byte(data)); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal node data: %w", err)
 	}
@@ -87,13 +88,13 @@ func (r *RedisStorage) GetAllKeys() ([]uint32, error) {
 	return result, nil
 }
 
-func (r *RedisStorage) SaveCache(cache *NodeCache) error {
+func (r *RedisStorage) SaveCache(cache *graph.NodeCache) error {
 	ctx := context.Background()
 	data, err := cache.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("failed to marshal cache: %w", err)
 	}
-	return r.client.Set(ctx, fmt.Sprintf("cache:%d", cache.nodeID), data, 0).Err()
+	return r.client.Set(ctx, fmt.Sprintf("cache:%d", cache.ID), data, 0).Err()
 }
 
 func (r *RedisStorage) ToBeCached() ([]uint32, error) {
@@ -134,20 +135,20 @@ func (r *RedisStorage) ClearCacheStack() error {
 	return nil
 }
 
-func (r *RedisStorage) GetCache(nodeID uint32) (*NodeCache, error) {
+func (r *RedisStorage) GetCache(nodeID uint32) (*graph.NodeCache, error) {
 	ctx := context.Background()
 	data, err := r.client.Get(ctx, fmt.Sprintf("cache:%d", nodeID)).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cache for node %d: %w", nodeID, err)
 	}
-	var cache NodeCache
+	var cache graph.NodeCache
 	if err := cache.UnmarshalJSON([]byte(data)); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal cache data: %w", err)
 	}
 	return &cache, nil
 }
 
-func (r *RedisStorage) GetNodes(ids []uint32) (map[uint32]*Node, error) {
+func (r *RedisStorage) GetNodes(ids []uint32) (map[uint32]*graph.Node, error) {
 	ctx := context.Background()
 	pipe := r.client.Pipeline()
 
@@ -161,7 +162,7 @@ func (r *RedisStorage) GetNodes(ids []uint32) (map[uint32]*Node, error) {
 		return nil, fmt.Errorf("failed to get nodes: %w", err)
 	}
 
-	nodes := make(map[uint32]*Node, len(ids))
+	nodes := make(map[uint32]*graph.Node, len(ids))
 	for i, cmd := range cmds {
 		data, err := cmd.Result()
 		if err == redis.Nil {
@@ -170,7 +171,7 @@ func (r *RedisStorage) GetNodes(ids []uint32) (map[uint32]*Node, error) {
 			return nil, fmt.Errorf("failed to get node data for ID %d: %w", ids[i], err)
 		}
 
-		var node Node
+		var node graph.Node
 		if err := node.UnmarshalJSON([]byte(data)); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal node data: %w", err)
 		}
@@ -180,7 +181,7 @@ func (r *RedisStorage) GetNodes(ids []uint32) (map[uint32]*Node, error) {
 	return nodes, nil
 }
 
-func (r *RedisStorage) SaveCaches(caches []*NodeCache) error {
+func (r *RedisStorage) SaveCaches(caches []*graph.NodeCache) error {
 	ctx := context.Background()
 	pipe := r.client.Pipeline()
 
@@ -189,7 +190,7 @@ func (r *RedisStorage) SaveCaches(caches []*NodeCache) error {
 		if err != nil {
 			return fmt.Errorf("failed to marshal cache: %w", err)
 		}
-		pipe.Set(ctx, fmt.Sprintf("cache:%d", cache.nodeID), data, 0)
+		pipe.Set(ctx, fmt.Sprintf("cache:%d", cache.ID), data, 0)
 	}
 
 	_, err := pipe.Exec(ctx)

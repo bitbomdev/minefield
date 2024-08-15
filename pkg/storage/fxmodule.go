@@ -1,4 +1,4 @@
-package pkg
+package storage
 
 import (
 	"go.uber.org/fx"

@@ -10,7 +10,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bit-bom/minefield/pkg"
+	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bit-bom/minefield/pkg/storage"
 	"github.com/package-url/packageurl-go"
 )
 
@@ -63,7 +64,7 @@ var purlEcosystems = map[string]map[string]Ecosystem{
 }
 var ErrBadPurl = fmt.Errorf("bad purl")
 
-func Vulnerabilities(storage pkg.Storage) error {
+func Vulnerabilities(storage storage.Storage) error {
 	keys, err := storage.GetAllKeys()
 	if err != nil {
 		return err
@@ -85,7 +86,7 @@ func Vulnerabilities(storage pkg.Storage) error {
 			}
 
 			for _, vuln := range vulns {
-				vulnNode, err := pkg.AddNode(storage, "VULNERABILITY", any(vuln), vuln.ID)
+				vulnNode, err := graph.AddNode(storage, "VULNERABILITY", any(vuln), vuln.ID)
 				if err != nil {
 					return err
 				}

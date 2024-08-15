@@ -1,16 +1,17 @@
-package pkg
+package graph
 
 import (
 	"log"
 	"testing"
 
+	storage2 "github.com/bit-bom/minefield/pkg/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_findCycles(t *testing.T) {
 	logger := log.Default()
 
-	storage := NewMockStorage()
+	storage := storage2.NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "1")
 	assert.NoError(t, err)
 	node2, err := AddNode(storage, "type2", "metadata2", "2")
@@ -33,7 +34,7 @@ func Test_findCycles(t *testing.T) {
 func Test_findCycles_With_Cycles(t *testing.T) {
 	logger := log.Default()
 
-	storage := NewMockStorage()
+	storage := storage2.NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "1")
 	assert.NoError(t, err)
 	node2, err := AddNode(storage, "type2", "metadata2", "2")

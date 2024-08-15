@@ -8,11 +8,12 @@ import (
 	"strings"
 
 	cdx "github.com/CycloneDX/cyclonedx-go"
-	"github.com/bit-bom/minefield/pkg"
+	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bit-bom/minefield/pkg/storage"
 )
 
 // IngestSBOM ingests a SBOM file or directory into the storage backend.
-func SBOM(sbomPath string, storage pkg.Storage) error {
+func SBOM(sbomPath string, storage storage.Storage) error {
 	info, err := os.Stat(sbomPath)
 	if err != nil {
 		return fmt.Errorf("error accessing path %s: %w", sbomPath, err)
@@ -37,7 +38,7 @@ func SBOM(sbomPath string, storage pkg.Storage) error {
 }
 
 // processSBOMFile processes a SBOM file and adds it to the storage backend.
-func processSBOMFile(filePath string, storage pkg.Storage) error {
+func processSBOMFile(filePath string, storage storage.Storage) error {
 	if filePath == "" {
 		return fmt.Errorf("file path is empty")
 	}
@@ -67,7 +68,7 @@ func processSBOMFile(filePath string, storage pkg.Storage) error {
 		mainPurl = fmt.Sprintf("pkg:generic/%s@%s", mainBomNode.Name, mainBomNode.Version)
 	}
 
-	mainGraphNode, err := pkg.AddNode(storage, string(mainBomNode.Type), bom, mainPurl)
+	mainGraphNode, err := graph.AddNode(storage, string(mainBomNode.Type), bom, mainPurl)
 
 	if err != nil {
 		return fmt.Errorf("failed to parse SBOM file %s: %w", filePath, err)
@@ -93,9 +94,9 @@ func processSBOMFile(filePath string, storage pkg.Storage) error {
 			purl = fmt.Sprintf("pkg:generic/%s@%s", node.Name, node.Version)
 		}
 
-		graphNode, err := pkg.AddNode(storage, string(node.Type), any(node), purl)
+		graphNode, err := graph.AddNode(storage, string(node.Type), any(node), purl)
 		if err != nil {
-			if errors.Is(err, pkg.ErrNodeAlreadyExists) {
+			if errors.Is(err, graph.ErrNodeAlreadyExists) {
 				// TODO: Add a logger
 				fmt.Println("Skipping...")
 				continue

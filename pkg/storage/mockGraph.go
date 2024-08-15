@@ -1,4 +1,4 @@
-package pkg
+package storage
 
 import (
 	"errors"
@@ -6,23 +6,24 @@ import (
 	"sync"
 
 	"github.com/RoaringBitmap/roaring"
+	"github.com/bit-bom/minefield/pkg/graph"
 )
 
 type MockStorage struct {
-	nodes        map[uint32]*Node
+	nodes        map[uint32]*graph.Node
 	dependencies map[uint32]*roaring.Bitmap
 	dependents   map[uint32]*roaring.Bitmap
 	nameToID     map[string]uint32
 	idCounter    uint32
 	fullyCached  bool
 	mu           sync.Mutex
-	cache        map[uint32]*NodeCache
+	cache        map[uint32]*graph.NodeCache
 	toBeCached   []uint32
 }
 
 func NewMockStorage() *MockStorage {
 	return &MockStorage{
-		nodes:        make(map[uint32]*Node),
+		nodes:        make(map[uint32]*graph.Node),
 		dependencies: make(map[uint32]*roaring.Bitmap),
 		dependents:   make(map[uint32]*roaring.Bitmap),
 		nameToID:     make(map[string]uint32),
@@ -30,7 +31,7 @@ func NewMockStorage() *MockStorage {
 	}
 }
 
-func (m *MockStorage) SaveNode(node *Node) error {
+func (m *MockStorage) SaveNode(node *graph.Node) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.nameToID[node.Name] = node.ID
@@ -39,7 +40,7 @@ func (m *MockStorage) SaveNode(node *Node) error {
 	return nil
 }
 
-func (m *MockStorage) GetNode(id uint32) (*Node, error) {
+func (m *MockStorage) GetNode(id uint32) (*graph.Node, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	node, exists := m.nodes[id]
@@ -61,13 +62,13 @@ func (m *MockStorage) GetAllKeys() ([]uint32, error) {
 	return keys, nil
 }
 
-func (m *MockStorage) SaveCache(cache *NodeCache) error {
+func (m *MockStorage) SaveCache(cache *graph.NodeCache) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.cache == nil {
-		m.cache = map[uint32]*NodeCache{}
+		m.cache = map[uint32]*graph.NodeCache{}
 	}
-	m.cache[cache.nodeID] = cache
+	m.cache[cache.ID] = cache
 	return nil
 }
 
@@ -89,7 +90,7 @@ func (m *MockStorage) ClearCacheStack() error {
 	return nil
 }
 
-func (m *MockStorage) GetCache(id uint32) (*NodeCache, error) {
+func (m *MockStorage) GetCache(id uint32) (*graph.NodeCache, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if _, ok := m.cache[id]; !ok {
@@ -114,11 +115,11 @@ func (m *MockStorage) NameToID(name string) (uint32, error) {
 	return m.nameToID[name], nil
 }
 
-func (m *MockStorage) GetNodes(ids []uint32) (map[uint32]*Node, error) {
+func (m *MockStorage) GetNodes(ids []uint32) (map[uint32]*graph.Node, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	nodes := make(map[uint32]*Node, len(ids))
+	nodes := make(map[uint32]*graph.Node, len(ids))
 	for _, id := range ids {
 		node, exists := m.nodes[id]
 		if !exists {
@@ -130,14 +131,14 @@ func (m *MockStorage) GetNodes(ids []uint32) (map[uint32]*Node, error) {
 	return nodes, nil
 }
 
-func (m *MockStorage) SaveCaches(caches []*NodeCache) error {
+func (m *MockStorage) SaveCaches(caches []*graph.NodeCache) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for _, cache := range caches {
 		if m.cache == nil {
-			m.cache = map[uint32]*NodeCache{}
+			m.cache = map[uint32]*graph.NodeCache{}
 		}
-		m.cache[cache.nodeID] = cache
+		m.cache[cache.ID] = cache
 	}
 	return nil
 }

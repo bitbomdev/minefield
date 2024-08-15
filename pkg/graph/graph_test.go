@@ -1,4 +1,4 @@
-package pkg
+package graph
 
 import (
 	"encoding/json"
@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/RoaringBitmap/roaring"
+	storage2 "github.com/bit-bom/minefield/pkg/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAddNode(t *testing.T) {
-	storage := NewMockStorage()
+	storage := storage2.NewMockStorage()
 	node, err := AddNode(storage, "type1", "metadata1", "name1")
 
 	assert.NoError(t, err)
@@ -22,7 +23,7 @@ func TestAddNode(t *testing.T) {
 }
 
 func TestSetDependency(t *testing.T) {
-	storage := NewMockStorage()
+	storage := storage2.NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "name1")
 	assert.NoError(t, err, "Expected no error")
 	node2, err := AddNode(storage, "type2", "metadata2", "name2")
@@ -36,7 +37,7 @@ func TestSetDependency(t *testing.T) {
 }
 
 func TestSetDependent(t *testing.T) {
-	storage := NewMockStorage()
+	storage := storage2.NewMockStorage()
 	node1, err := AddNode(storage, "type1", "metadata1", "name1")
 	assert.NoError(t, err, "Expected no error")
 	node2, err := AddNode(storage, "type2", "metadata2", "name2")
@@ -51,7 +52,7 @@ func TestSetDependent(t *testing.T) {
 func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 	tests := []int{1000}
 	for _, n := range tests {
-		storage := NewMockStorage()
+		storage := storage2.NewMockStorage()
 		nodes := make([]*Node, n)
 		expectedDependents := make(map[uint32][]uint32)
 		expectedDependencies := make(map[uint32][]uint32)
@@ -133,7 +134,7 @@ func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 	tests := []int{1000}
 	for _, n := range tests {
-		storage := NewMockStorage()
+		storage := storage2.NewMockStorage()
 		nodes := make([]*Node, n)
 		expectedDependents := make(map[uint32][]uint32)
 		expectedDependencies := make(map[uint32][]uint32)
@@ -208,7 +209,7 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 }
 
 func TestComplexCircularDependency(t *testing.T) {
-	storage := NewMockStorage()
+	storage := storage2.NewMockStorage()
 	nodes := make([]*Node, 13)
 	var err error
 
@@ -283,7 +284,7 @@ func TestComplexCircularDependency(t *testing.T) {
 }
 
 func TestSimpleCircle(t *testing.T) {
-	storage := NewMockStorage()
+	storage := storage2.NewMockStorage()
 	nodes := make([]*Node, 3)
 	var err error
 
@@ -324,7 +325,7 @@ func TestSimpleCircle(t *testing.T) {
 }
 
 func TestIntermediateSimpleCircles(t *testing.T) {
-	storage := NewMockStorage()
+	storage := storage2.NewMockStorage()
 	nodes := make([]*Node, 6)
 	var err error
 
@@ -410,12 +411,12 @@ func TestNodeJSONMarshalUnmarshal(t *testing.T) {
 func TestNodeCacheJSONMarshalUnmarshal(t *testing.T) {
 	// Create a test NodeCache
 	nodeCache := &NodeCache{
-		nodeID:      1,
-		allParents:  roaring.New(),
-		allChildren: roaring.New(),
+		ID:          1,
+		AllParents:  roaring.New(),
+		AllChildren: roaring.New(),
 	}
-	nodeCache.allParents.AddMany([]uint32{5, 6, 7})
-	nodeCache.allChildren.AddMany([]uint32{2, 3, 4})
+	nodeCache.AllParents.AddMany([]uint32{5, 6, 7})
+	nodeCache.AllChildren.AddMany([]uint32{2, 3, 4})
 
 	// Test NodeCache marshaling and unmarshaling
 	nodeCacheJSON, err := json.Marshal(nodeCache)
@@ -425,7 +426,7 @@ func TestNodeCacheJSONMarshalUnmarshal(t *testing.T) {
 	err = json.Unmarshal(nodeCacheJSON, &unmarshaledNodeCache)
 	assert.NoError(t, err, "Failed to unmarshal NodeCache")
 
-	assert.Equal(t, nodeCache.nodeID, unmarshaledNodeCache.nodeID)
-	assert.True(t, nodeCache.allParents.Equals(unmarshaledNodeCache.allParents))
-	assert.True(t, nodeCache.allChildren.Equals(unmarshaledNodeCache.allChildren))
+	assert.Equal(t, nodeCache.ID, unmarshaledNodeCache.ID)
+	assert.True(t, nodeCache.AllParents.Equals(unmarshaledNodeCache.AllParents))
+	assert.True(t, nodeCache.AllChildren.Equals(unmarshaledNodeCache.AllChildren))
 }

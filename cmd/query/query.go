@@ -8,13 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bit-bom/minefield/pkg"
+	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bit-bom/minefield/pkg/storage"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	storage   pkg.Storage
+	storage   storage.Storage
 	outputdir string
 	maxOutput int
 }
@@ -27,7 +28,7 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 func (o *options) Run(_ *cobra.Command, args []string) error {
 	script := strings.Join(args, " ")
 
-	execute, err := pkg.ParseAndExecute(script, o.storage, "")
+	execute, err := graph.ParseAndExecute(script, o.storage, "")
 	if err != nil {
 		return fmt.Errorf("failed to parse and execute script: %w", err)
 	}
@@ -56,7 +57,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 				return fmt.Errorf("output directory does not exist: %w", err)
 			}
 
-			filePath := filepath.Join(o.outputdir, pkg.SanitizeFilename(node.Name)+".json")
+			filePath := filepath.Join(o.outputdir, graph.SanitizeFilename(node.Name)+".json")
 			file, err := os.Create(filePath)
 			if err != nil {
 				return fmt.Errorf("failed to create file: %w", err)
@@ -75,7 +76,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func New(storage pkg.Storage) *cobra.Command {
+func New(storage storage.Storage) *cobra.Command {
 	o := &options{
 		storage: storage,
 	}

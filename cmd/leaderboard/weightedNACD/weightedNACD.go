@@ -6,14 +6,14 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/bit-bom/minefield/pkg"
-	"github.com/bit-bom/minefield/pkg/weightedNACD"
+	"github.com/bit-bom/minefield/pkg/storage"
+	"github.com/bit-bom/minefield/pkg/tools/weightedNACD"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	storage     pkg.Storage
+	storage     storage.Storage
 	weightsFile string
 	maxOutput   int
 }
@@ -93,7 +93,7 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func New(storage pkg.Storage) *cobra.Command {
+func New(storage storage.Storage) *cobra.Command {
 	o := &options{
 		storage: storage,
 	}

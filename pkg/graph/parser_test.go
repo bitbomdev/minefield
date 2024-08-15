@@ -1,13 +1,14 @@
-package pkg
+package graph
 
 import (
 	"testing"
 
 	"github.com/RoaringBitmap/roaring"
+	storage2 "github.com/bit-bom/minefield/pkg/storage"
 )
 
 func TestParseAndExecute(t *testing.T) {
-	storage := NewMockStorage()
+	storage := storage2.NewMockStorage()
 
 	node1, err := AddNode(storage, "PACKAGE", nil, "pkg:generic/lib-A@1.0.0")
 	if err != nil {
