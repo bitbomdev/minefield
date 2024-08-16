@@ -102,4 +102,3 @@ minefield
 ## Acknowledgements
 
 - https://github.com/RoaringBitmap/roaring
-- https://github.com/protobom/protobom
