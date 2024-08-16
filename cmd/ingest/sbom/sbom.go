@@ -3,13 +3,13 @@ package sbom
 import (
 	"fmt"
 
-	"github.com/bit-bom/minefield/pkg"
-	"github.com/bit-bom/minefield/pkg/ingest"
+	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bit-bom/minefield/pkg/tools/ingest"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	storage pkg.Storage
+	storage graph.Storage
 }
 
 func (o *options) AddFlags(_ *cobra.Command) {}
@@ -26,13 +26,13 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func New(storage pkg.Storage) *cobra.Command {
+func New(storage graph.Storage) *cobra.Command {
 	o := &options{
 		storage: storage,
 	}
 	cmd := &cobra.Command{
 		Use:               "sbom [sbomPath]",
-		Short:             "Ingest an SBOM into the storage",
+		Short:             "Ingest an SBOM into storage",
 		Args:              cobra.ExactArgs(1),
 		RunE:              o.Run,
 		DisableAutoGenTag: true,

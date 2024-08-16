@@ -1,10 +1,11 @@
-package pkg
+package storages
 
 import (
 	"context"
 	"testing"
 
 	"github.com/RoaringBitmap/roaring"
+	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,7 +27,7 @@ func TestGenerateID(t *testing.T) {
 
 func TestSaveNode(t *testing.T) {
 	r := setupTestRedis()
-	node := &Node{ID: 1, Name: "test_node", Children: roaring.New(), Parents: roaring.New()}
+	node := &graph.Node{ID: 1, Name: "test_node", Children: roaring.New(), Parents: roaring.New()}
 	err := r.SaveNode(node)
 	assert.NoError(t, err)
 
@@ -39,7 +40,7 @@ func TestSaveNode(t *testing.T) {
 
 func TestNameToID(t *testing.T) {
 	r := setupTestRedis()
-	node := &Node{ID: 1, Name: "test_node", Children: roaring.New(), Parents: roaring.New()}
+	node := &graph.Node{ID: 1, Name: "test_node", Children: roaring.New(), Parents: roaring.New()}
 	err := r.SaveNode(node)
 	assert.NoError(t, err)
 
@@ -50,8 +51,8 @@ func TestNameToID(t *testing.T) {
 
 func TestGetAllKeys(t *testing.T) {
 	r := setupTestRedis()
-	node1 := &Node{ID: 1, Name: "node1", Children: roaring.New(), Parents: roaring.New()}
-	node2 := &Node{ID: 1, Name: "node2", Children: roaring.New(), Parents: roaring.New()}
+	node1 := &graph.Node{ID: 1, Name: "node1", Children: roaring.New(), Parents: roaring.New()}
+	node2 := &graph.Node{ID: 2, Name: "node2", Children: roaring.New(), Parents: roaring.New()}
 	err := r.SaveNode(node1)
 	assert.NoError(t, err)
 	err = r.SaveNode(node2)
@@ -65,13 +66,13 @@ func TestGetAllKeys(t *testing.T) {
 
 func TestSaveCache(t *testing.T) {
 	r := setupTestRedis()
-	cache := &NodeCache{nodeID: 1, allParents: roaring.New(), allChildren: roaring.New()}
+	cache := &graph.NodeCache{ID: 1, AllParents: roaring.New(), AllChildren: roaring.New()}
 	err := r.SaveCache(cache)
 	assert.NoError(t, err)
 
-	savedCache, err := r.GetCache(cache.nodeID)
+	savedCache, err := r.GetCache(cache.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, cache.nodeID, savedCache.nodeID)
+	assert.Equal(t, cache.ID, savedCache.ID)
 }
 
 func TestToBeCached(t *testing.T) {

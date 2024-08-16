@@ -1,4 +1,4 @@
-package pkg
+package graph
 
 import (
 	"log"
@@ -23,7 +23,7 @@ func Test_findCycles(t *testing.T) {
 
 	got, err := findCycles(storage, "children", 2, allNodes)
 	if err != nil {
-		logger.Fatalf("error finding cycles, storage %v, err %v", storage, err)
+		logger.Fatalf("error finding cycles, storages %v, err %v", storage, err)
 		return
 	}
 
@@ -53,7 +53,7 @@ func Test_findCycles_With_Cycles(t *testing.T) {
 
 	got, err := findCycles(storage, "children", 3, allNodes)
 	if err != nil {
-		logger.Fatalf("error finding cycles, storage %v, err %v", storage, err)
+		logger.Fatalf("error finding cycles, storages %v, err %v", storage, err)
 		return
 	}
 

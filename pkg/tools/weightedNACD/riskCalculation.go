@@ -5,7 +5,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/bit-bom/minefield/pkg"
+	"github.com/bit-bom/minefield/pkg/graph"
 )
 
 const (
@@ -35,7 +35,7 @@ type Weights struct {
 	} `json:"scorecard,omitempty"`
 }
 
-func WeightedNACD(storage pkg.Storage, weights Weights) ([]*PkgAndValue, error) {
+func WeightedNACD(storage graph.Storage, weights Weights) ([]*PkgAndValue, error) {
 	weightsForEachType := map[string]weightsForType{}
 
 	if weights.Dependencies != nil {

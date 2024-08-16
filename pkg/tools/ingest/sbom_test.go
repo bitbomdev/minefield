@@ -4,20 +4,20 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/bit-bom/minefield/pkg"
+	"github.com/bit-bom/minefield/pkg/graph"
 )
 
 func TestIngestSBOM(t *testing.T) {
 	tests := []struct {
 		name     string
 		sbomPath string
-		want     map[uint32]*pkg.Node
+		want     map[uint32]*graph.Node
 		wantErr  bool
 	}{
 		{
 			name:     "default",
-			sbomPath: "../../test",
-			want: map[uint32]*pkg.Node{
+			sbomPath: "../../../test",
+			want: map[uint32]*graph.Node{
 				1: {
 					ID:   1,
 					Type: "application",
@@ -43,7 +43,7 @@ func TestIngestSBOM(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			storage := pkg.NewMockStorage()
+			storage := graph.NewMockStorage()
 			if err := SBOM(test.sbomPath, storage); test.wantErr != (err != nil) {
 				t.Errorf("Sbom() error = %v, wantErr = %v", err, test.wantErr)
 			}
@@ -71,7 +71,7 @@ func TestIngestSBOM(t *testing.T) {
 	}
 }
 
-func nodeEquals(n, n2 *pkg.Node) bool {
+func nodeEquals(n, n2 *graph.Node) bool {
 	if ((n == nil || n2 == nil) && n != n2) ||
 		(n != nil && (n.ID != n2.ID || n.Type != n2.Type)) {
 		return false

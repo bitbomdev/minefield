@@ -6,19 +6,19 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/bit-bom/minefield/pkg"
+	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	storage   pkg.Storage
+	storage   graph.Storage
 	all       bool
 	maxOutput int
 }
 
 type query struct {
-	node   *pkg.Node
+	node   *graph.Node
 	output []uint32
 }
 
@@ -54,7 +54,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 			continue
 		}
 
-		execute, err := pkg.ParseAndExecute(args[0], o.storage, node.Name)
+		execute, err := graph.ParseAndExecute(args[0], o.storage, node.Name)
 		if err != nil {
 			return err
 		}
@@ -90,7 +90,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func New(storage pkg.Storage) *cobra.Command {
+func New(storage graph.Storage) *cobra.Command {
 	o := &options{
 		storage: storage,
 	}

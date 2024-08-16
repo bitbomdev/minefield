@@ -3,13 +3,13 @@ package osv
 import (
 	"fmt"
 
-	"github.com/bit-bom/minefield/pkg"
-	"github.com/bit-bom/minefield/pkg/ingest"
+	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bit-bom/minefield/pkg/tools/ingest"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	storage pkg.Storage
+	storage graph.Storage
 }
 
 func (o *options) AddFlags(_ *cobra.Command) {}
@@ -24,13 +24,13 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func New(storage pkg.Storage) *cobra.Command {
+func New(storage graph.Storage) *cobra.Command {
 	o := &options{
 		storage: storage,
 	}
 	cmd := &cobra.Command{
 		Use:               "osv",
-		Short:             "Ingest vulnerabilities into the storage",
+		Short:             "Ingest vulnerabilities into storage",
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}

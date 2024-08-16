@@ -1,4 +1,4 @@
-package pkg
+package graph
 
 // Storage is the interface that wraps the methods for a storage backend.
 type Storage interface {

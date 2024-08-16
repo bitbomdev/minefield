@@ -1,4 +1,4 @@
-package pkg
+package graph
 
 import (
 	"errors"
@@ -67,7 +67,7 @@ func (m *MockStorage) SaveCache(cache *NodeCache) error {
 	if m.cache == nil {
 		m.cache = map[uint32]*NodeCache{}
 	}
-	m.cache[cache.nodeID] = cache
+	m.cache[cache.ID] = cache
 	return nil
 }
 
@@ -137,7 +137,7 @@ func (m *MockStorage) SaveCaches(caches []*NodeCache) error {
 		if m.cache == nil {
 			m.cache = map[uint32]*NodeCache{}
 		}
-		m.cache[cache.nodeID] = cache
+		m.cache[cache.ID] = cache
 	}
 	return nil
 }

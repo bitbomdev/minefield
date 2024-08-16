@@ -3,18 +3,18 @@ package cache
 import (
 	"fmt"
 
-	"github.com/bit-bom/minefield/pkg"
+	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	storage pkg.Storage
+	storage graph.Storage
 }
 
 func (o *options) AddFlags(_ *cobra.Command) {}
 
 func (o *options) Run(_ *cobra.Command, _ []string) error {
-	if err := pkg.Cache(o.storage); err != nil {
+	if err := graph.Cache(o.storage); err != nil {
 		return fmt.Errorf("failed to cache: %w", err)
 	}
 
@@ -22,7 +22,7 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func New(storage pkg.Storage) *cobra.Command {
+func New(storage graph.Storage) *cobra.Command {
 	o := &options{
 		storage: storage,
 	}

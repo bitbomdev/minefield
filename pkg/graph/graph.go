@@ -1,4 +1,4 @@
-package pkg
+package graph
 
 import (
 	"encoding/json"
@@ -35,36 +35,36 @@ type Node struct {
 }
 
 type NodeCache struct {
-	nodeID      uint32
-	allParents  *roaring.Bitmap
-	allChildren *roaring.Bitmap
+	ID          uint32
+	AllParents  *roaring.Bitmap
+	AllChildren *roaring.Bitmap
 }
 
 func NewNodeCache(id uint32, allParents, allChildren *roaring.Bitmap) *NodeCache {
 	return &NodeCache{
-		nodeID:      id,
-		allParents:  allParents,
-		allChildren: allChildren,
+		ID:          id,
+		AllParents:  allParents,
+		AllChildren: allChildren,
 	}
 }
 
 // MarshalJSON is a custom JSON marshalling method for NodeCache.
 // It converts the roaring bitmaps to byte slices for JSON serialization.
 func (nc *NodeCache) MarshalJSON() ([]byte, error) {
-	allParentsData, err := nc.allParents.ToBytes()
+	allParentsData, err := nc.AllParents.ToBytes()
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert allParents bitmap to bytes: %w", err)
+		return nil, fmt.Errorf("failed to convert AllParents bitmap to bytes: %w", err)
 	}
-	allChildrenData, err := nc.allChildren.ToBytes()
+	allChildrenData, err := nc.AllChildren.ToBytes()
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert allChildren bitmap to bytes: %w", err)
+		return nil, fmt.Errorf("failed to convert AllChildren bitmap to bytes: %w", err)
 	}
 	return json.Marshal(&struct {
-		NodeID          uint32 `json:"nodeID"`
+		NodeID          uint32 `json:"ID"`
 		AllParentsData  []byte `json:"allParentsData"`
 		AllChildrenData []byte `json:"allChildrenData"`
 	}{
-		NodeID:          nc.nodeID,
+		NodeID:          nc.ID,
 		AllParentsData:  allParentsData,
 		AllChildrenData: allChildrenData,
 	})
@@ -74,21 +74,21 @@ func (nc *NodeCache) MarshalJSON() ([]byte, error) {
 // It converts the byte slices back to roaring bitmaps after JSON deserialization.
 func (nc *NodeCache) UnmarshalJSON(data []byte) error {
 	aux := &struct {
-		NodeID          uint32 `json:"nodeID"`
+		NodeID          uint32 `json:"ID"`
 		AllParentsData  []byte `json:"allParentsData"`
 		AllChildrenData []byte `json:"allChildrenData"`
 	}{}
 	if err := json.Unmarshal(data, aux); err != nil {
 		return fmt.Errorf("failed to unmarshal NodeCache data: %w", err)
 	}
-	nc.nodeID = aux.NodeID
-	nc.allParents = roaring.New()
-	nc.allChildren = roaring.New()
-	if _, err := nc.allParents.FromBuffer(aux.AllParentsData); err != nil {
-		return fmt.Errorf("failed to convert allParents data from buffer: %w", err)
+	nc.ID = aux.NodeID
+	nc.AllParents = roaring.New()
+	nc.AllChildren = roaring.New()
+	if _, err := nc.AllParents.FromBuffer(aux.AllParentsData); err != nil {
+		return fmt.Errorf("failed to convert AllParents data from buffer: %w", err)
 	}
-	if _, err := nc.allChildren.FromBuffer(aux.AllChildrenData); err != nil {
-		return fmt.Errorf("failed to convert allChildren data from buffer: %w", err)
+	if _, err := nc.AllChildren.FromBuffer(aux.AllChildrenData); err != nil {
+		return fmt.Errorf("failed to convert AllChildren data from buffer: %w", err)
 	}
 	return nil
 }
@@ -173,9 +173,9 @@ func AddNode(storage Storage, _type string, metadata any, name string) (*Node, e
 		Parents:  roaring.New(),
 	}
 	nCache := &NodeCache{
-		nodeID:      ID,
-		allParents:  roaring.New(),
-		allChildren: roaring.New(),
+		ID:          ID,
+		AllParents:  roaring.New(),
+		AllChildren: roaring.New(),
 	}
 	if err := storage.SaveNode(n); err != nil {
 		return nil, fmt.Errorf("failed to save node: %w", err)
@@ -198,7 +198,7 @@ func (n *Node) SetDependency(storage Storage, neighbor *Node) error {
 		return ErrSelfDependency
 	}
 	if storage == nil {
-		return fmt.Errorf("storage cannot be nil")
+		return fmt.Errorf("storages cannot be nil")
 	}
 
 	n.Children.Add(neighbor.ID)
@@ -218,7 +218,7 @@ func (n *Node) queryBitmap(storage Storage, direction Direction) (*roaring.Bitma
 		return nil, fmt.Errorf("cannot query bitmap of nil node")
 	}
 	if storage == nil {
-		return nil, fmt.Errorf("storage cannot be nil")
+		return nil, fmt.Errorf("storages cannot be nil")
 	}
 
 	result := roaring.New()
@@ -282,7 +282,7 @@ func (n *Node) QueryDependents(storage Storage) (*roaring.Bitmap, error) {
 		return nil, err
 	}
 
-	return nCache.allParents, nil
+	return nCache.AllParents, nil
 }
 
 func (n *Node) QueryDependencies(storage Storage) (*roaring.Bitmap, error) {
@@ -299,7 +299,7 @@ func (n *Node) QueryDependencies(storage Storage) (*roaring.Bitmap, error) {
 		return nil, err
 	}
 
-	return nCache.allChildren, nil
+	return nCache.AllChildren, nil
 }
 
 func GenerateDOT(storage Storage) (string, error) {

@@ -5,13 +5,13 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/bit-bom/minefield/pkg"
+	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	storage   pkg.Storage
+	storage   graph.Storage
 	maxOutput int
 }
 
@@ -46,7 +46,7 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func New(storage pkg.Storage) *cobra.Command {
+func New(storage graph.Storage) *cobra.Command {
 	o := &options{
 		storage: storage,
 	}

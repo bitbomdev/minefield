@@ -1,4 +1,4 @@
-package pkg
+package graph
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
-// ParseAndExecute parses and executes a script using the given storage backend.
+// ParseAndExecute parses and executes a script using the given storages backend.
 func ParseAndExecute(script string, storage Storage, defaultNodeName string) (*roaring.Bitmap, error) {
 	var stack []*roaring.Bitmap
 	var operators []string

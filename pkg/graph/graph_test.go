@@ -1,4 +1,4 @@
-package pkg
+package graph
 
 import (
 	"encoding/json"
@@ -353,7 +353,7 @@ func TestIntermediateSimpleCircles(t *testing.T) {
 	// Linking Circle 1 and Circle 2
 	err = nodes[2].SetDependency(storage, nodes[3])
 	assert.NoError(t, err)
-	// err = nodes[5].SetDependency(storage, nodes[0])
+	// err = nodes[5].SetDependency(storages, nodes[0])
 	// assert.NoError(t, err)
 
 	if err := Cache(storage); err != nil {
@@ -410,12 +410,12 @@ func TestNodeJSONMarshalUnmarshal(t *testing.T) {
 func TestNodeCacheJSONMarshalUnmarshal(t *testing.T) {
 	// Create a test NodeCache
 	nodeCache := &NodeCache{
-		nodeID:      1,
-		allParents:  roaring.New(),
-		allChildren: roaring.New(),
+		ID:          1,
+		AllParents:  roaring.New(),
+		AllChildren: roaring.New(),
 	}
-	nodeCache.allParents.AddMany([]uint32{5, 6, 7})
-	nodeCache.allChildren.AddMany([]uint32{2, 3, 4})
+	nodeCache.AllParents.AddMany([]uint32{5, 6, 7})
+	nodeCache.AllChildren.AddMany([]uint32{2, 3, 4})
 
 	// Test NodeCache marshaling and unmarshaling
 	nodeCacheJSON, err := json.Marshal(nodeCache)
@@ -425,7 +425,7 @@ func TestNodeCacheJSONMarshalUnmarshal(t *testing.T) {
 	err = json.Unmarshal(nodeCacheJSON, &unmarshaledNodeCache)
 	assert.NoError(t, err, "Failed to unmarshal NodeCache")
 
-	assert.Equal(t, nodeCache.nodeID, unmarshaledNodeCache.nodeID)
-	assert.True(t, nodeCache.allParents.Equals(unmarshaledNodeCache.allParents))
-	assert.True(t, nodeCache.allChildren.Equals(unmarshaledNodeCache.allChildren))
+	assert.Equal(t, nodeCache.ID, unmarshaledNodeCache.ID)
+	assert.True(t, nodeCache.AllParents.Equals(unmarshaledNodeCache.AllParents))
+	assert.True(t, nodeCache.AllChildren.Equals(unmarshaledNodeCache.AllChildren))
 }
