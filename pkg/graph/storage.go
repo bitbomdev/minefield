@@ -1,6 +1,6 @@
 package graph
 
-// Storage is the interface that wraps the methods for a storages backend.
+// Storage is the interface that wraps the methods for a storage backend.
 type Storage interface {
 	NameToID(name string) (uint32, error)
 	SaveNode(node *Node) error
