@@ -6,7 +6,7 @@ BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s.
 
 ## What is a Roaring Bitmap
 
-[Roaring bitmaps](https://github.com/RoaringBitmap/roaring) are a data structure that creates ginormous bitmaps.
+[Roaring bitmaps](https://github.com/RoaringBitmap/roaring) are a data structure that creates ginormous bitmaps (bitmasks).
 
 A regular bitmap is an extremely space-efficient Set (Or in languages that don't use Sets, a `map[int] bool`). A Roaring Bitmap is a regular bitmap on steroids.
 
