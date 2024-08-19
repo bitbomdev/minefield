@@ -4,6 +4,20 @@ BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s.
 
 > The average user doesn't give a damn what happens, as long as (1) it works and (2) it's fast. - Daniel J. Bernstein
 
+## Table of Contents
+
+1. [What is a Roaring Bitmap](#what-is-a-roaring-bitmap)
+2. [Caching](#caching)
+3. [Overview of BitBom](#overview-of-bitbom)
+4. [Getting Started](#to-start-using-minefield)
+   - [Using Docker](#using-docker)
+   - [Building from source](#building-from-source)
+   - [Using go install](#using-go-install)
+5. [Quickstart Guide](#quickstart-guide)
+6. [Example Usage](#example)
+7. [Custom Query Commands](#custom-query-commands)
+8. [Acknowledgements](#acknowledgements)
+
 ## What is a Roaring Bitmap
 
 [Roaring bitmaps](https://github.com/RoaringBitmap/roaring) are a data structure that creates ginormous bitmaps (bitmasks).
@@ -129,6 +143,10 @@ minefield
     ```
    #### Bitbom's visualization on a query
    ![img.png](img.png)
+
+## Custom Query Commands
+
+For detailed information on available query commands and their usage, please refer to the [Custom Query Commands documentation](docs/customQueryCommands.md).
 
 ## Acknowledgements
 
