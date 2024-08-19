@@ -127,7 +127,7 @@ minefield
      ```sh
     minefield query "dependents PACKAGE pkg:generic/dep2@1.0.0" 
     ```
-   ###### Bitbom's visualization on a query
+   #### Bitbom's visualization on a query
    ![img.png](img.png)
 
 ## Acknowledgements
