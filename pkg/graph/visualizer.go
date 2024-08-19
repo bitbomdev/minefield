@@ -87,7 +87,7 @@ func graphQuery(storage Storage, ids *roaring.Bitmap, query string) (*charts.Gra
 		}
 		if !alreadyCreatedNodes.Contains(id) {
 			alreadyCreatedNodes.Add(id)
-			nodes = append(nodes, opts.GraphNode{SymbolSize: max(10, connections), Name: node.Name, ItemStyle: &opts.ItemStyle{Color: "#42b0f5"}, X: float32(rand.Intn(100000)), Y: float32(rand.Intn(100000))})
+			nodes = append(nodes, opts.GraphNode{SymbolSize: int(max(10, float64(connections)*1.5)), Name: node.Name, ItemStyle: &opts.ItemStyle{Color: "#42b0f5"}, X: float32(rand.Intn(100000)), Y: float32(rand.Intn(100000))})
 		}
 
 	}
