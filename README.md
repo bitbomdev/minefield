@@ -125,7 +125,7 @@ minefield
     ```
 6. Run queries with the visualizer
      ```sh
-    minefield query "dependents PACKAGE pkg:generic/dep2@1.0.0" 
+    minefield query "dependents PACKAGE pkg:generic/dep2@1.0.0 --visualize" 
     ```
    #### Bitbom's visualization on a query
    ![img.png](img.png)
