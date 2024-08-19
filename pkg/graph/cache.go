@@ -61,14 +61,14 @@ func Cache(storage Storage) error {
 		}
 
 		childBindValue := cachedChildValues[i].Clone()
-		childBindValue.Remove(uint32(childIntId))
+		childBindValue.Add(uint32(childIntId))
 
 		tempValue, err := cachedParents.Get(strconv.Itoa(childIntId))
 		if err != nil {
 			return fmt.Errorf("error getting value for key %s, err: %v", childId, err)
 		}
 		parentBindValue := tempValue.Clone()
-		parentBindValue.Remove(uint32(childIntId))
+		parentBindValue.Add(uint32(childIntId))
 		caches = append(caches, NewNodeCache(uint32(childIntId), parentBindValue, childBindValue))
 	}
 

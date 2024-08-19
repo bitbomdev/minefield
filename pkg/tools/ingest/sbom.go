@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/bit-bom/minefield/pkg/graph"
@@ -36,7 +35,6 @@ func SBOM(sbomPath string, storage graph.Storage) error {
 	return nil
 }
 
-// processSBOMFile processes a SBOM file and adds it to the storages backend.
 func processSBOMFile(filePath string, storage graph.Storage) error {
 	if filePath == "" {
 		return fmt.Errorf("file path is empty")
@@ -59,41 +57,50 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 		return fmt.Errorf("failed to decode BOM: %w", err)
 	}
 
-	mainBomNode := bom.Metadata.Component
+	if bom.Metadata == nil || bom.Metadata.Component == nil {
+		return nil
+	}
+	mainBomNodes := []cdx.Component{*bom.Metadata.Component}
 
-	mainPurl := mainBomNode.PackageURL
+	stack := []cdx.Component{*bom.Metadata.Component}
 
-	if mainPurl == "" {
-		mainPurl = fmt.Sprintf("pkg:generic/%s@%s", mainBomNode.Name, mainBomNode.Version)
+	for len(stack) > 0 {
+		comp := stack[0]
+		stack = stack[1:]
+
+		if comp.Components != nil && len(*comp.Components) > 0 {
+			stack = append(stack, *comp.Components...)
+			mainBomNodes = append(mainBomNodes, *comp.Components...)
+		}
 	}
 
-	mainGraphNode, err := graph.AddNode(storage, string(mainBomNode.Type), bom, mainPurl)
+	var mainPurls []string
 
-	if err != nil {
-		return fmt.Errorf("failed to parse SBOM file %s: %w", filePath, err)
+	for _, mainBomNode := range mainBomNodes {
+		mainPurl := fmt.Sprintf("pkg:generic/%s", mainBomNode.Name)
+
+		mainPurls = append(mainPurls, mainPurl)
+	}
+
+	var mainGraphNodes []*graph.Node
+
+	for i := range mainPurls {
+		mainGraphNode, err := graph.AddNode(storage, "library", bom, mainPurls[i])
+		if err != nil {
+			return fmt.Errorf("failed to parse SBOM file %s: %w", filePath, err)
+		}
+		mainGraphNodes = append(mainGraphNodes, mainGraphNode)
 	}
 
 	for _, node := range *bom.Components {
 
-		directDep := false
-		if node.Properties != nil {
-			for _, property := range *node.Properties {
-				if strings.Contains(property.Name, "indirect") && property.Value == "false" {
-					directDep = true
-				}
-			}
-		}
-
-		if !directDep {
-			continue
-		}
 		purl := node.PackageURL
 
 		if purl == "" {
-			purl = fmt.Sprintf("pkg:generic/%s@%s", node.Name, node.Version)
+			purl = fmt.Sprintf("pkg:generic/%s", node.Name)
 		}
 
-		graphNode, err := graph.AddNode(storage, string(node.Type), any(node), purl)
+		graphNode, err := graph.AddNode(storage, "library", any(node), purl)
 		if err != nil {
 			if errors.Is(err, graph.ErrNodeAlreadyExists) {
 				// TODO: Add a logger
@@ -103,10 +110,14 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 			return fmt.Errorf("failed to add node: %w", err)
 		}
 
-		if err := mainGraphNode.SetDependency(storage, graphNode); err != nil {
-			return fmt.Errorf("failed to add dependencies: %w", err)
+		for _, mainGraphNode := range mainGraphNodes {
+			if mainGraphNode.ID == graphNode.ID {
+				continue
+			}
+			if err := mainGraphNode.SetDependency(storage, graphNode); err != nil {
+				return fmt.Errorf("failed to add dependencies: %w", err)
+			}
 		}
-
 	}
 
 	return nil

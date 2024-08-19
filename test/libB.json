@@ -7,14 +7,26 @@
     "component": {
       "type": "library",
       "name": "lib-B",
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "properties": [
+        {
+          "name": "cdx:go:indirect",
+          "value": "false"
+        }
+      ]
     }
   },
   "components": [
     {
       "type": "library",
       "name": "dep1",
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "properties": [
+        {
+          "name": "cdx:go:indirect",
+          "value": "false"
+        }
+      ]
     }
   ]
 }

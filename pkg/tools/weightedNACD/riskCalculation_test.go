@@ -40,8 +40,8 @@ func TestWeightedNACD(t *testing.T) {
 				},
 			},
 			want: []*PkgAndValue{
-				{Id: 1, Risk: math.NaN(), Criticality: 0.62, Likelihood: math.NaN()},
-				{Id: 2, Risk: math.NaN(), Criticality: 0.38, Likelihood: math.NaN()},
+				{Id: 1, Risk: math.NaN(), Criticality: 0.82, Likelihood: math.NaN()},
+				{Id: 2, Risk: math.NaN(), Criticality: 0.62, Likelihood: math.NaN()},
 			},
 			wantErr: false,
 		},

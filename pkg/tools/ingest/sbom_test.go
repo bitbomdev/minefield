@@ -1,6 +1,7 @@
 package ingest
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 
@@ -20,7 +21,7 @@ func TestIngestSBOM(t *testing.T) {
 			want: map[uint32]*graph.Node{
 				1: {
 					ID:   1,
-					Type: "application",
+					Type: "library",
 					Name: "pkg:generic/dep1@1.0.0",
 				},
 				2: {
@@ -62,7 +63,7 @@ func TestIngestSBOM(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to get node, %v", err)
 				}
-
+				fmt.Println(node.Name)
 				if !nodeEquals(node, test.want[key]) {
 					t.Fatalf("expected node %v, got %v", test.want[key], node)
 				}

@@ -5,17 +5,29 @@
     "metadata": {
       "timestamp": "2024-06-14T12:00:00Z",
       "component": {
-        "type": "application",
+        "type": "library",
         "name": "dep1",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "properties": [
+          {
+            "name": "cdx:go:indirect",
+            "value": "false"
+          }
+        ]
       }
     },
   "components": [
     {
       "type": "library",
       "name": "dep2",
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "properties": [
+        {
+          "name": "cdx:go:indirect",
+          "value": "false"
+        }
+      ]
     }
   ]
 
-  }
+}
