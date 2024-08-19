@@ -3,6 +3,9 @@
 BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s.
 
 > The average user doesn't give a damn what happens, as long as (1) it works and (2) it's fast. - Daniel J. Bernstein
+## BitBom Minefield Paper
+
+For a detailed explanation of the BitBom Minefield tool, please refer to the [BitBom Minefield Paper](docs/bitbom.pdf).
 
 ## Table of Contents
 
