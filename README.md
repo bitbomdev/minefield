@@ -123,7 +123,12 @@ minefield
     ```sh
     minefield query "dependencies PACKAGE pkg:generic/lib-B@1.0.0 and dependencies PACKAGE pkg:generic/lib-A@1.0.0" 
     ```
-   
+6. Run queries with the visualizer
+     ```sh
+    minefield query "dependents PACKAGE pkg:generic/dep2@1.0.0" 
+    ```
+   ###### Bitbom's visualization on a query
+   ![img.png](img.png)
 
 ## Acknowledgements
 
