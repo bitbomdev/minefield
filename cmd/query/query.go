@@ -1,6 +1,7 @@
 package query
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -18,11 +19,15 @@ type options struct {
 	storage   graph.Storage
 	outputdir string
 	maxOutput int
+	addr      string
+	visualize bool
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.outputdir, "output-dir", "", "specify dir to write the output to")
 	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
+	cmd.Flags().BoolVar(&o.visualize, "visualize", false, "visualize the query")
+	cmd.Flags().StringVar(&o.addr, "addr", "8081", "address to run the visualizer on")
 }
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
@@ -68,6 +73,20 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 			if err != nil {
 				return fmt.Errorf("failed to write data to file: %w", err)
 			}
+		}
+
+	}
+
+	if o.visualize {
+		shutdown, err := graph.RunGraphVisualizer(o.storage, execute, script, "8081")
+		if err != nil {
+			return err
+		}
+		defer shutdown()
+
+		fmt.Println("Press Enter to stop the server and continue...")
+		if _, err := bufio.NewReader(os.Stdin).ReadBytes('\n'); err != nil {
+			return err
 		}
 	}
 

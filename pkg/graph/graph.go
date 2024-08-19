@@ -254,7 +254,7 @@ func (n *Node) queryBitmap(storage Storage, direction Direction) (*roaring.Bitma
 		}
 	}
 
-	result.Remove(n.ID)
+	result.Add(n.ID)
 
 	return result, nil
 }

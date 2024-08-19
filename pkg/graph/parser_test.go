@@ -53,13 +53,13 @@ func TestParseAndExecute(t *testing.T) {
 		{
 			name:            "Simple dependents query",
 			script:          "dependents PACKAGE pkg:generic/dep1@1.0.0",
-			want:            roaring.BitmapOf(1, 2),
+			want:            roaring.BitmapOf(1, 2, 3),
 			defaultNodeName: "",
 		},
 		{
 			name:            "Simple dependencies query",
 			script:          "dependencies PACKAGE pkg:generic/lib-A@1.0.0",
-			want:            roaring.BitmapOf(3, 4),
+			want:            roaring.BitmapOf(1, 3, 4),
 			defaultNodeName: "",
 		},
 		{
@@ -71,7 +71,7 @@ func TestParseAndExecute(t *testing.T) {
 		{
 			name:            "Combine dependents and dependencies with OR",
 			script:          "dependents PACKAGE pkg:generic/dep1@1.0.0 or dependencies PACKAGE pkg:generic/dep1@1.0.0",
-			want:            roaring.BitmapOf(1, 2, 4),
+			want:            roaring.BitmapOf(1, 2, 3, 4),
 			defaultNodeName: "",
 		},
 		{
