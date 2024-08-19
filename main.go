@@ -18,7 +18,7 @@ func main() {
 				panic(err)
 			}
 			if err := shutdowner.Shutdown(); err != nil {
-				panic(fmt.Sprintf("Failed to shutdonw fx err = %s", err))
+				panic(fmt.Sprintf("Failed to shutdown fx err = %s", err))
 			}
 		}),
 		fx.NopLogger,
