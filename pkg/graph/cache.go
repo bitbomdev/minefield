@@ -26,22 +26,14 @@ func Cache(storage Storage) error {
 		return fmt.Errorf("error getting all nodes: %w", err)
 	}
 
-	childSCC, err := findCycles(storage, ChildrenDirection, len(keys), allNodes)
+	scc := findCycles(len(keys), allNodes)
+
+	cachedChildren, err := buildCache(uncachedNodes, ChildrenDirection, scc, allNodes)
 	if err != nil {
 		return err
 	}
 
-	cachedChildren, err := buildCache(storage, uncachedNodes, ChildrenDirection, childSCC, allNodes)
-	if err != nil {
-		return err
-	}
-
-	parentSCC, err := findCycles(storage, ParentsDirection, len(keys), allNodes)
-	if err != nil {
-		return err
-	}
-
-	cachedParents, err := buildCache(storage, uncachedNodes, ParentsDirection, parentSCC, allNodes)
+	cachedParents, err := buildCache(uncachedNodes, ParentsDirection, scc, allNodes)
 	if err != nil {
 		return err
 	}
@@ -78,36 +70,27 @@ func Cache(storage Storage) error {
 	return storage.ClearCacheStack()
 }
 
-func findCycles(storage Storage, direction Direction, numOfNodes int, allNodes map[uint32]*Node) (map[uint32]uint32, error) {
+func findCycles(numOfNodes int, allNodes map[uint32]*Node) map[uint32]uint32 {
 	var stack []uint32
-	var tarjanDFS func(nodeID uint32) error
+	var tarjanDFS func(nodeID uint32)
 
 	currentTarjanID := 0
 	nodeToTarjanID := map[uint32]uint32{}
 	lowLink := make(map[uint32]uint32)
 	inStack := roaring.New()
 
-	tarjanDFS = func(nodeID uint32) error {
+	tarjanDFS = func(nodeID uint32) {
 		currentNode := allNodes[nodeID]
-
-		var nextNodes []uint32
-		if direction == ChildrenDirection {
-			nextNodes = currentNode.Children.ToArray()
-		} else {
-			nextNodes = currentNode.Parents.ToArray()
-		}
-
 		currentTarjanID++
 		stack = append(stack, nodeID)
 		inStack.Add(nodeID)
 		nodeToTarjanID[nodeID] = uint32(currentTarjanID)
 		lowLink[nodeID] = uint32(currentTarjanID)
 
-		for _, nextNode := range nextNodes {
+		for _, nextNode := range currentNode.Children.ToArray() {
 			if _, visited := nodeToTarjanID[nextNode]; !visited {
-				if err := tarjanDFS(nextNode); err != nil {
-					return err
-				}
+				tarjanDFS(nextNode)
+
 				lowLink[nodeID] = min(lowLink[nodeID], lowLink[nextNode])
 			} else if inStack.Contains(nextNode) {
 				lowLink[nodeID] = min(lowLink[nodeID], nodeToTarjanID[nextNode])
@@ -125,18 +108,15 @@ func findCycles(storage Storage, direction Direction, numOfNodes int, allNodes m
 				}
 			}
 		}
-		return nil
 	}
 
 	for id := 1; id < numOfNodes+1; id++ {
 		if _, visited := nodeToTarjanID[uint32(id)]; !visited {
-			if err := tarjanDFS(uint32(id)); err != nil {
-				return nil, err
-			}
+			tarjanDFS(uint32(id))
 		}
 	}
 
-	return lowLink, nil
+	return lowLink
 }
 
 type stackElm struct {
@@ -144,11 +124,11 @@ type stackElm struct {
 	todoIndex int
 }
 
-func buildCache(storage Storage, uncachedNodes []uint32, direction Direction, scc map[uint32]uint32, allNodes map[uint32]*Node) (*NativeKeyManagement, error) {
+func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint32, allNodes map[uint32]*Node) (*NativeKeyManagement, error) {
 	cache, children, parents := NewNativeKeyManagement(), NewNativeKeyManagement(), NewNativeKeyManagement()
 	alreadyCached := roaring.New()
 
-	err := addCyclesToBindMap(storage, scc, cache, children, parents, allNodes)
+	err := addCyclesToBindMap(scc, cache, children, parents, allNodes)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +177,7 @@ func buildCache(storage Storage, uncachedNodes []uint32, direction Direction, sc
 	return cache, nil
 }
 
-func addCyclesToBindMap(storage Storage, scc map[uint32]uint32, cache, children, parents *NativeKeyManagement, allNodes map[uint32]*Node) error {
+func addCyclesToBindMap(scc map[uint32]uint32, cache, children, parents *NativeKeyManagement, allNodes map[uint32]*Node) error {
 	parentToKeys := map[uint32][]string{}
 
 	for k, v := range scc {

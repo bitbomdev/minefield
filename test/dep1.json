@@ -7,7 +7,14 @@
       "component": {
         "type": "library",
         "name": "dep1",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "components" : [
+          {
+            "type": "library",
+            "name": "dep1/subcomponent",
+            "version": "1.0.0"
+          }
+        ]
       }
     },
   "components": [

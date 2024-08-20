@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 )
 
 func TestIngestSBOM(t *testing.T) {
+	createTestFiles(t)
 	tests := []struct {
 		name     string
 		sbomPath string
@@ -22,24 +24,49 @@ func TestIngestSBOM(t *testing.T) {
 				1: {
 					ID:   1,
 					Type: "library",
-					Name: "pkg:generic/dep1@1.0.0",
+					Name: "pkg:generic/dep1",
 				},
 				2: {
 					ID:   2,
 					Type: "library",
-					Name: "pkg:generic/dep2@1.0.0",
+					Name: "pkg:generic/dep1/subcomponent",
 				},
 				3: {
 					ID:   3,
 					Type: "library",
-					Name: "pkg:generic/lib-A@1.0.0",
+					Name: "pkg:generic/dep2",
 				},
 				4: {
 					ID:   4,
 					Type: "library",
-					Name: "pkg:generic/lib-B@1.0.0",
+					Name: "pkg:generic/lib-A",
+				},
+				5: {
+					ID:   5,
+					Type: "library",
+					Name: "pkg:generic/lib-B",
 				},
 			},
+		},
+		{
+			name:     "non-existent file",
+			sbomPath: "non_existent_file.json",
+			wantErr:  true,
+		},
+		{
+			name:     "empty directory",
+			sbomPath: "../../../test/empty_dir",
+			want:     map[uint32]*graph.Node{},
+		},
+		{
+			name:     "invalid SBOM file",
+			sbomPath: "../../../test/invalid_sbom.json",
+			wantErr:  false,
+		},
+		{
+			name:     "SBOM with no components",
+			sbomPath: "../../../test/no_components_sbom.json",
+			want:     map[uint32]*graph.Node{},
 		},
 	}
 	for _, test := range tests {
@@ -70,12 +97,51 @@ func TestIngestSBOM(t *testing.T) {
 			}
 		})
 	}
+	if err := os.RemoveAll("../../../test/empty_dir"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove("../../../test/invalid_sbom.json"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove("../../../test/no_components_sbom.json"); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func nodeEquals(n, n2 *graph.Node) bool {
 	if ((n == nil || n2 == nil) && n != n2) ||
-		(n != nil && (n.ID != n2.ID || n.Type != n2.Type)) {
+		(n != nil && (n.ID != n2.ID || n.Type != n2.Type || n.Name != n2.Name)) {
 		return false
 	}
 	return true
+}
+
+func createTestFiles(t *testing.T) {
+	t.Helper()
+
+	// Create an empty directory
+	err := os.MkdirAll("../../../test/empty_dir", 0o755)
+	if err != nil {
+		t.Fatalf("Failed to create empty directory: %v", err)
+	}
+
+	// Create an invalid SBOM file
+	invalidSBOM := []byte(`{"invalid": "json"}`)
+	err = os.WriteFile("../../../test/invalid_sbom.json", invalidSBOM, 0o644)
+	if err != nil {
+		t.Fatalf("Failed to create invalid SBOM file: %v", err)
+	}
+
+	// Create a SBOM file with no components
+	noComponentsSBOM := []byte(`{
+		"bomFormat": "CycloneDX",
+		"specVersion": "1.4",
+		"version": 1,
+		"metadata": {},
+		"components": []
+	}`)
+	err = os.WriteFile("../../../test/no_components_sbom.json", noComponentsSBOM, 0o644)
+	if err != nil {
+		t.Fatalf("Failed to create no components SBOM file: %v", err)
+	}
 }
