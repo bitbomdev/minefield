@@ -153,6 +153,10 @@ minefield
 
 For detailed information on available query commands and their usage, please refer to the [Custom Query Commands documentation](docs/customQueryCommands.md).
 
+## In-Depth Demo 
+
+For a more in-depth demo, please refer to the [Minefield's Demo](docs/demoOfMinefield.md)
+
 ## Acknowledgements
 
 - https://github.com/RoaringBitmap/roaring
