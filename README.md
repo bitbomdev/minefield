@@ -1,5 +1,7 @@
 # Minefield
 
+[![codecov](https://codecov.io/gh/bitbomdev/minefield/graph/badge.svg?token=HPRMZFGXE9)](https://codecov.io/gh/bitbomdev/minefield)
+
 BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s.
 
 > The average user doesn't give a damn what happens, as long as (1) it works and (2) it's fast. - Daniel J. Bernstein
