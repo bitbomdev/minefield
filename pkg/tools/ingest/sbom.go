@@ -6,11 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
-	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/protobom/protobom/pkg/reader"
 )
 
-// IngestSBOM ingests a SBOM file or directory into the storages backend.
+// SBOM ingests a SBOM file or directory into the storage backend.
 func SBOM(sbomPath string, storage graph.Storage) error {
 	info, err := os.Stat(sbomPath)
 	if err != nil {
@@ -41,63 +41,34 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 		return fmt.Errorf("file path is empty")
 	}
 
-	_, err := os.Stat(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to stat file %s: %w", filePath, err)
-	}
-
 	file, err := os.Open(filePath)
 	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	bom := new(cdx.BOM)
-	decoder := cdx.NewBOMDecoder(file, cdx.BOMFileFormatJSON)
-	if err = decoder.Decode(bom); err != nil {
-		return fmt.Errorf("failed to decode BOM: %w", err)
+		return fmt.Errorf("failed to open file %s: %w", filePath, err)
 	}
 
-	if bom.Metadata == nil || bom.Metadata.Component == nil {
+	// Create a new protobom reader
+	r := reader.New()
+
+	// Parse the SBOM file
+	document, err := r.ParseFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to parse SBOM file %s: %w", filePath, err)
+	}
+
+	// Get the node list from the document
+	nodeList := document.GetNodeList()
+	if nodeList == nil {
 		return nil
 	}
-	mainBomNodes := []cdx.Component{*bom.Metadata.Component}
 
-	stack := []cdx.Component{*bom.Metadata.Component}
+	// Process each node in the SBOM
 
-	for len(stack) > 0 {
-		comp := stack[0]
-		stack = stack[1:]
+	nameToId := map[string]uint32{}
 
-		if comp.Components != nil && len(*comp.Components) > 0 {
-			stack = append(stack, *comp.Components...)
-			mainBomNodes = append(mainBomNodes, *comp.Components...)
-		}
-	}
+	for _, node := range nodeList.GetNodes() {
+		purl := fmt.Sprintf("pkg:generic/%s", node.GetName())
 
-	var mainPurls []string
-
-	for _, mainBomNode := range mainBomNodes {
-		mainPurl := fmt.Sprintf("pkg:generic/%s", mainBomNode.Name)
-
-		mainPurls = append(mainPurls, mainPurl)
-	}
-
-	var mainGraphNodes []*graph.Node
-
-	for i := range mainPurls {
-		mainGraphNode, err := graph.AddNode(storage, "library", bom, mainPurls[i])
-		if err != nil {
-			return fmt.Errorf("failed to parse SBOM file %s: %w", filePath, err)
-		}
-		mainGraphNodes = append(mainGraphNodes, mainGraphNode)
-	}
-
-	for _, node := range *bom.Components {
-
-		purl := fmt.Sprintf("pkg:generic/%s", node.Name)
-
-		graphNode, err := graph.AddNode(storage, "library", any(node), purl)
+		graphNode, err := graph.AddNode(storage, "library", file, purl)
 		if err != nil {
 			if errors.Is(err, graph.ErrNodeAlreadyExists) {
 				// TODO: Add a logger
@@ -107,13 +78,29 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 			return fmt.Errorf("failed to add node: %w", err)
 		}
 
-		for _, mainGraphNode := range mainGraphNodes {
-			if mainGraphNode.ID == graphNode.ID {
-				continue
+		nameToId[node.Id] = graphNode.ID
+	}
+
+	for _, edge := range nodeList.Edges {
+
+		fromNode, err := storage.GetNode(nameToId[edge.From])
+		if err != nil {
+			return fmt.Errorf("failed to get from node %s: %w", edge.From, err)
+		}
+
+		for _, to := range edge.To {
+
+			toNode, err := storage.GetNode(nameToId[to])
+			if err != nil {
+				return fmt.Errorf("failed to to get node %s: %w", edge.To, err)
 			}
-			if err := mainGraphNode.SetDependency(storage, graphNode); err != nil {
-				return fmt.Errorf("failed to add dependencies: %w", err)
+
+			if fromNode.ID != toNode.ID {
+				if err := fromNode.SetDependency(storage, toNode); err != nil {
+					return fmt.Errorf("failed to add edge %s -> %s: %w", edge.From, to, err)
+				}
 			}
+
 		}
 	}
 
