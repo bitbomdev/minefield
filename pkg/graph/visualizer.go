@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"net/http"
 	"time"
@@ -82,7 +83,15 @@ func graphQuery(storage Storage, ids *roaring.Bitmap, query string) (*charts.Gra
 		}
 		if !alreadyCreatedNodes.Contains(id) {
 			alreadyCreatedNodes.Add(id)
-			nodes = append(nodes, opts.GraphNode{SymbolSize: int(max(10, float64(connections)*1.5)), Name: node.Name, ItemStyle: &opts.ItemStyle{Color: "#42b0f5"}, X: float32(rand.Intn(100000)), Y: float32(rand.Intn(100000))})
+			symbolSize := calculateSymbolSize(connections)
+			color := getColorForSize(symbolSize)
+			nodes = append(nodes, opts.GraphNode{
+				SymbolSize: symbolSize,
+				Name:       node.Name,
+				ItemStyle:  &opts.ItemStyle{Color: color},
+				X:          float32(rand.Intn(100000)),
+				Y:          float32(rand.Intn(100000)),
+			})
 		}
 
 	}
@@ -140,4 +149,53 @@ func graphQuery(storage Storage, ids *roaring.Bitmap, query string) (*charts.Gra
 	fmt.Printf("Number of nodes: %d\n", len(nodes))
 	fmt.Printf("Number of links: %d\n", len(links))
 	return graph, nil
+}
+
+func getColorForSize(size int) string {
+	// Map size to a value between 0 and 1
+	t := math.Max(0, math.Min(1, float64(size-10)/50)) // Clamp t between 0 and 1
+
+	// Define color stops (muted versions)
+	colors := []struct{ r, g, b uint8 }{
+		{139, 0, 0},     // Dark red (smallest nodes)
+		{165, 42, 42},   // Brown
+		{178, 34, 34},   // Firebrick
+		{205, 92, 92},   // Indian red
+		{210, 105, 30},  // Chocolate
+		{205, 133, 63},  // Peru
+		{210, 105, 30},  // Muted orange (middle nodes)
+		{188, 143, 143}, // Rosy brown
+		{199, 21, 133},  // Medium violet red
+		{186, 85, 211},  // Medium orchid (replacing Pale violet red)
+		{255, 20, 147},  // Deep pink (largest nodes)
+	}
+
+	// Find the two colors to interpolate between
+	i := int(t * float64(len(colors)-1))
+	i = int(math.Min(float64(len(colors)-2), float64(i))) // Ensure i is within bounds
+
+	c1, c2 := colors[i], colors[i+1]
+
+	// Interpolate between the two colors
+	f := t*float64(len(colors)-1) - float64(i)
+	r := uint8(float64(c1.r)*(1-f) + float64(c2.r)*f)
+	g := uint8(float64(c1.g)*(1-f) + float64(c2.g)*f)
+	b := uint8(float64(c1.b)*(1-f) + float64(c2.b)*f)
+
+	return fmt.Sprintf("rgb(%d, %d, %d)", r, g, b)
+}
+
+func calculateSymbolSize(connections int) int {
+	if connections == 0 {
+		return 5 // Minimum size for nodes with no connections
+	}
+	// Use logarithmic scale to compress the range
+	logSize := math.Log1p(float64(connections)) // log(x+1) to handle 0 connections
+	// Map the log value to a range between 8 and 80
+	minSize := 8.0
+	maxSize := 80.0
+	maxLogConnections := math.Log1p(1000) // Adjust this based on your max expected connections
+	scaledSize := minSize + math.Pow(logSize/maxLogConnections, 1.5)*(maxSize-minSize)
+	return int(math.Round(scaledSize))
+	// return max(20, connections)
 }
