@@ -148,7 +148,7 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 		}
 
 		// Set random dependencies, ensuring no duplicates and no backward dependencies
-		rand.Seed(time.Now().UnixNano())
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 		m := map[int][]int{}
 
