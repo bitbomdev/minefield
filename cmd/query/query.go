@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -18,8 +19,8 @@ import (
 type options struct {
 	storage   graph.Storage
 	outputdir string
-	maxOutput int
 	addr      string
+	maxOutput int
 	visualize bool
 }
 
@@ -78,7 +79,10 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	}
 
 	if o.visualize {
-		shutdown, err := graph.RunGraphVisualizer(o.storage, execute, script, "8081")
+		server := &http.Server{
+			Addr: ":" + o.addr,
+		}
+		shutdown, err := graph.RunGraphVisualizer(o.storage, execute, script, server)
 		if err != nil {
 			return err
 		}

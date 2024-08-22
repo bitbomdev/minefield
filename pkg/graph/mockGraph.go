@@ -13,11 +13,11 @@ type MockStorage struct {
 	dependencies map[uint32]*roaring.Bitmap
 	dependents   map[uint32]*roaring.Bitmap
 	nameToID     map[string]uint32
-	idCounter    uint32
-	fullyCached  bool
-	mu           sync.Mutex
 	cache        map[uint32]*NodeCache
 	toBeCached   []uint32
+	mu           sync.Mutex
+	idCounter    uint32
+	fullyCached  bool
 }
 
 func NewMockStorage() *MockStorage {

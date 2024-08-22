@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os/exec"
-	"strings"
 
 	"github.com/RoaringBitmap/roaring"
 )
@@ -35,9 +33,9 @@ type Node struct {
 }
 
 type NodeCache struct {
-	ID          uint32
 	AllParents  *roaring.Bitmap
 	AllChildren *roaring.Bitmap
+	ID          uint32
 }
 
 func NewNodeCache(id uint32, allParents, allChildren *roaring.Bitmap) *NodeCache {
@@ -60,9 +58,9 @@ func (nc *NodeCache) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("failed to convert AllChildren bitmap to bytes: %w", err)
 	}
 	return json.Marshal(&struct {
-		NodeID          uint32 `json:"ID"`
 		AllParentsData  []byte `json:"allParentsData"`
 		AllChildrenData []byte `json:"allChildrenData"`
+		NodeID          uint32 `json:"ID"`
 	}{
 		NodeID:          nc.ID,
 		AllParentsData:  allParentsData,
@@ -74,9 +72,9 @@ func (nc *NodeCache) MarshalJSON() ([]byte, error) {
 // It converts the byte slices back to roaring bitmaps after JSON deserialization.
 func (nc *NodeCache) UnmarshalJSON(data []byte) error {
 	aux := &struct {
-		NodeID          uint32 `json:"ID"`
 		AllParentsData  []byte `json:"allParentsData"`
 		AllChildrenData []byte `json:"allChildrenData"`
+		NodeID          uint32 `json:"ID"`
 	}{}
 	if err := json.Unmarshal(data, aux); err != nil {
 		return fmt.Errorf("failed to unmarshal NodeCache data: %w", err)
@@ -300,50 +298,4 @@ func (n *Node) QueryDependencies(storage Storage) (*roaring.Bitmap, error) {
 	}
 
 	return nCache.AllChildren, nil
-}
-
-func GenerateDOT(storage Storage) (string, error) {
-	keys, err := storage.GetAllKeys()
-	if err != nil {
-		return "", err
-	}
-
-	var dotBuilder strings.Builder
-	dotBuilder.WriteString("digraph G {\n")
-	dotBuilder.WriteString("node [shape=ellipse, style=filled, fillcolor=lightblue];\n") // Node style
-	dotBuilder.WriteString("edge [color=gray];\n")                                       // Edge style
-
-	for _, key := range keys {
-		node, err := storage.GetNode(key)
-		if err != nil {
-			return "", err
-		}
-
-		// Add the node with a label that includes type and additional metadata if needed
-		label := fmt.Sprintf("%s\\nMetadata: %v", node.Type, node.Metadata)
-		dotBuilder.WriteString(fmt.Sprintf("%d [label=\"%s\"];\n", node.ID, label))
-
-		// Add edges for children
-		for _, childID := range node.Children.ToArray() {
-			dotBuilder.WriteString(fmt.Sprintf("%d -> %d;\n", node.ID, childID))
-		}
-	}
-	dotBuilder.WriteString("}\n")
-	return dotBuilder.String(), nil
-}
-
-func RenderGraph(storage Storage) error {
-	dotString, err := GenerateDOT(storage)
-	if err != nil {
-		return err
-	}
-
-	cmd := exec.Command("dot", "-Tpng", "-o", "graph.png", "-Kfdp") // Using fdp for a spring model layout
-	cmd.Stdin = strings.NewReader(dotString)
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	fmt.Println("Graph rendered as graph.png using fdp layout")
-	return nil
 }
