@@ -21,9 +21,7 @@ type PkgAndValue struct {
 }
 
 type Weights struct {
-	CriticalityWeight float64 `json:"criticalityWeight"`
-	LikelihoodWeight  float64 `json:"likelihoodWeight"`
-	Dependencies      *struct {
+	Dependencies *struct {
 		Weight float64 `json:"weight"`
 		K      float64 `json:"k"`
 		L      float64 `json:"l"`
@@ -33,6 +31,8 @@ type Weights struct {
 		K      float64 `json:"k"`
 		L      float64 `json:"l"`
 	} `json:"scorecard,omitempty"`
+	CriticalityWeight float64 `json:"criticalityWeight"`
+	LikelihoodWeight  float64 `json:"likelihoodWeight"`
 }
 
 func WeightedNACD(storage graph.Storage, weights Weights) ([]*PkgAndValue, error) {

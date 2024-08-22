@@ -7,8 +7,8 @@ type weightsForType struct {
 }
 
 type valueAndType struct {
-	value float64
 	_type string
+	value float64
 }
 
 // sigmoidBasedAlgo is based on this alternative algorithm https://docs.google.com/document/d/1Xb86MrKFQZQNq9rCQb08Dk1b5HU7nzLHkzfjBvbndeM/edit?pli=1#heading=h.n6yhyn5znyw3

@@ -13,38 +13,33 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
-func RunGraphVisualizer(storage Storage, ids *roaring.Bitmap, query, addr string) (func(), error) {
-	srv := &http.Server{Addr: ":" + addr}
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+func RunGraphVisualizer(storage Storage, ids *roaring.Bitmap, query string, server *http.Server) (func(), error) {
+	server.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		chart, err := graphQuery(storage, ids, query)
 		if err != nil {
 			http.Error(w, "Error generating graph: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		// Add debug information
 		err = chart.Render(w)
 		if err != nil {
 			http.Error(w, "Error rendering graph: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		fmt.Println("Graph rendered successfully")
 	})
 
 	go func() {
-		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			fmt.Printf("HTTP server ListenAndServe: %v", err)
 		}
 	}()
 
-	fmt.Printf("Starting server on http://localhost:%s\n", addr)
+	fmt.Printf("Starting server on %s\n", server.Addr)
 
 	shutdown := func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if err := srv.Shutdown(ctx); err != nil {
+		if err := server.Shutdown(ctx); err != nil {
 			fmt.Printf("Server forced to shutdown: %v\n", err)
 		}
 		fmt.Println("Server stopped")

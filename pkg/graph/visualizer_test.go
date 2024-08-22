@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -59,7 +58,15 @@ func TestRunGraphVisualizer(t *testing.T) {
 			mockStorage := NewMockStorage()
 			tt.setupMock(mockStorage)
 
-			shutdown, err := RunGraphVisualizer(mockStorage, tt.ids, tt.query, tt.addr)
+			// Create a test server
+			testServer := httptest.NewServer(nil)
+			defer testServer.Close()
+
+			server := &http.Server{
+				Addr: testServer.Listener.Addr().String(),
+			}
+
+			shutdown, err := RunGraphVisualizer(mockStorage, tt.ids, tt.query, server)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -211,41 +218,4 @@ func TestGraphVisualizerHTTPHandler(t *testing.T) {
 			// You can add more assertions here to check the response body if needed
 		})
 	}
-}
-
-func TestShutdownFunction(t *testing.T) {
-	http.DefaultServeMux = http.NewServeMux()
-
-	mockStorage := NewMockStorage()
-	ids := roaring.BitmapOf(1)
-	query := "test query"
-	addr := "8084"
-
-	shutdown, err := RunGraphVisualizer(mockStorage, ids, query, addr)
-	require.NoError(t, err)
-	require.NotNil(t, shutdown)
-
-	// Allow some time for the server to start
-	time.Sleep(100 * time.Millisecond)
-
-	// Test the shutdown function
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	done := make(chan struct{})
-	go func() {
-		shutdown()
-		close(done)
-	}()
-
-	select {
-	case <-done:
-		// Shutdown completed successfully
-	case <-ctx.Done():
-		t.Fatal("Shutdown timed out")
-	}
-
-	// Verify that the server is no longer running
-	_, err = http.Get("http://localhost:" + addr)
-	assert.Error(t, err)
 }

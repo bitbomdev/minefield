@@ -33,9 +33,9 @@ type Node struct {
 }
 
 type NodeCache struct {
-	ID          uint32
 	AllParents  *roaring.Bitmap
 	AllChildren *roaring.Bitmap
+	ID          uint32
 }
 
 func NewNodeCache(id uint32, allParents, allChildren *roaring.Bitmap) *NodeCache {
@@ -58,9 +58,9 @@ func (nc *NodeCache) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("failed to convert AllChildren bitmap to bytes: %w", err)
 	}
 	return json.Marshal(&struct {
-		NodeID          uint32 `json:"ID"`
 		AllParentsData  []byte `json:"allParentsData"`
 		AllChildrenData []byte `json:"allChildrenData"`
+		NodeID          uint32 `json:"ID"`
 	}{
 		NodeID:          nc.ID,
 		AllParentsData:  allParentsData,
@@ -72,9 +72,9 @@ func (nc *NodeCache) MarshalJSON() ([]byte, error) {
 // It converts the byte slices back to roaring bitmaps after JSON deserialization.
 func (nc *NodeCache) UnmarshalJSON(data []byte) error {
 	aux := &struct {
-		NodeID          uint32 `json:"ID"`
 		AllParentsData  []byte `json:"allParentsData"`
 		AllChildrenData []byte `json:"allChildrenData"`
+		NodeID          uint32 `json:"ID"`
 	}{}
 	if err := json.Unmarshal(data, aux); err != nil {
 		return fmt.Errorf("failed to unmarshal NodeCache data: %w", err)
