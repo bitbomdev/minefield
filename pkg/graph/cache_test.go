@@ -66,7 +66,6 @@ func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 		}
 
 		// Set random dependencies, allowing controlled circles
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		cycleProbability := 0.01 // 1% chance to create a cycle
 		for i := 0; i < n; i++ {
 			possibleDeps := rand.Perm(n - i)                   // Generate a random permutation of indices [0, min(90, n-i)-1]
@@ -146,9 +145,6 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 			assert.NoError(t, err)
 			nodes[i] = node
 		}
-
-		// Set random dependencies, ensuring no duplicates and no backward dependencies
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 		m := map[int][]int{}
 
