@@ -3,6 +3,7 @@ package ingest
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -24,12 +25,13 @@ func SBOM(sbomPath string, storage graph.Storage) error {
 		}
 		for _, entry := range entries {
 			entryPath := filepath.Join(sbomPath, entry.Name())
-			fmt.Printf("Ingesting SBOM from path %s\n", entryPath)
+			log.Printf("Ingesting SBOM from path %s\n", entryPath)
 			if err := SBOM(entryPath, storage); err != nil {
 				return fmt.Errorf("failed to ingest SBOM from path %s: %w", entryPath, err)
 			}
 		}
 	} else {
+		log.Printf("Ingesting SBOM from path %s\n", sbomPath)
 		return processSBOMFile(sbomPath, storage)
 	}
 
@@ -71,8 +73,7 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 		graphNode, err := graph.AddNode(storage, "library", file, purl)
 		if err != nil {
 			if errors.Is(err, graph.ErrNodeAlreadyExists) {
-				// TODO: Add a logger
-				fmt.Println("Skipping...")
+				log.Printf("Skipping node %s: %s\n", node.GetName(), err)
 				continue
 			}
 			return fmt.Errorf("failed to add node: %w", err)
