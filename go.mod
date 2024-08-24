@@ -7,6 +7,7 @@ require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/go-echarts/go-echarts/v2 v2.4.1
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/goccy/go-json v0.10.3
 	github.com/google/go-cmp v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/package-url/packageurl-go v0.1.3
@@ -31,7 +32,6 @@ require (
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect

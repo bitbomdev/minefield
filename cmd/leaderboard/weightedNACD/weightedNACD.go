@@ -1,10 +1,11 @@
 package weightedNACD
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/goccy/go-json"
 
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/bit-bom/minefield/pkg/tools/weightedNACD"
