@@ -1,9 +1,10 @@
 package graph
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/goccy/go-json"
 
 	"github.com/RoaringBitmap/roaring"
 )

@@ -4,11 +4,12 @@ package ingest
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/goccy/go-json"
 
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/package-url/packageurl-go"
