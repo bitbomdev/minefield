@@ -24,6 +24,7 @@ func SBOM(sbomPath string, storage graph.Storage) error {
 		}
 		for _, entry := range entries {
 			entryPath := filepath.Join(sbomPath, entry.Name())
+			fmt.Printf("Ingesting SBOM from path %s\n", entryPath)
 			if err := SBOM(entryPath, storage); err != nil {
 				return fmt.Errorf("failed to ingest SBOM from path %s: %w", entryPath, err)
 			}
