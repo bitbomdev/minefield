@@ -35,7 +35,7 @@ func RunGraphVisualizer(storage Storage, ids *roaring.Bitmap, query string, serv
 		}
 	}()
 
-	fmt.Printf("Starting server on %s\n", server.Addr)
+	fmt.Printf("Starting server on localhost%s\n", server.Addr)
 
 	shutdown := func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -59,7 +59,7 @@ func graphQuery(storage Storage, ids *roaring.Bitmap, query string) (*charts.Gra
 		charts.WithInitializationOpts(opts.Initialization{
 			Width:  "9000px",
 			Height: "5000px",
-			Theme:  "dark",
+			// Theme:  "dark",
 		}),
 	)
 

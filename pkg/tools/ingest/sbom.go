@@ -18,6 +18,8 @@ func SBOM(sbomPath string, storage graph.Storage) error {
 		return fmt.Errorf("error accessing path %s: %w", sbomPath, err)
 	}
 
+	var errors []error
+
 	if info.IsDir() {
 		entries, err := os.ReadDir(sbomPath)
 		if err != nil {
@@ -27,12 +29,18 @@ func SBOM(sbomPath string, storage graph.Storage) error {
 			entryPath := filepath.Join(sbomPath, entry.Name())
 			log.Printf("Ingesting SBOM from path %s\n", entryPath)
 			if err := SBOM(entryPath, storage); err != nil {
-				return fmt.Errorf("failed to ingest SBOM from path %s: %w", entryPath, err)
+				errors = append(errors, fmt.Errorf("failed to ingest SBOM from path %s: %w", entryPath, err))
 			}
 		}
 	} else {
 		log.Printf("Ingesting SBOM from path %s\n", sbomPath)
-		return processSBOMFile(sbomPath, storage)
+		if err := processSBOMFile(sbomPath, storage); err != nil {
+			errors = append(errors, fmt.Errorf("failed to process SBOM file %s: %w", sbomPath, err))
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("errors occurred during SBOM ingestion: %v", errors)
 	}
 
 	return nil

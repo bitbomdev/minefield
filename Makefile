@@ -6,7 +6,7 @@ build:
 	go build ./pkg/...
 
 # Test target
-test: docker-up
+test:
 	go test -v -coverprofile=coverage.out ./...
 
 # Clean target
