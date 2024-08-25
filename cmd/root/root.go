@@ -9,9 +9,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type options struct{}
+type options struct {
+	pprofEnabled bool
+	pprofAddr    string
+}
 
-func (o *options) AddFlags(_ *cobra.Command) {
+func (o *options) AddFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().BoolVar(&o.pprofEnabled, "pprof", false, "enable pprof server")
+	cmd.PersistentFlags().StringVar(&o.pprofAddr, "pprof-addr", "localhost:6060", "address for pprof server")
 }
 
 func New(storage graph.Storage) *cobra.Command {

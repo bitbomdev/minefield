@@ -55,17 +55,18 @@ func TestIngestSBOM(t *testing.T) {
 		},
 		{
 			name:     "empty directory",
-			sbomPath: "../../../test/empty_dir",
+			sbomPath: "../../../empty_dir",
 			want:     map[uint32]*graph.Node{},
-		},
-		{
-			name:     "invalid SBOM file",
-			sbomPath: "../../../test/invalid_sbom.json",
 			wantErr:  false,
 		},
 		{
+			name:     "invalid SBOM file",
+			sbomPath: "../../../invalid_sbom.json",
+			wantErr:  true,
+		},
+		{
 			name:     "SBOM with no components",
-			sbomPath: "../../../test/no_components_sbom.json",
+			sbomPath: "../../../no_components_sbom.json",
 			want:     map[uint32]*graph.Node{},
 		},
 	}
@@ -97,13 +98,13 @@ func TestIngestSBOM(t *testing.T) {
 			}
 		})
 	}
-	if err := os.RemoveAll("../../../test/empty_dir"); err != nil {
+	if err := os.RemoveAll("../../../empty_dir"); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Remove("../../../test/invalid_sbom.json"); err != nil {
+	if err := os.Remove("../../../invalid_sbom.json"); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Remove("../../../test/no_components_sbom.json"); err != nil {
+	if err := os.Remove("../../../no_components_sbom.json"); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -120,14 +121,14 @@ func createTestFiles(t *testing.T) {
 	t.Helper()
 
 	// Create an empty directory
-	err := os.MkdirAll("../../../test/empty_dir", 0o755)
+	err := os.MkdirAll("../../../empty_dir", 0o755)
 	if err != nil {
 		t.Fatalf("Failed to create empty directory: %v", err)
 	}
 
 	// Create an invalid SBOM file
 	invalidSBOM := []byte(`{"invalid": "json"}`)
-	err = os.WriteFile("../../../test/invalid_sbom.json", invalidSBOM, 0o644)
+	err = os.WriteFile("../../../invalid_sbom.json", invalidSBOM, 0o644)
 	if err != nil {
 		t.Fatalf("Failed to create invalid SBOM file: %v", err)
 	}
@@ -135,12 +136,12 @@ func createTestFiles(t *testing.T) {
 	// Create a SBOM file with no components
 	noComponentsSBOM := []byte(`{
 		"bomFormat": "CycloneDX",
-		"specVersion": "1.4",
+		"specVersion": "1.5",
 		"version": 1,
 		"metadata": {},
 		"components": []
 	}`)
-	err = os.WriteFile("../../../test/no_components_sbom.json", noComponentsSBOM, 0o644)
+	err = os.WriteFile("../../../no_components_sbom.json", noComponentsSBOM, 0o644)
 	if err != nil {
 		t.Fatalf("Failed to create no components SBOM file: %v", err)
 	}
