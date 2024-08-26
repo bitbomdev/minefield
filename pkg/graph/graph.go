@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/goccy/go-json"
-
 	"github.com/RoaringBitmap/roaring"
+	"github.com/goccy/go-json"
 )
 
 var (
@@ -266,6 +265,25 @@ func (n *Node) QueryDependenciesNoCache(storage Storage) (*roaring.Bitmap, error
 	return n.queryBitmap(storage, ChildrenDirection)
 }
 
+func BatchQueryDependents(storage Storage, nodes []*Node, caches map[uint32]*NodeCache, isCached bool) (map[uint32]*roaring.Bitmap, error) {
+	result := map[uint32]*roaring.Bitmap{}
+
+	for _, node := range nodes {
+		if !isCached {
+			ans, err := node.QueryDependentsNoCache(storage)
+			if err != nil {
+				return nil, err
+			}
+
+			result[node.ID] = ans
+
+		} else {
+			result[node.ID] = caches[node.ID].AllParents
+		}
+	}
+	return result, nil
+}
+
 // QueryDependents checks if all nodes are cached, if so find the dependents in the cache, if not find the dependents without searching the cache
 func (n *Node) QueryDependents(storage Storage) (*roaring.Bitmap, error) {
 	uncachedNodes, err := storage.ToBeCached()
@@ -282,6 +300,25 @@ func (n *Node) QueryDependents(storage Storage) (*roaring.Bitmap, error) {
 	}
 
 	return nCache.AllParents, nil
+}
+
+func BatchQueryDependencies(storage Storage, nodes []*Node, caches map[uint32]*NodeCache, isCached bool) (map[uint32]*roaring.Bitmap, error) {
+	result := map[uint32]*roaring.Bitmap{}
+
+	for _, node := range nodes {
+		if !isCached {
+			ans, err := node.QueryDependenciesNoCache(storage)
+			if err != nil {
+				return nil, err
+			}
+
+			result[node.ID] = ans
+
+		} else {
+			result[node.ID] = caches[node.ID].AllChildren
+		}
+	}
+	return result, nil
 }
 
 func (n *Node) QueryDependencies(storage Storage) (*roaring.Bitmap, error) {

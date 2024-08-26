@@ -99,8 +99,7 @@ func (r *RedisStorage) SaveCache(cache *graph.NodeCache) error {
 
 func (r *RedisStorage) ToBeCached() ([]uint32, error) {
 	ctx := context.Background()
-	// Use SMEMBERS to get all members of the set
-	data, err := r.client.SMembers(ctx, "to_be_cached").Result()
+	data, err := r.client.LRange(ctx, "to_be_cached", 0, -1).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get to_be_cached data: %w", err)
 	}
@@ -119,7 +118,7 @@ func (r *RedisStorage) ToBeCached() ([]uint32, error) {
 
 func (r *RedisStorage) AddNodeToCachedStack(nodeID uint32) error {
 	ctx := context.Background()
-	err := r.client.SAdd(ctx, "to_be_cached", nodeID).Err()
+	err := r.client.RPush(ctx, "to_be_cached", nodeID).Err()
 	if err != nil {
 		return fmt.Errorf("failed to add node %d to cached stack: %w", nodeID, err)
 	}
@@ -198,4 +197,37 @@ func (r *RedisStorage) SaveCaches(caches []*graph.NodeCache) error {
 		return fmt.Errorf("failed to save caches: %w", err)
 	}
 	return nil
+}
+
+func (r *RedisStorage) GetCaches(ids []uint32) (map[uint32]*graph.NodeCache, error) {
+	ctx := context.Background()
+	pipe := r.client.Pipeline()
+
+	cmds := make([]*redis.StringCmd, len(ids))
+	for i, id := range ids {
+		cmds[i] = pipe.Get(ctx, fmt.Sprintf("cache:%d", id))
+	}
+
+	_, err := pipe.Exec(ctx)
+	if err != nil && err != redis.Nil {
+		return nil, fmt.Errorf("failed to get caches: %w", err)
+	}
+
+	caches := make(map[uint32]*graph.NodeCache, len(ids))
+	for i, cmd := range cmds {
+		data, err := cmd.Result()
+		if err == redis.Nil {
+			continue // Skip missing caches
+		} else if err != nil {
+			return nil, fmt.Errorf("failed to get cache data for ID %d: %w", ids[i], err)
+		}
+
+		var cache graph.NodeCache
+		if err := cache.UnmarshalJSON([]byte(data)); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal cache data: %w", err)
+		}
+		caches[ids[i]] = &cache
+	}
+
+	return caches, nil
 }
