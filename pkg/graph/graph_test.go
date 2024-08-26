@@ -219,3 +219,28 @@ func TestNodeCacheJSONMarshalUnmarshal(t *testing.T) {
 	assert.True(t, nodeCache.AllParents.Equals(unmarshaledNodeCache.AllParents))
 	assert.True(t, nodeCache.AllChildren.Equals(unmarshaledNodeCache.AllChildren))
 }
+
+func TestBatchAddNodes(t *testing.T) {
+	storage := NewMockStorage()
+
+	nodes := []*Node{
+		{Type: "type1", Metadata: "metadata1", Name: "name1"},
+		{Type: "type2", Metadata: "metadata2", Name: "name2"},
+		{Type: "type3", Metadata: "metadata3", Name: "name3"},
+	}
+
+	// Add nodes in batch
+	addedNodes, err := BatchAddNodes(storage, nodes)
+	assert.NoError(t, err, "Expected no error during BatchAddNodes")
+
+	// Check if all nodes are added and IDs are generated
+	for _, node := range addedNodes {
+		assert.NotEqual(t, uint32(0), node.ID, "Expected node ID to be generated")
+		pulledNode, err := storage.GetNode(node.ID)
+		assert.NoError(t, err, "Expected no error when getting node")
+		assert.Equal(t, node, pulledNode, "Expected node to be equal to pulled node")
+	}
+
+	// Check if the result contains all nodes
+	assert.Equal(t, len(nodes), len(addedNodes), "Expected all nodes to be added")
+}

@@ -9,16 +9,19 @@ import (
 )
 
 type options struct {
-	storage graph.Storage
+	storage   graph.Storage
+	batchSize int
 }
 
-func (o *options) AddFlags(_ *cobra.Command) {}
+func (o *options) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().IntVar(&o.batchSize, "batch-size", 100, "default batch node insert size")
+}
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
 	sbomPath := args[0]
 
 	// Ingest SBOM
-	if err := ingest.SBOM(sbomPath, o.storage); err != nil {
+	if err := ingest.SBOM(sbomPath, o.storage, o.batchSize); err != nil {
 		return fmt.Errorf("failed to ingest SBOM: %w", err)
 	}
 

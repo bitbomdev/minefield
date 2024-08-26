@@ -6,6 +6,7 @@ build:
 	go build ./pkg/...
 
 # Test target
+.PHONY: test
 test:
 	go test -v -coverprofile=coverage.out ./...
 

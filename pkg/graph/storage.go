@@ -1,5 +1,7 @@
 package graph
 
+import "context"
+
 // Storage is the interface that wraps the methods for a storage backend.
 type Storage interface {
 	NameToID(name string) (uint32, error)
@@ -14,4 +16,5 @@ type Storage interface {
 	GetCache(id uint32) (*NodeCache, error)
 	ClearCacheStack() error
 	GenerateID() (uint32, error)
+	BatchSaveNodes(ctx context.Context, nodes []*Node) error
 }

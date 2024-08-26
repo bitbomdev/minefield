@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -104,7 +105,9 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert parent bitmap to bytes: %w", err)
 	}
-	return json.Marshal(&struct {
+
+	// Preallocate the struct to avoid additional allocations
+	aux := struct {
 		Metadata   any    `json:"metadata"`
 		Type       string `json:"type"`
 		Name       string `json:"name"`
@@ -118,7 +121,10 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 		Metadata:   n.Metadata,
 		ChildData:  childData,
 		ParentData: parentData,
-	})
+	}
+
+	// Use json.Marshal directly on the preallocated struct
+	return json.Marshal(&aux)
 }
 
 // UnmarshalJSON is a custom JSON unmarshalling tool.
@@ -183,6 +189,31 @@ func AddNode(storage Storage, _type string, metadata any, name string) (*Node, e
 		return nil, err
 	}
 	return n, nil
+}
+
+// BatchAddNodes adds a batch of nodes to the graph.
+// If a node already exists, it is not added again.
+// If a node does not exist, it is added to the list of non-existing nodes.
+// The non-existing nodes and caches are saved together in a batch.
+func BatchAddNodes(storage Storage, nodes []*Node) ([]*Node, error) {
+	result := make([]*Node, 0)
+	nonExistingNodes := make([]*Node, 0)
+	for _, node := range nodes {
+		if id, err := storage.NameToID(node.Name); err == nil {
+			node.ID = id
+			result = append(result, node)
+		} else {
+			nonExistingNodes = append(nonExistingNodes, node)
+		}
+	}
+	// Batch save all non-existing nodes and caches together
+	if err := storage.BatchSaveNodes(context.Background(), nonExistingNodes); err != nil {
+		return nil, err
+	}
+
+	// Combine result with nonExistingNodes
+	result = append(result, nonExistingNodes...)
+	return result, nil
 }
 
 // SetDependency now uses generic types for metadata

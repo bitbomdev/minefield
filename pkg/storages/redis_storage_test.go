@@ -2,11 +2,17 @@ package storages
 
 import (
 	"context"
+	"encoding/json"
+	"os"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -98,4 +104,68 @@ func TestClearCacheStack(t *testing.T) {
 	toBeCached, err := r.ToBeCached()
 	assert.NoError(t, err)
 	assert.NotContains(t, toBeCached, nodeID)
+}
+
+func TestGenerateSaveNodesAndCaches(t *testing.T) {
+	r := setupTestRedis()
+	defer r.client.Close()
+	testSbom, err := os.ReadFile("../../test/kubernetes-sigs_kind.sbom.json")
+	assert.NoError(t, err)
+
+	// Prepare test data
+	nodes := make([]*graph.Node, 10)
+	for i := 0; i < 10; i++ {
+		nodes[i] = &graph.Node{
+			Name:     "Node" + strconv.Itoa(i+1),
+			Metadata: testSbom,
+			Type:     "Type" + strconv.Itoa(i+1),
+			Children: roaring.New(),
+			Parents:  roaring.New(),
+		}
+	}
+	start := time.Now()
+	// Call the method
+	err = r.BatchSaveNodes(context.Background(), nodes)
+	elapsed := time.Since(start)
+	t.Logf("Time taken: %s", elapsed)
+	assert.NoError(t, err)
+	// Verify the results
+	for _, node := range nodes {
+		data, err := r.client.Get(context.Background(), "node:"+strconv.Itoa(int(node.ID))).Result()
+		assert.NotZero(t, node.ID)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, data)
+		// Verify the structure and fields of the node
+		var storedNode graph.Node
+		err = json.Unmarshal([]byte(data), &storedNode)
+		assert.NoError(t, err)
+		if diff := cmp.Diff(node, &storedNode, cmpopts.IgnoreUnexported(roaring.Bitmap{}), cmpopts.IgnoreFields(graph.Node{}, "Metadata")); diff != "" {
+			t.Errorf("Node mismatch (-want +got):\n%s", diff)
+		}
+	}
+
+	for _, node := range nodes {
+		id, err := r.client.Get(context.Background(), "name_to_id:"+node.Name).Result()
+		assert.NoError(t, err)
+		assert.Equal(t, strconv.Itoa(int(node.ID)), id)
+	}
+
+	toBeCached, err := r.client.SMembers(context.Background(), "to_be_cached").Result()
+	assert.NoError(t, err)
+	assert.Len(t, toBeCached, len(nodes))
+
+	// Check for unexpected keys
+	keys, err := r.client.Keys(context.Background(), "*").Result()
+	assert.NoError(t, err)
+	expectedKeys := make(map[string]bool)
+	for _, node := range nodes {
+		expectedKeys["node:"+strconv.Itoa(int(node.ID))] = true
+		expectedKeys["name_to_id:"+node.Name] = true
+	}
+	expectedKeys["to_be_cached"] = true
+	expectedKeys["id_counter"] = true // Add id_counter as a valid key
+
+	for _, key := range keys {
+		assert.True(t, expectedKeys[key], "Unexpected key found: %s", key)
+	}
 }

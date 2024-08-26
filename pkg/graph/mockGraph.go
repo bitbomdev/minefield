@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -138,6 +139,44 @@ func (m *MockStorage) SaveCaches(caches []*NodeCache) error {
 			m.cache = map[uint32]*NodeCache{}
 		}
 		m.cache[cache.ID] = cache
+	}
+	return nil
+}
+
+func (m *MockStorage) BatchSaveNodes(ctx context.Context, nodes []*Node) error {
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(nodes))
+
+	for _, node := range nodes {
+		wg.Add(1)
+		go func(n *Node) {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				errChan <- ctx.Err()
+				return
+			default:
+				id, err := m.GenerateID()
+				if err != nil {
+					errChan <- err
+					return
+				}
+				n.ID = id
+				fmt.Printf("Generated ID: %d for node: %+v\n", id, n.ID) // Add logging here
+				if err := m.SaveNode(n); err != nil {
+					errChan <- err
+				} else {
+					fmt.Printf("Node saved: %+v\n", n) // Add logging here
+				}
+			}
+		}(node)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	if len(errChan) > 0 {
+		return <-errChan
 	}
 	return nil
 }
