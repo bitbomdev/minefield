@@ -26,10 +26,6 @@ func TestParseAndExecute(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := Cache(storage); err != nil {
-		t.Fatal(err)
-	}
-
 	err = node1.SetDependency(storage, node3)
 	if err != nil {
 		t.Fatal(err)
@@ -40,6 +36,10 @@ func TestParseAndExecute(t *testing.T) {
 	}
 	err = node3.SetDependency(storage, node4)
 	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Cache(storage); err != nil {
 		t.Fatal(err)
 	}
 
@@ -84,7 +84,19 @@ func TestParseAndExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ParseAndExecute(tt.script, storage, tt.defaultNodeName)
+			keys, err := storage.GetAllKeys()
+			if err != nil {
+				t.Fatal(err)
+			}
+			nodes, err := storage.GetNodes(keys)
+			if err != nil {
+				t.Fatal(err)
+			}
+			caches, err := storage.GetCaches(keys)
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := ParseAndExecute(tt.script, storage, tt.defaultNodeName, nodes, caches, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseAndExecute() error = %v, wantErr %v", err, tt.wantErr)
 				return

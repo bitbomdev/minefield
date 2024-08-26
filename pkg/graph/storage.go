@@ -12,6 +12,7 @@ type Storage interface {
 	ToBeCached() ([]uint32, error)
 	AddNodeToCachedStack(id uint32) error
 	GetCache(id uint32) (*NodeCache, error)
+	GetCaches(ids []uint32) (map[uint32]*NodeCache, error)
 	ClearCacheStack() error
 	GenerateID() (uint32, error)
 }

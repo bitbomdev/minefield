@@ -9,10 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/goccy/go-json"
-
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/bit-bom/minefield/pkg/tools"
+	"github.com/goccy/go-json"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -35,7 +34,25 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 func (o *options) Run(_ *cobra.Command, args []string) error {
 	script := strings.Join(args, " ")
 
-	execute, err := graph.ParseAndExecute(script, o.storage, "")
+	keys, err := o.storage.GetAllKeys()
+	if err != nil {
+		return err
+	}
+
+	nodes, err := o.storage.GetNodes(keys)
+	if err != nil {
+		return err
+	}
+
+	caches, err := o.storage.GetCaches(keys)
+	if err != nil {
+		return fmt.Errorf("failed to batch query caches from keys: %w", err)
+	}
+	cacheStack, err := o.storage.ToBeCached()
+	if err != nil {
+		return err
+	}
+	execute, err := graph.ParseAndExecute(script, o.storage, "", nodes, caches, len(cacheStack) == 0)
 	if err != nil {
 		return fmt.Errorf("failed to parse and execute script: %w", err)
 	}

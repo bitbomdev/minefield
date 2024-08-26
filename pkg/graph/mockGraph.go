@@ -141,3 +141,19 @@ func (m *MockStorage) SaveCaches(caches []*NodeCache) error {
 	}
 	return nil
 }
+
+func (m *MockStorage) GetCaches(ids []uint32) (map[uint32]*NodeCache, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	caches := make(map[uint32]*NodeCache, len(ids))
+	for _, id := range ids {
+		cache, exists := m.cache[id]
+		if !exists {
+			continue // Skip missing caches
+		}
+		caches[id] = cache
+	}
+
+	return caches, nil
+}

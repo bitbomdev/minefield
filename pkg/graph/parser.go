@@ -7,10 +7,15 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
-// ParseAndExecute parses and executes a script using the given storages backend.
-func ParseAndExecute(script string, storage Storage, defaultNodeName string) (*roaring.Bitmap, error) {
+// ParseAndExecute parses and executes a script using the given storage backend.
+func ParseAndExecute(script string, storage Storage, defaultNodeName string, nodes map[uint32]*Node, caches map[uint32]*NodeCache, isCached bool) (*roaring.Bitmap, error) {
 	var stack []*roaring.Bitmap
 	var operators []string
+
+	nameToIDs := make(map[string]uint32, len(nodes))
+	for _, node := range nodes {
+		nameToIDs[node.Name] = node.ID
+	}
 
 	applyOperator := func() error {
 		if len(stack) < 2 {
@@ -44,6 +49,39 @@ func ParseAndExecute(script string, storage Storage, defaultNodeName string) (*r
 	}
 
 	tokens := strings.Fields(script) // Split script into tokens based on spaces
+	dependentsToBeQueried, dependenciesToBeQueried := []*Node{}, []*Node{}
+	for tokenIndex := 0; tokenIndex < len(tokens); tokenIndex++ {
+		token := tokens[tokenIndex]
+
+		if strings.HasPrefix(token, "dependents") || strings.HasPrefix(token, "dependencies") {
+			dir := token
+			tokenIndex++
+			if defaultNodeName != "" {
+				token = defaultNodeName
+			} else {
+				tokenIndex++
+				token = tokens[tokenIndex]
+			}
+			nodeID := nameToIDs[token]
+			node := nodes[nodeID]
+
+			if strings.TrimSpace(dir) == "dependents" {
+				dependentsToBeQueried = append(dependentsToBeQueried, node)
+			} else {
+				dependenciesToBeQueried = append(dependenciesToBeQueried, node)
+			}
+		}
+	}
+
+	nodeToDependents, err := BatchQueryDependents(storage, dependentsToBeQueried, caches, isCached)
+	if err != nil {
+		return nil, err
+	}
+	nodeToDependencies, err := BatchQueryDependencies(storage, dependenciesToBeQueried, caches, isCached)
+	if err != nil {
+		return nil, err
+	}
+
 	for tokenIndex := 0; tokenIndex < len(tokens); tokenIndex++ {
 		token := tokens[tokenIndex]
 		switch {
@@ -57,34 +95,22 @@ func ParseAndExecute(script string, storage Storage, defaultNodeName string) (*r
 				tokenIndex++
 				token = tokens[tokenIndex]
 			}
-			nodeID, err := storage.NameToID(token)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get node ID for name %s: %w", token, err)
-			}
-			node, err := storage.GetNode(nodeID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get node for id %v: %w", nodeID, err)
-			}
+			nodeID := nameToIDs[token]
+
+			node := nodes[nodeID]
 			var bitmap *roaring.Bitmap
 			if strings.TrimSpace(dir) == "dependents" {
-				bitmap, err = node.QueryDependents(storage)
+				bitmap = nodeToDependents[node.ID]
 			} else {
-				bitmap, err = node.QueryDependencies(storage)
-			}
-			if err != nil {
-				return nil, fmt.Errorf("failed to query dependents for node ID %d: %w", nodeID, err)
+				bitmap = nodeToDependencies[node.ID]
 			}
 			if bitmap == nil {
 				continue
 			}
 
 			for _, id := range bitmap.ToArray() {
-				node, err := storage.GetNode(id)
-				if err != nil {
-					return nil, err
-				}
-
-				if node.Type != nodeTypeQueried {
+				checkNode := nodes[id]
+				if checkNode.Type != nodeTypeQueried {
 					bitmap.Remove(id)
 				}
 			}

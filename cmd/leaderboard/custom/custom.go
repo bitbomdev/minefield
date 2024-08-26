@@ -1,9 +1,9 @@
 package custom
 
 import (
+	"container/heap"
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
 
 	"github.com/bit-bom/minefield/pkg/graph"
@@ -44,27 +44,43 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	// Print dependencies
 	queries := []query{}
 
-	for _, key := range keys {
-		node, err := o.storage.GetNode(key)
-		if err != nil {
-			return err
-		}
+	nodes, err := o.storage.GetNodes(keys)
+	if err != nil {
+		return fmt.Errorf("failed to batch query nodes from keys: %w", err)
+	}
 
+	caches, err := o.storage.GetCaches(keys)
+	if err != nil {
+		return fmt.Errorf("failed to batch query caches from keys: %w", err)
+	}
+
+	cacheStack, err := o.storage.ToBeCached()
+	if err != nil {
+		return err
+	}
+
+	h := &queryHeap{}
+	heap.Init(h)
+
+	for _, node := range nodes {
 		if node.Name == "" {
 			continue
 		}
 
-		execute, err := graph.ParseAndExecute(args[0], o.storage, node.Name)
+		execute, err := graph.ParseAndExecute(args[0], o.storage, node.Name, nodes, caches, len(cacheStack) == 0)
 		if err != nil {
 			return err
 		}
 
-		queries = append(queries, query{node: node, output: execute.ToArray()})
+		output := execute.ToArray()
+		heap.Push(h, &query{node: node, output: output})
+
 	}
 
-	sort.Slice(queries, func(i, j int) bool {
-		return len(queries[i].output) > len(queries[j].output)
-	})
+	queries = make([]query, h.Len())
+	for i := len(queries) - 1; i >= 0; i-- {
+		queries[i] = *heap.Pop(h).(*query)
+	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 
@@ -104,4 +120,23 @@ func New(storage graph.Storage) *cobra.Command {
 	o.AddFlags(cmd)
 
 	return cmd
+}
+
+type queryHeap []*query
+
+func (h queryHeap) Len() int { return len(h) }
+func (h queryHeap) Less(i, j int) bool {
+	return len(h[i].output) < len(h[j].output)
+}
+func (h queryHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
+func (h *queryHeap) Push(x interface{}) {
+	*h = append(*h, x.(*query))
+}
+
+func (h *queryHeap) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
 }
