@@ -35,8 +35,14 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	script := strings.Join(args, " ")
 
 	keys, err := o.storage.GetAllKeys()
+	if err != nil {
+		return err
+	}
 
 	nodes, err := o.storage.GetNodes(keys)
+	if err != nil {
+		return err
+	}
 
 	caches, err := o.storage.GetCaches(keys)
 	if err != nil {
