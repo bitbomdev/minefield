@@ -3,7 +3,7 @@
 
 # Build target
 build:
-	go build ./pkg/...
+	go build -o bin/minefield main.go
 
 # Test target
 test:
