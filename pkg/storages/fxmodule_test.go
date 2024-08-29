@@ -2,7 +2,6 @@ package storages
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/bit-bom/minefield/pkg/graph"
@@ -18,22 +17,14 @@ func TestNewRedisStorageModule(t *testing.T) {
 	var client *redis.Client
 	var err error
 
-	// Try different ports until a working one is found
-	for port := 6379; port <= 6389; port++ {
-		addr = fmt.Sprintf("localhost:%d", port)
-		client = redis.NewClient(&redis.Options{Addr: addr})
-		defer client.Close()
+	// Use a static port for Redis
+	addr = "localhost:6379"
+	client = redis.NewClient(&redis.Options{Addr: addr})
+	defer client.Close()
 
-		_, err = client.Ping(context.Background()).Result()
-		if err == nil {
-			break
-		} else {
-			t.Logf("Redis not available at %s, trying next port...", addr)
-		}
-	}
-
+	_, err = client.Ping(context.Background()).Result()
 	if err != nil {
-		t.Skipf("Skipping test: Redis is not available on any tested port")
+		t.Skipf("Skipping test: Redis is not available at %s", addr)
 	}
 
 	// Create an fx.App for testing
