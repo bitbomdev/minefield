@@ -9,16 +9,25 @@ import (
 
 type options struct {
 	storage graph.Storage
+	clear   bool
 }
 
-func (o *options) AddFlags(_ *cobra.Command) {}
+func (o *options) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&o.clear, "clear", false, "Clear the cache instead of creating it")
+}
 
 func (o *options) Run(_ *cobra.Command, _ []string) error {
-	if err := graph.Cache(o.storage); err != nil {
-		return fmt.Errorf("failed to cache: %w", err)
+	if o.clear {
+		if err := o.storage.RemoveAllCaches(); err != nil {
+			return fmt.Errorf("failed to clear cache: %w", err)
+		}
+		fmt.Println("Cache cleared successfully")
+	} else {
+		if err := graph.Cache(o.storage); err != nil {
+			return fmt.Errorf("failed to cache: %w", err)
+		}
+		fmt.Println("Finished Caching")
 	}
-
-	fmt.Println("Finished Caching")
 	return nil
 }
 
@@ -28,7 +37,7 @@ func New(storage graph.Storage) *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:               "cache",
-		Short:             "Cache all nodes",
+		Short:             "Cache all nodes or remove existing cache",
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}

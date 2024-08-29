@@ -10,8 +10,8 @@ import (
 )
 
 type options struct {
-	pprofEnabled bool
 	pprofAddr    string
+	pprofEnabled bool
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {

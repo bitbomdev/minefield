@@ -124,9 +124,15 @@ type stackElm struct {
 	todoIndex int
 }
 
+type todoFuturePair struct {
+	todoNodes   []uint32
+	futureNodes []uint32
+}
+
 func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint32, allNodes map[uint32]*Node) (*NativeKeyManagement, error) {
 	cache, children, parents := NewNativeKeyManagement(), NewNativeKeyManagement(), NewNativeKeyManagement()
 	alreadyCached := roaring.New()
+	todoFutureCache := make(map[uint32]todoFuturePair)
 
 	err := addCyclesToBindMap(scc, cache, children, parents, allNodes)
 	if err != nil {
@@ -149,7 +155,7 @@ func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint
 			continue
 		}
 
-		todoNodes, futureNodes, err := getTodoAndFutureNodes(children, parents, curNode, direction)
+		todoNodes, futureNodes, err := getTodoAndFutureNodesCached(children, parents, curNode, direction, todoFutureCache)
 		if err != nil {
 			return nil, err
 		}
@@ -175,6 +181,20 @@ func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint
 		}
 	}
 	return cache, nil
+}
+
+func getTodoAndFutureNodesCached(children, parents *NativeKeyManagement, curNode *Node, direction Direction, cache map[uint32]todoFuturePair) ([]uint32, []uint32, error) {
+	if pair, exists := cache[curNode.ID]; exists {
+		return pair.todoNodes, pair.futureNodes, nil
+	}
+
+	todoNodes, futureNodes, err := getTodoAndFutureNodes(children, parents, curNode, direction)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cache[curNode.ID] = todoFuturePair{todoNodes: todoNodes, futureNodes: futureNodes}
+	return todoNodes, futureNodes, nil
 }
 
 func addCyclesToBindMap(scc map[uint32]uint32, cache, children, parents *NativeKeyManagement, allNodes map[uint32]*Node) error {

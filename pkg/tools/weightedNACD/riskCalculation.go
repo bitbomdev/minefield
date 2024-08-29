@@ -68,7 +68,7 @@ func WeightedNACD(storage graph.Storage, weights Weights) ([]*PkgAndValue, error
 		}
 
 		// We can really only calculate the algo on package nodes
-		if node.Type == "PACKAGE" {
+		if node.Type == "library" {
 			deps, err := node.QueryDependencies(storage)
 			if err != nil {
 				return nil, fmt.Errorf("error querying dependencies for node with Id %d: %w", id, err)

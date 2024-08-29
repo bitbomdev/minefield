@@ -157,3 +157,18 @@ func (m *MockStorage) GetCaches(ids []uint32) (map[uint32]*NodeCache, error) {
 
 	return caches, nil
 }
+
+func (m *MockStorage) RemoveAllCaches() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Add all cache IDs to the toBeCached slice
+	for id := range m.cache {
+		m.toBeCached = append(m.toBeCached, id)
+	}
+
+	// Clear the cache
+	m.cache = make(map[uint32]*NodeCache)
+
+	return nil
+}
