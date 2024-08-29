@@ -5,9 +5,12 @@
 BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s.
 
 > The average user doesn't give a damn what happens, as long as (1) it works and (2) it's fast. - Daniel J. Bernstein
-## BitBom Minefield Paper
 
-For a detailed explanation of the BitBom Minefield tool, please refer to the [BitBom Minefield Paper](docs/bitbom.pdf).
+## Bitbom's visualization on a query
+![img.png](img.png)
+## Minefield Paper
+
+For a detailed explanation of the Minefield tool, please refer to the [Minefield Paper](docs/bitbom.pdf).
 
 ## Table of Contents
 
@@ -146,9 +149,6 @@ minefield
      ```sh
     minefield query "dependents PACKAGE pkg:generic/dep2@1.0.0 --visualize" 
     ```
-   #### Bitbom's visualization on a query
-   ![img.png](img.png)
-
 ## Custom Query Commands
 
 For detailed information on available query commands and their usage, please refer to the [Custom Query Commands documentation](docs/customQueryCommands.md).
