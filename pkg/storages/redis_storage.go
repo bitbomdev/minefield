@@ -37,7 +37,7 @@ func (r *RedisStorage) SaveNode(node *graph.Node) error {
 	if err := r.client.Set(context.Background(), fmt.Sprintf("node:%d", node.ID), data, 0).Err(); err != nil {
 		return fmt.Errorf("failed to save node data: %w", err)
 	}
-	if err := r.client.Set(context.Background(), fmt.Sprint("name_to_id:", node.Name), strconv.Itoa(int(node.ID)), 0).Err(); err != nil {
+	if err := r.client.Set(context.Background(), fmt.Sprintf("name_to_id:%s", node.Name), strconv.Itoa(int(node.ID)), 0).Err(); err != nil {
 		return fmt.Errorf("failed to save node name to ID mapping: %w", err)
 	}
 	if err := r.AddNodeToCachedStack(node.ID); err != nil {
@@ -230,4 +230,42 @@ func (r *RedisStorage) GetCaches(ids []uint32) (map[uint32]*graph.NodeCache, err
 	}
 
 	return caches, nil
+}
+
+func (r *RedisStorage) RemoveAllCaches() error {
+	ctx := context.Background()
+	var cursor uint64
+	var err error
+
+	for {
+		var keys []string
+		keys, cursor, err = r.client.Scan(ctx, cursor, "cache:*", 1000).Result()
+		if err != nil {
+			return fmt.Errorf("failed to scan cache keys: %w", err)
+		}
+
+		if len(keys) > 0 {
+			pipe := r.client.Pipeline()
+
+			// Extract IDs and add them to the cache stack
+			for _, key := range keys {
+				id := strings.TrimPrefix(key, "cache:")
+				pipe.RPush(ctx, "to_be_cached", id)
+			}
+
+			// Delete the cache entries
+			pipe.Unlink(ctx, keys...)
+
+			_, err = pipe.Exec(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to process cache keys: %w", err)
+			}
+		}
+
+		if cursor == 0 {
+			break
+		}
+	}
+
+	return nil
 }

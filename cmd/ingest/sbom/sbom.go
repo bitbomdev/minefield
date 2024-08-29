@@ -18,7 +18,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	sbomPath := args[0]
 
 	// Ingest SBOM
-	if err := ingest.SBOM(sbomPath, o.storage); err != nil {
+	if _, err := ingest.SBOM(sbomPath, o.storage); err != nil {
 		return fmt.Errorf("failed to ingest SBOM: %w", err)
 	}
 

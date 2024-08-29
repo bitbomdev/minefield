@@ -32,3 +32,5 @@ docker-build:
 	docker build -t ghcr.io/bitbomdev/minefield:latest .
 
 all: build test docker-build 
+
+.PHONY: test build clean clean-redis docker-up docker-down docker-logs docker-build all

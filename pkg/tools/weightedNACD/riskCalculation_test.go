@@ -51,9 +51,9 @@ func TestWeightedNACD(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			storage := graph.NewMockStorage()
 			// Add mock nodes to storages
-			node1, err := graph.AddNode(storage, "PACKAGE", "metadata1", "pkg:generic/dep1@1.0.0")
+			node1, err := graph.AddNode(storage, "library", "metadata1", "pkg:generic/dep1@1.0.0")
 			assert.NoError(t, err)
-			node2, err := graph.AddNode(storage, "PACKAGE", "metadata2", "pkg:generic/dep2@1.0.0")
+			node2, err := graph.AddNode(storage, "library", "metadata2", "pkg:generic/dep2@1.0.0")
 			assert.NoError(t, err)
 
 			// Set dependencies

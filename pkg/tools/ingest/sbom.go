@@ -3,7 +3,6 @@ package ingest
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -12,38 +11,43 @@ import (
 )
 
 // SBOM ingests a SBOM file or directory into the storage backend.
-func SBOM(sbomPath string, storage graph.Storage) error {
+func SBOM(sbomPath string, storage graph.Storage) (int, error) {
 	info, err := os.Stat(sbomPath)
 	if err != nil {
-		return fmt.Errorf("error accessing path %s: %w", sbomPath, err)
+		return 0, fmt.Errorf("error accessing path %s: %w", sbomPath, err)
 	}
 
 	var errors []error
+	count := 0
 
 	if info.IsDir() {
 		entries, err := os.ReadDir(sbomPath)
 		if err != nil {
-			return fmt.Errorf("failed to read directory %s: %w", sbomPath, err)
+			return 0, fmt.Errorf("failed to read directory %s: %w", sbomPath, err)
 		}
 		for _, entry := range entries {
 			entryPath := filepath.Join(sbomPath, entry.Name())
-			log.Printf("Ingesting SBOM from path %s\n", entryPath)
-			if err := SBOM(entryPath, storage); err != nil {
+			subCount, err := SBOM(entryPath, storage)
+			count += subCount
+			fmt.Printf("\r\033[K%s", formatProgress(count, entryPath))
+			if err != nil {
 				errors = append(errors, fmt.Errorf("failed to ingest SBOM from path %s: %w", entryPath, err))
 			}
 		}
 	} else {
-		log.Printf("Ingesting SBOM from path %s\n", sbomPath)
 		if err := processSBOMFile(sbomPath, storage); err != nil {
 			errors = append(errors, fmt.Errorf("failed to process SBOM file %s: %w", sbomPath, err))
+		} else {
+			count++
+			fmt.Printf("\r\033[K%s", formatProgress(count, sbomPath))
 		}
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf("errors occurred during SBOM ingestion: %v", errors)
+		return count, fmt.Errorf("errors occurred during SBOM ingestion: %v", errors)
 	}
 
-	return nil
+	return count, nil
 }
 
 func processSBOMFile(filePath string, storage graph.Storage) error {
@@ -77,21 +81,19 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 
 	for _, node := range nodeList.GetNodes() {
 		purl := fmt.Sprintf("pkg:generic/%s", node.GetName())
-
 		graphNode, err := graph.AddNode(storage, "library", file, purl)
 		if err != nil {
 			if errors.Is(err, graph.ErrNodeAlreadyExists) {
-				log.Printf("Skipping node %s: %s\n", node.GetName(), err)
-				continue
+				// log.Printf("Skipping node %s: %s\n", node.GetName(), err)
+			} else {
+				return fmt.Errorf("failed to add node: %w", err)
 			}
-			return fmt.Errorf("failed to add node: %w", err)
 		}
 
 		nameToId[node.Id] = graphNode.ID
 	}
 
 	for _, edge := range nodeList.Edges {
-
 		fromNode, err := storage.GetNode(nameToId[edge.From])
 		if err != nil {
 			return fmt.Errorf("failed to get from node %s: %w", edge.From, err)
@@ -114,4 +116,16 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 	}
 
 	return nil
+}
+
+// Add these helper functions at the end of the file
+func formatProgress(count int, path string) string {
+	return fmt.Sprintf("Ingested %d SBOMs | Current: %s", count, truncatePath(path, 50))
+}
+
+func truncatePath(path string, maxLength int) string {
+	if len(path) <= maxLength {
+		return path
+	}
+	return "..." + path[len(path)-maxLength+3:]
 }
