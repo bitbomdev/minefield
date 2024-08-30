@@ -64,11 +64,12 @@ var purlEcosystems = map[string]map[string]Ecosystem{
 }
 var ErrBadPurl = fmt.Errorf("bad purl")
 
-func Vulnerabilities(storage graph.Storage) error {
+func Vulnerabilities(storage graph.Storage, progress func(count int, id string)) error {
 	keys, err := storage.GetAllKeys()
 	if err != nil {
 		return err
 	}
+	count := 0
 
 	for _, key := range keys {
 		node, err := storage.GetNode(key)
@@ -76,7 +77,7 @@ func Vulnerabilities(storage graph.Storage) error {
 			return err
 		}
 
-		if node.Type == "PACKAGE" {
+		if node.Type == "library" {
 			if node.Name == "" {
 				continue
 			}
@@ -86,7 +87,11 @@ func Vulnerabilities(storage graph.Storage) error {
 			}
 
 			for _, vuln := range vulns {
-				vulnNode, err := graph.AddNode(storage, "VULNERABILITY", any(vuln), vuln.ID)
+				vulnNode, err := graph.AddNode(storage, "vuln", any(vuln), vuln.ID)
+				count++
+				if progress != nil {
+					progress(count, vuln.ID)
+				}
 				if err != nil {
 					return err
 				}

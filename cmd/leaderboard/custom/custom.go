@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/olekukonko/tablewriter"
@@ -62,7 +63,8 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	h := &queryHeap{}
 	heap.Init(h)
 
-	for _, node := range nodes {
+	for index := 0; index < len(keys); index++ {
+		node := nodes[keys[index]]
 		if node.Name == "" {
 			continue
 		}
@@ -74,7 +76,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 
 		output := execute.ToArray()
 		heap.Push(h, &query{node: node, output: output})
-
+		printProgress(index+1, len(nodes))
 	}
 
 	queries = make([]query, h.Len())
@@ -139,4 +141,28 @@ func (h *queryHeap) Pop() interface{} {
 	x := old[n-1]
 	*h = old[0 : n-1]
 	return x
+}
+
+func printProgress(progress, total int) {
+	if total == 0 {
+		fmt.Println("Progress total cannot be zero.")
+		return
+	}
+	barLength := 40
+	progressRatio := float64(progress) / float64(total)
+	progressBar := int(progressRatio * float64(barLength))
+
+	bar := "\033[1;36m" + strings.Repeat("=", progressBar)
+	if progressBar < barLength {
+		bar += ">"
+	}
+	bar += strings.Repeat(" ", max(0, barLength-progressBar-1)) + "\033[0m"
+
+	percentage := fmt.Sprintf("\033[1;34m%3d%%\033[0m", int(progressRatio*100))
+
+	fmt.Printf("\r[%s] %s of the queries computed \033[1;34m(%d/%d)\033[0m", bar, percentage, progress, total)
+
+	if progress == total {
+		fmt.Println()
+	}
 }

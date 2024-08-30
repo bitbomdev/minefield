@@ -35,7 +35,7 @@ type Weights struct {
 	LikelihoodWeight  float64 `json:"likelihoodWeight"`
 }
 
-func WeightedNACD(storage graph.Storage, weights Weights) ([]*PkgAndValue, error) {
+func WeightedNACD(storage graph.Storage, weights Weights, progress func(int, int)) ([]*PkgAndValue, error) {
 	weightsForEachType := map[string]weightsForType{}
 
 	if weights.Dependencies != nil {
@@ -61,7 +61,7 @@ func WeightedNACD(storage graph.Storage, weights Weights) ([]*PkgAndValue, error
 		return nil, fmt.Errorf("error getting all leaderboard: %w", err)
 	}
 
-	for _, id := range ids {
+	for index, id := range ids {
 		node, err := storage.GetNode(id)
 		if err != nil {
 			return nil, fmt.Errorf("error getting node with Id %d: %w", id, err)
@@ -83,14 +83,14 @@ func WeightedNACD(storage graph.Storage, weights Weights) ([]*PkgAndValue, error
 			criticality := sigmoidBasedAlgo(valsAndTypesForCriticality, weightsForEachType)
 			likelihood := sigmoidBasedAlgo(valsAndTypesForLikelihood, weightsForEachType)
 
-			// Round values to the second decimal place
-			criticality = math.Round(criticality*100) / 100
-			likelihood = math.Round(likelihood*100) / 100
-
 			risk := riskAlgo(weights.CriticalityWeight, criticality, weights.LikelihoodWeight, likelihood)
-			risk = math.Round(risk*100) / 100
 
 			scoresPerPkg = append(scoresPerPkg, &PkgAndValue{Id: id, Risk: risk, Criticality: criticality, Likelihood: likelihood})
+		}
+
+		// Update progress
+		if progress != nil {
+			progress(index+1, len(ids))
 		}
 	}
 

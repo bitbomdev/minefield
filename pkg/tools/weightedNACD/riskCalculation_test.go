@@ -40,8 +40,8 @@ func TestWeightedNACD(t *testing.T) {
 				},
 			},
 			want: []*PkgAndValue{
-				{Id: 1, Risk: math.NaN(), Criticality: 0.82, Likelihood: math.NaN()},
-				{Id: 2, Risk: math.NaN(), Criticality: 0.62, Likelihood: math.NaN()},
+				{Id: 1, Risk: math.NaN(), Criticality: 0.8175744761936437, Likelihood: math.NaN()},
+				{Id: 2, Risk: math.NaN(), Criticality: 0.6224593312018546, Likelihood: math.NaN()},
 			},
 			wantErr: false,
 		},
@@ -60,7 +60,7 @@ func TestWeightedNACD(t *testing.T) {
 			err = node1.SetDependency(storage, node2)
 			assert.NoError(t, err)
 
-			got, err := WeightedNACD(storage, test.weights)
+			got, err := WeightedNACD(storage, test.weights, nil)
 			if (err != nil) != test.wantErr {
 				t.Errorf("WeightedNACD() error = %v, wantErr %v", err, test.wantErr)
 				return

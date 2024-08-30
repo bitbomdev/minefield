@@ -7,7 +7,7 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
-func Cache(storage Storage) error {
+func Cache(storage Storage, progressDependents func(int, int, bool), progressDependencies func(int, int, bool)) error {
 	uncachedNodes, err := storage.ToBeCached()
 	if err != nil {
 		return err
@@ -27,13 +27,14 @@ func Cache(storage Storage) error {
 	}
 
 	scc := findCycles(len(keys), allNodes)
+	fmt.Println("HI")
 
-	cachedChildren, err := buildCache(uncachedNodes, ChildrenDirection, scc, allNodes)
+	cachedChildren, err := buildCache(uncachedNodes, ChildrenDirection, scc, allNodes, progressDependencies)
 	if err != nil {
 		return err
 	}
 
-	cachedParents, err := buildCache(uncachedNodes, ParentsDirection, scc, allNodes)
+	cachedParents, err := buildCache(uncachedNodes, ParentsDirection, scc, allNodes, progressDependents)
 	if err != nil {
 		return err
 	}
@@ -129,7 +130,7 @@ type todoFuturePair struct {
 	futureNodes []uint32
 }
 
-func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint32, allNodes map[uint32]*Node) (*NativeKeyManagement, error) {
+func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint32, allNodes map[uint32]*Node, progress func(int, int, bool)) (*NativeKeyManagement, error) {
 	cache, children, parents := NewNativeKeyManagement(), NewNativeKeyManagement(), NewNativeKeyManagement()
 	alreadyCached := roaring.New()
 	todoFutureCache := make(map[uint32]todoFuturePair)
@@ -139,47 +140,56 @@ func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint
 		return nil, err
 	}
 
-	stack := []stackElm{}
+	count := 0
 
 	for _, nodeID := range uncachedNodes {
-		stack = append(stack, stackElm{id: nodeID, todoIndex: 0})
-	}
 
-	for len(stack) > 0 {
+		stack := []stackElm{stackElm{id: nodeID, todoIndex: 0}}
 
-		todoIndex := stack[len(stack)-1].todoIndex
-		curNode := allNodes[stack[len(stack)-1].id]
+		for len(stack) > 0 {
 
-		if alreadyCached.Contains(curNode.ID) {
-			stack = stack[:len(stack)-1]
-			continue
-		}
-
-		todoNodes, futureNodes, err := getTodoAndFutureNodesCached(children, parents, curNode, direction, todoFutureCache)
-		if err != nil {
-			return nil, err
-		}
-
-		if todoIndex == len(todoNodes) {
-			alreadyCached.Add(curNode.ID)
-			stack = stack[:len(stack)-1]
-
-			for _, nextNode := range futureNodes {
-				stack = append(stack, stackElm{id: nextNode, todoIndex: 0})
+			todoIndex := stack[len(stack)-1].todoIndex
+			curNode := allNodes[stack[len(stack)-1].id]
+	
+			if alreadyCached.Contains(curNode.ID) {
+				stack = stack[:len(stack)-1]
+				continue
 			}
-		} else {
-			if scc[curNode.ID] != scc[todoNodes[todoIndex]] {
-				stack = append(stack[:len(stack)-1], stackElm{id: curNode.ID, todoIndex: todoIndex + 1})
-				if alreadyCached.Contains(todoNodes[todoIndex]) {
-					if err := addToCache(cache, curNode.ID, todoNodes[todoIndex]); err != nil {
-						return nil, err
+	
+			todoNodes, futureNodes, err := getTodoAndFutureNodesCached(children, parents, curNode, direction, todoFutureCache)
+			if err != nil {
+				return nil, err
+			}
+	
+			if todoIndex == len(todoNodes) {
+				alreadyCached.Add(curNode.ID)
+				stack = stack[:len(stack)-1]
+	
+				for _, nextNode := range futureNodes {
+					stack = append(stack, stackElm{id: nextNode, todoIndex: 0})
+				}
+			} else {
+				if scc[curNode.ID] != scc[todoNodes[todoIndex]] {
+					stack = append(stack[:len(stack)-1], stackElm{id: curNode.ID, todoIndex: todoIndex + 1})
+					if alreadyCached.Contains(todoNodes[todoIndex]) {
+						if err := addToCache(cache, curNode.ID, todoNodes[todoIndex]); err != nil {
+							return nil, err
+						}
+					} else {
+						stack = append(stack, stackElm{id: todoNodes[todoIndex], todoIndex: 0})
 					}
-				} else {
-					stack = append(stack, stackElm{id: todoNodes[todoIndex], todoIndex: 0})
 				}
 			}
+
+			
+		}
+		// Update the progress bar
+		count++
+		if progress != nil {
+			progress(count, len(uncachedNodes), direction == ParentsDirection)
 		}
 	}
+
 	return cache, nil
 }
 
