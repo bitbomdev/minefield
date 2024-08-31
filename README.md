@@ -1,6 +1,8 @@
 # Minefield
 
 [![codecov](https://codecov.io/gh/bitbomdev/minefield/graph/badge.svg?token=HPRMZFGXE9)](https://codecov.io/gh/bitbomdev/minefield)
+[![Build and Test](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml/badge.svg)](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml)
+[![OSV-Scanner Scheduled Scan](https://github.com/bitbomdev/minefield/actions/workflows/osv-schedule.yml/badge.svg)](https://github.com/bitbomdev/minefield/actions/workflows/osv-schedule.yml)
 
 BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s.
 
