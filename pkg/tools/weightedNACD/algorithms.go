@@ -24,7 +24,7 @@ func sigmoidBasedAlgo(values []valueAndType, valsForType map[string]weightsForTy
 		sum2 += vals.weight / (1 + math.Pow(math.E, -vals.k*(values[i].value-vals.l/2)))
 	}
 
-	return math.Round((1/sum*sum2)*100) / 100
+	return 1 / sum * sum2
 }
 
 // Risk is because of this https://docs.google.com/document/d/1Xb86MrKFQZQNq9rCQb08Dk1b5HU7nzLHkzfjBvbndeM/edit?pli=1#heading=h.z6k227z3me9k

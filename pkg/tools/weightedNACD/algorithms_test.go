@@ -21,7 +21,7 @@ func TestSigmoidBasedAlgo(t *testing.T) {
 			valsForType: map[string]weightsForType{
 				"dependencies": {weight: 1.0, k: 1.0, l: 1.0},
 			},
-			want: 0.62,
+			want: 0.6224593312018546,
 		},
 		{
 			name: "multiple values",
@@ -33,7 +33,7 @@ func TestSigmoidBasedAlgo(t *testing.T) {
 				"dependencies": {weight: 1.0, k: 1.0, l: 1.0},
 				"scorecard":    {weight: 2.0, k: 1.0, l: 2.0},
 			},
-			want: 0.88,
+			want: 0.8801465633925935,
 		},
 	}
 

@@ -11,7 +11,7 @@ import (
 )
 
 // SBOM ingests a SBOM file or directory into the storage backend.
-func SBOM(sbomPath string, storage graph.Storage) (int, error) {
+func SBOM(sbomPath string, storage graph.Storage, progress func(count int, path string)) (int, error) {
 	info, err := os.Stat(sbomPath)
 	if err != nil {
 		return 0, fmt.Errorf("error accessing path %s: %w", sbomPath, err)
@@ -27,9 +27,11 @@ func SBOM(sbomPath string, storage graph.Storage) (int, error) {
 		}
 		for _, entry := range entries {
 			entryPath := filepath.Join(sbomPath, entry.Name())
-			subCount, err := SBOM(entryPath, storage)
+			subCount, err := SBOM(entryPath, storage, progress)
 			count += subCount
-			fmt.Printf("\r\033[K%s", formatProgress(count, entryPath))
+			if progress != nil {
+				progress(count, entryPath)
+			}
 			if err != nil {
 				errors = append(errors, fmt.Errorf("failed to ingest SBOM from path %s: %w", entryPath, err))
 			}
@@ -39,7 +41,9 @@ func SBOM(sbomPath string, storage graph.Storage) (int, error) {
 			errors = append(errors, fmt.Errorf("failed to process SBOM file %s: %w", sbomPath, err))
 		} else {
 			count++
-			fmt.Printf("\r\033[K%s", formatProgress(count, sbomPath))
+			if progress != nil {
+				progress(count, sbomPath)
+			}
 		}
 	}
 
@@ -118,14 +122,3 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 	return nil
 }
 
-// Add these helper functions at the end of the file
-func formatProgress(count int, path string) string {
-	return fmt.Sprintf("Ingested %d SBOMs | Current: %s", count, truncatePath(path, 50))
-}
-
-func truncatePath(path string, maxLength int) string {
-	if len(path) <= maxLength {
-		return path
-	}
-	return "..." + path[len(path)-maxLength+3:]
-}

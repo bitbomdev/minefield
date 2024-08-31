@@ -1,6 +1,8 @@
 package tools
 
-import "strings"
+import (
+	"strings"
+)
 
 // SanitizeFilename replaces characters that are not allowed in filenames with underscores.
 func SanitizeFilename(filename string) string {
@@ -12,4 +14,11 @@ func SanitizeFilename(filename string) string {
 		filename = strings.ReplaceAll(filename, char, "_")
 	}
 	return filename
+}
+
+func TruncateString(str string, maxLength int) string {
+	if len(str) <= maxLength {
+		return str
+	}
+	return "..." + str[len(str)-maxLength+3:]
 }

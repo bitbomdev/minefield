@@ -73,7 +73,7 @@ func TestIngestSBOM(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			storage := graph.NewMockStorage()
-			if _, err := SBOM(test.sbomPath, storage); test.wantErr != (err != nil) {
+			if _, err := SBOM(test.sbomPath, storage, nil); test.wantErr != (err != nil) {
 				t.Errorf("Sbom() error = %v, wantErr = %v", err, test.wantErr)
 			}
 

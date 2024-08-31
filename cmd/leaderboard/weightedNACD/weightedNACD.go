@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-
-	"github.com/goccy/go-json"
+	"strings"
 
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/bit-bom/minefield/pkg/tools/weightedNACD"
+	"github.com/goccy/go-json"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -68,14 +68,14 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	results, err := weightedNACD.WeightedNACD(o.storage, weights)
+	results, err := weightedNACD.WeightedNACD(o.storage, weights, printProgress)
 	if err != nil {
 		return fmt.Errorf("failed to calculate weighted NACD: %w", err)
 	}
 
 	// Print results as a table
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Package", "Risk", "Criticality", "Likelihood"})
+	table.SetHeader([]string{"Name", "ID", "Risk", "Criticality", "Likelihood"})
 
 	for index, result := range results {
 		if index > o.maxOutput {
@@ -86,7 +86,7 @@ func (o *options) Run(_ *cobra.Command, _ []string) error {
 			fmt.Println("Failed to get node for ID:", err)
 			continue
 		}
-		table.Append([]string{strconv.Itoa(int(node.ID)), fmt.Sprintf("%f", result.Risk), fmt.Sprintf("%f", result.Criticality), fmt.Sprintf("%f", result.Likelihood)})
+		table.Append([]string{node.Name, strconv.Itoa(int(node.ID)), fmt.Sprintf("%f", result.Risk), fmt.Sprintf("%f", result.Criticality), fmt.Sprintf("%f", result.Likelihood)})
 	}
 
 	table.Render()
@@ -110,4 +110,28 @@ func New(storage graph.Storage) *cobra.Command {
 	o.AddFlags(cmd)
 
 	return cmd
+}
+
+func printProgress(progress, total int) {
+	if total == 0 {
+		fmt.Println("Progress total cannot be zero.")
+		return
+	}
+	barLength := 40
+	progressRatio := float64(progress) / float64(total)
+	progressBar := int(progressRatio * float64(barLength))
+
+	bar := "\033[1;36m" + strings.Repeat("=", progressBar)
+	if progressBar < barLength {
+		bar += ">"
+	}
+	bar += strings.Repeat(" ", max(0, barLength-progressBar-1)) + "\033[0m"
+
+	percentage := fmt.Sprintf("\033[1;34m%3d%%\033[0m", int(progressRatio*100))
+
+	fmt.Printf("\r[%s] %s of the queries computed \033[1;34m(%d/%d)\033[0m", bar, percentage, progress, total)
+
+	if progress == total {
+		fmt.Println()
+	}
 }
