@@ -16,7 +16,7 @@ For a detailed explanation of the Minefield tool, please refer to the [Minefield
 
 1. [What is a Roaring Bitmap](#what-is-a-roaring-bitmap)
 2. [Caching](#caching)
-3. [Overview of BitBom](#overview-of-bitbom)
+3. [Overview of Minefield](#overview-of-minefield)
 4. [Getting Started](#to-start-using-minefield)
    - [Using Docker](#using-docker)
    - [Building from source](#building-from-source)
@@ -58,7 +58,7 @@ Returning to our earlier example, caching 100,000 nodes with 10 connections each
 
 The difference of 1 second versus 31.7 years is monumental.
 
-## Overview of BitBom
+## Overview of minefield 
 
 This sequence diagram provides a high-level overview of how Minefield operates from a user's perspective:
 
@@ -67,21 +67,21 @@ This diagram illustrates the interactions between the user, Minefield, and its c
 ```mermaid
 sequenceDiagram
     participant User
-    participant BitBom
+    participant Minefield 
     participant Storage
     participant Query
     
     note right of User: Ingestion
-    User->>BitBom: Ingest (Either SBOM, OSV...)
-    BitBom->>Storage: Store data
+    User->>Minefield: Ingest (Either SBOM, OSV...)
+    Minefield->>Storage: Store data
     
     note right of User: Caching
-    User->>BitBom: Cache Data
-    BitBom->>Storage: Cache data with Roaring Bitmaps
+    User->>Minefield: Cache Data
+    Minefield->>Storage: Cache data with Roaring Bitmaps
     
     note right of User: Querying
-    User->>BitBom: Run Query<br/>`query "dependents PACKAGE pkg:generic/dep2@1.0.0"`
-    BitBom->>Query: Execute query
+    User->>Minefield: Run Query<br/>`query "dependents PACKAGE pkg:generic/dep2@1.0.0"`
+    Minefield->>Query: Execute query
     Query->>Storage: Fetch data in O(1) time
     Query->>User: Return query results
 ```

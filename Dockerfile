@@ -3,10 +3,10 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO=0 go build -o /app/bitbom main.go
+RUN CGO=0 go build -o /app/minefield main.go
 
 FROM cgr.dev/chainguard/go:latest
 WORKDIR /app
-COPY --from=builder /app/bitbom /app/bitbom
+COPY --from=builder /app/minefield /app/minefield
 
-ENTRYPOINT ["/app/bitbom"]
+ENTRYPOINT ["/app/minefield"]
