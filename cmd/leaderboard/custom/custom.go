@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/olekukonko/tablewriter"
@@ -13,9 +14,10 @@ import (
 )
 
 type options struct {
-	storage   graph.Storage
-	all       bool
-	maxOutput int
+	storage     graph.Storage
+	all         bool
+	maxOutput   int
+	concurrency int
 }
 
 type query struct {
@@ -26,6 +28,7 @@ type query struct {
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&o.all, "all", false, "show the queries output for each node")
 	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
+	cmd.Flags().IntVar(&o.concurrency, "concurrency", 100, "max concurrency")
 }
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
@@ -41,9 +44,6 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to query keys: %w", err)
 	}
-
-	// Print dependencies
-	queries := []query{}
 
 	nodes, err := o.storage.GetNodes(keys)
 	if err != nil {
@@ -63,23 +63,61 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	h := &queryHeap{}
 	heap.Init(h)
 
-	for index := 0; index < len(keys); index++ {
-		node := nodes[keys[index]]
+	// Use maxConcurrency in your parallel processing code
+	semaphore := make(chan struct{}, o.concurrency)
+
+	// Create channels for queries and errors
+	queryChan := make(chan *query, len(nodes))
+	errChan := make(chan error, len(nodes))
+
+	var wg sync.WaitGroup
+	for _, node := range nodes {
 		if node.Name == "" {
 			continue
 		}
 
-		execute, err := graph.ParseAndExecute(args[0], o.storage, node.Name, nodes, caches, len(cacheStack) == 0)
+		wg.Add(1)
+		semaphore <- struct{}{} // Acquire a token
+		go func(node *graph.Node) {
+			defer wg.Done()
+			defer func() { <-semaphore }() // Release the token
+
+			execute, err := graph.ParseAndExecute(args[0], o.storage, node.Name, nodes, caches, len(cacheStack) == 0)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			output := execute.ToArray()
+			queryChan <- &query{node: node, output: output}
+		}(node)
+	}
+
+	// Close channels once all goroutines are done
+	go func() {
+		wg.Wait()
+		close(queryChan)
+		close(errChan)
+		close(semaphore) // Close the semaphore channel
+	}()
+	counter := 0
+	// Collect results from channels
+	for q := range queryChan {
+		heap.Push(h, q)
+		counter++
+		printProgress(counter, len(nodes))
+	}
+
+	// Check for errors
+	select {
+	case err := <-errChan:
 		if err != nil {
 			return err
 		}
-
-		output := execute.ToArray()
-		heap.Push(h, &query{node: node, output: output})
-		printProgress(index+1, len(nodes))
+	default:
 	}
 
-	queries = make([]query, h.Len())
+	queries := make([]query, h.Len())
 	for i := len(queries) - 1; i >= 0; i-- {
 		queries[i] = *heap.Pop(h).(*query)
 	}
@@ -108,7 +146,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func New(storage graph.Storage) *cobra.Command {
+func New(storage graph.Storage, maxConcurrency int) *cobra.Command {
 	o := &options{
 		storage: storage,
 	}
