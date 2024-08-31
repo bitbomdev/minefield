@@ -153,6 +153,9 @@ minefield
 
 For detailed information on available query commands and their usage, please refer to the [Custom Query Commands documentation](docs/customQueryCommands.md).
 
+## Stargazers over time
+[![Stargazers over time](https://starchart.cc/bitbomdev/minefield.svg?variant=adaptive)](https://starchart.cc/bitbomdev/minefield)
+
 ## Acknowledgements
 
 - https://github.com/RoaringBitmap/roaring
