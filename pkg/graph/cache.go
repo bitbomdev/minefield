@@ -27,7 +27,6 @@ func Cache(storage Storage, progressDependents func(int, int, bool), progressDep
 	}
 
 	scc := findCycles(len(keys), allNodes)
-	fmt.Println("HI")
 
 	cachedChildren, err := buildCache(uncachedNodes, ChildrenDirection, scc, allNodes, progressDependencies)
 	if err != nil {
@@ -144,27 +143,27 @@ func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint
 
 	for _, nodeID := range uncachedNodes {
 
-		stack := []stackElm{stackElm{id: nodeID, todoIndex: 0}}
+		stack := []stackElm{{id: nodeID, todoIndex: 0}}
 
 		for len(stack) > 0 {
 
 			todoIndex := stack[len(stack)-1].todoIndex
 			curNode := allNodes[stack[len(stack)-1].id]
-	
+
 			if alreadyCached.Contains(curNode.ID) {
 				stack = stack[:len(stack)-1]
 				continue
 			}
-	
+
 			todoNodes, futureNodes, err := getTodoAndFutureNodesCached(children, parents, curNode, direction, todoFutureCache)
 			if err != nil {
 				return nil, err
 			}
-	
+
 			if todoIndex == len(todoNodes) {
 				alreadyCached.Add(curNode.ID)
 				stack = stack[:len(stack)-1]
-	
+
 				for _, nextNode := range futureNodes {
 					stack = append(stack, stackElm{id: nextNode, todoIndex: 0})
 				}
@@ -181,7 +180,6 @@ func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint
 				}
 			}
 
-			
 		}
 		// Update the progress bar
 		count++
