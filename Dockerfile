@@ -5,7 +5,7 @@ RUN go mod download
 COPY . .
 RUN CGO=0 go build -o /app/minefield main.go
 
-FROM cgr.dev/chainguard/go:latest
+FROM cgr.dev/chainguard/glibc-dynamic
 WORKDIR /app
 COPY --from=builder /app/minefield /app/minefield
 
