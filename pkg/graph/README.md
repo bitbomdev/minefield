@@ -1,6 +1,6 @@
 # Caching
 
-In Bitbom, each node in the graph can have dependencies (children) and dependents (parents). To optimize the performance of querying these relationships, Bitbom uses a caching mechanism. This mechanism precomputes and stores the full set of dependencies and dependents for each node, reducing the need for redundant computations during queries.
+In Minefield, each node in the graph can have dependencies (children) and dependents (parents). To optimize the performance of querying these relationships, Minefield uses a caching mechanism. This mechanism precomputes and stores the full set of dependencies and dependents for each node, reducing the need for redundant computations during queries.
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -75,4 +75,4 @@ D --> E
 
 ## Conclusion
 
-The caching mechanism in Bitbom optimizes the performance of querying dependencies and dependents in a graph by precomputing and storing these relationships.
+The caching mechanism in Minefield optimizes the performance of querying dependencies and dependents in a graph by precomputing and storing these relationships.

@@ -22,7 +22,7 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 func New(storage graph.Storage) *cobra.Command {
 	o := &options{}
 	cmd := &cobra.Command{
-		Use:               "bitbom",
+		Use:               "minefield",
 		Short:             "graphing SBOM's with the power of roaring bitmaps",
 		SilenceUsage:      true,
 		DisableAutoGenTag: true,
