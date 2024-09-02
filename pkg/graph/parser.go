@@ -7,6 +7,14 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
+const (
+	dependencies = "dependencies"
+	dependents   = "dependents"
+	or           = "or"
+	and          = "and"
+	xor          = "xor"
+)
+
 // Define the grammar using Go structs and Participle tags
 type Expression struct {
 	Left  *Term       `@@`
@@ -22,14 +30,14 @@ type Term struct {
 type Query struct {
 	QueryType string  `@Ident`  // For example "dependencies" or "dependents"
 	NodeType  string  `@Ident`  // For example "library" or "vulns"
-	NodeName  *string `@Ident?` // NodeName is now optional - For example
+	NodeName  *string `@Ident?` // NodeName is now optional // The purl being inputted
 }
 
 var (
 	simpleLexer = lexer.MustSimple([]lexer.SimpleRule{
+		{"Operator", `\b(?:and|or|xor)\b`},      // Prioritize operators
 		{"Ident", `[a-zA-Z][a-zA-Z0-9:/._@-]*`}, // Updated to handle colons, slashes, dots, underscores, hyphens, and @
 		{"String", `"(?:\\.|[^"])*"`},
-		{"Operator", `\b(?:and|or|xor)\b`},
 		{"Whitespace", `[ \t\n\r]+`},
 		{"LBracket", `\[`},
 		{"RBracket", `\]`},
@@ -55,31 +63,31 @@ func ParseAndExecute(script string, storage Storage, defaultNodeName string, nod
 	}
 
 	// Collect all packages for batch querying
-	dependencies, dependents := collectPackages(expression, defaultNodeName)
+	dependenciesToQuery, dependentsToQuery := collectPackages(expression, defaultNodeName)
 
 	var nodeDependencies, nodeDependents []*Node
 
-	for _, dependency := range dependencies {
+	for _, dependency := range dependenciesToQuery {
 		id := nameToIDs[dependency]
 		nodeDependencies = append(nodeDependencies, nodes[id])
 	}
 
-	for _, dependent := range dependents {
+	for _, dependent := range dependentsToQuery {
 		id := nameToIDs[dependent]
 		nodeDependents = append(nodeDependents, nodes[id])
 	}
 
-	nodeToDependencies, err := BatchQueryDependencies(storage, nodeDependencies, caches, isCached)
+	dependenciesForID, err := BatchQueryDependencies(storage, nodeDependencies, caches, isCached)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get dependencies: %v", err)
+		return nil, fmt.Errorf("failed to get dependencies from batch query: %v", err)
 	}
-	nodeToDependents, err := BatchQueryDependents(storage, nodeDependents, caches, isCached)
+	dependentsForID, err := BatchQueryDependents(storage, nodeDependents, caches, isCached)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get dependents: %v", err)
+		return nil, fmt.Errorf("failed to get dependents from batch query: %v", err)
 	}
 
 	// Iterate through the parsed structure
-	bm, err := iterateExpression(expression, nodeToDependencies, nodeToDependents, nameToIDs, defaultNodeName)
+	bm, err := iterateExpression(expression, dependenciesForID, dependentsForID, nameToIDs, defaultNodeName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to iterate expression: %v", err)
 	}
@@ -88,67 +96,71 @@ func ParseAndExecute(script string, storage Storage, defaultNodeName string, nod
 }
 
 func collectPackages(expr *Expression, defaultNodeName string) ([]string, []string) {
-	var dependencies []string
-	var dependents []string
-	collectPackagesFromExpression(expr, &dependencies, &dependents, defaultNodeName)
-	return dependencies, dependents
+	var dependenciesToQuery []string
+	var dependentsToQuery []string
+	collectPackagesFromExpression(expr, &dependenciesToQuery, &dependentsToQuery, defaultNodeName)
+	return dependenciesToQuery, dependentsToQuery
 }
 
-func collectPackagesFromExpression(expr *Expression, dependencies, dependents *[]string, defaultNodeName string) {
+func collectPackagesFromExpression(expr *Expression, dependenciesToQuery, dependentsToQuery *[]string, defaultNodeName string) {
 	if expr == nil {
 		return
 	}
 
-	collectPackagesFromTerm(expr.Left, dependencies, dependents, defaultNodeName)
-	collectPackagesFromExpression(expr.Right, dependencies, dependents, defaultNodeName)
+	collectPackagesFromTerm(expr.Left, dependenciesToQuery, dependentsToQuery, defaultNodeName)
+	collectPackagesFromExpression(expr.Right, dependenciesToQuery, dependentsToQuery, defaultNodeName)
 }
 
-func collectPackagesFromTerm(term *Term, dependencies, dependents *[]string, defaultNodeName string) {
+func collectPackagesFromTerm(term *Term, dependenciesToQuery, dependentsToQuery *[]string, defaultNodeName string) {
 	if term == nil {
 		return
 	}
 
 	if term.Query != nil {
 		switch term.Query.QueryType {
-		case "dependencies":
+		case dependencies:
 			if term.Query.NodeName != nil {
-				*dependencies = append(*dependencies, *term.Query.NodeName)
+				*dependenciesToQuery = append(*dependenciesToQuery, *term.Query.NodeName)
 			} else {
-				*dependencies = append(*dependencies, defaultNodeName)
+				*dependenciesToQuery = append(*dependenciesToQuery, defaultNodeName)
 			}
-		case "dependents":
-			*dependents = append(*dependents, *term.Query.NodeName)
+		case dependents:
+			if term.Query.NodeName != nil {
+				*dependentsToQuery = append(*dependentsToQuery, *term.Query.NodeName)
+			} else {
+				*dependentsToQuery = append(*dependentsToQuery, defaultNodeName)
+			}
 		}
 	}
 
 	if term.Expression != nil {
-		collectPackagesFromExpression(term.Expression, dependencies, dependents, defaultNodeName)
+		collectPackagesFromExpression(term.Expression, dependenciesToQuery, dependentsToQuery, defaultNodeName)
 	}
 }
 
-func iterateExpression(expr *Expression, dependencies, dependents map[uint32]*roaring.Bitmap, nameToIDs map[string]uint32, defaultNodeName string) (*roaring.Bitmap, error) {
+func iterateExpression(expr *Expression, dependenciesForID, dependentsForID map[uint32]*roaring.Bitmap, nameToIDs map[string]uint32, defaultNodeName string) (*roaring.Bitmap, error) {
 	if expr == nil {
 		return nil, nil
 	}
 
-	bm, err := iterateTerm(expr.Left, dependencies, dependents, nameToIDs, defaultNodeName)
+	bm, err := iterateTerm(expr.Left, dependenciesForID, dependentsForID, nameToIDs, defaultNodeName)
 	if err != nil {
 		return nil, err
 	}
 
 	if expr.Op != nil {
-		bm2, err := iterateExpression(expr.Right, dependencies, dependents, nameToIDs, defaultNodeName)
+		bm2, err := iterateExpression(expr.Right, dependenciesForID, dependentsForID, nameToIDs, defaultNodeName)
 
 		if err != nil {
 			return nil, err
 		}
 
 		switch *expr.Op {
-		case "or":
+		case or:
 			bm.Or(bm2)
-		case "and":
+		case and:
 			bm.And(bm2)
-		case "xor":
+		case xor:
 			bm.Xor(bm2)
 		default:
 			return nil, fmt.Errorf("unknown operator: %s", *expr.Op)
@@ -158,7 +170,7 @@ func iterateExpression(expr *Expression, dependencies, dependents map[uint32]*ro
 	return bm, nil
 }
 
-func iterateTerm(term *Term, dependencies, dependents map[uint32]*roaring.Bitmap, nameToIDs map[string]uint32, defaultNodeName string) (*roaring.Bitmap, error) {
+func iterateTerm(term *Term, dependenciesForID, dependentsForID map[uint32]*roaring.Bitmap, nameToIDs map[string]uint32, defaultNodeName string) (*roaring.Bitmap, error) {
 	if term == nil {
 		return nil, nil
 	}
@@ -174,17 +186,17 @@ func iterateTerm(term *Term, dependencies, dependents map[uint32]*roaring.Bitmap
 		}
 
 		switch term.Query.QueryType {
-		case "dependencies":
-			bm = dependencies[id]
-		case "dependents":
-			bm = dependents[id]
+		case dependencies:
+			bm = dependenciesForID[id]
+		case dependents:
+			bm = dependentsForID[id]
 		default:
 			return nil, fmt.Errorf("unknown query: %s", term.Query.QueryType)
 		}
 	}
 
 	if term.Expression != nil {
-		_, err := iterateExpression(term.Expression, dependencies, dependents, nameToIDs, defaultNodeName)
+		_, err := iterateExpression(term.Expression, dependenciesForID, dependentsForID, nameToIDs, defaultNodeName)
 		if err != nil {
 			return nil, err
 		}
