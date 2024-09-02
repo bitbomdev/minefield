@@ -1,12 +1,14 @@
 # Minefield
-
+[![Go Report Card](https://goreportcard.com/badge/github.com/bit-bom/minefield)](https://goreportcard.com/report/github.com/bit-bom/minefield)
 [![Build and Test](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml/badge.svg)](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml)
-[![OSV-Scanner Scheduled Scan](https://github.com/bitbomdev/minefield/actions/workflows/osv-schedule.yml/badge.svg)](https://github.com/bitbomdev/minefield/actions/workflows/osv-schedule.yml)
 
-BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s.
 
-> The average user doesn't give a damn what happens, as long as (1) it works and (2) it's fast. - Daniel J. Bernstein
+>Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
 
+BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s FAST.
+
+![img.png](images/cache.png)
+> Caching 10,000 SBOMs packages transitive dependents in 30 seconds.
 ## Table of Contents
 
 1. [Quickstart guide](#quickstart-guide)
@@ -97,7 +99,7 @@ For detailed information on available query commands and their usage, please ref
 
 ## Visualization of a query
 
-![img.png](img.png)
+![img.png](images/img.png)
 
 ## Star History
 
