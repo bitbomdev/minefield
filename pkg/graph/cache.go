@@ -141,7 +141,14 @@ func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint
 
 	count := 0
 
+	nodesToCache := roaring.New()
+
 	for _, nodeID := range uncachedNodes {
+		nodesToCache.Add(nodeID)
+	}
+
+	nodesToProcess := nodesToCache.ToArray()
+	for _, nodeID := range nodesToProcess {
 
 		stack := []stackElm{{id: nodeID, todoIndex: 0}}
 
@@ -184,7 +191,7 @@ func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint
 		// Update the progress bar
 		count++
 		if progress != nil {
-			progress(count, len(uncachedNodes), direction == ParentsDirection)
+			progress(count, len(nodesToProcess), direction == ParentsDirection)
 		}
 	}
 
