@@ -96,7 +96,7 @@ func TestParseAndExecute(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			result, err := ParseAndExecute(tt.script, storage, tt.defaultNodeName, nodes, caches, true)
+			result, err := ParseAndExecute(tt.script, storage, nodes, caches, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseAndExecute() error = %v, wantErr %v", err, tt.wantErr)
 				return

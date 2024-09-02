@@ -4,6 +4,7 @@ go 1.22.5
 
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
+	github.com/alecthomas/participle/v2 v2.1.1
 	github.com/go-echarts/go-echarts/v2 v2.4.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/goccy/go-json v0.10.3
@@ -24,6 +25,8 @@ require (
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.0 // indirect
+	github.com/alecthomas/assert/v2 v2.6.0 // indirect
+	github.com/alecthomas/repr v0.4.0 // indirect
 	github.com/anchore/go-struct-converter v0.0.0-20230627203149-c72ef8859ca9 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
