@@ -68,13 +68,17 @@ func ParseAndExecute(script string, storage Storage, defaultNodeName string, nod
 	var nodeDependencies, nodeDependents []*Node
 
 	for _, dependency := range dependenciesToQuery {
-		id := nameToIDs[dependency]
+		id := nameToIDs[dependency.purl]
+		//if nodes[id].Type == dependency._type {
 		nodeDependencies = append(nodeDependencies, nodes[id])
+		//}
 	}
 
 	for _, dependent := range dependentsToQuery {
-		id := nameToIDs[dependent]
+		id := nameToIDs[dependent.purl]
+		//if nodes[id].Type == dependent._type {
 		nodeDependents = append(nodeDependents, nodes[id])
+		//}
 	}
 
 	dependenciesForID, err := BatchQueryDependencies(storage, nodeDependencies, caches, isCached)
@@ -87,22 +91,31 @@ func ParseAndExecute(script string, storage Storage, defaultNodeName string, nod
 	}
 
 	// Iterate through the parsed structure
-	bm, err := iterateExpression(expression, dependenciesForID, dependentsForID, nameToIDs, defaultNodeName)
+	bm, err := iterateExpression(expression, dependenciesForID, dependentsForID, nameToIDs, nodes, defaultNodeName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to iterate expression: %v", err)
+	}
+
+	if bm == nil {
+		bm = roaring.New()
 	}
 
 	return bm, nil
 }
 
-func collectPackages(expr *Expression, defaultNodeName string) ([]string, []string) {
-	var dependenciesToQuery []string
-	var dependentsToQuery []string
+type purlData struct {
+	purl  string
+	_type string
+}
+
+func collectPackages(expr *Expression, defaultNodeName string) ([]purlData, []purlData) {
+	var dependenciesToQuery []purlData
+	var dependentsToQuery []purlData
 	collectPackagesFromExpression(expr, &dependenciesToQuery, &dependentsToQuery, defaultNodeName)
 	return dependenciesToQuery, dependentsToQuery
 }
 
-func collectPackagesFromExpression(expr *Expression, dependenciesToQuery, dependentsToQuery *[]string, defaultNodeName string) {
+func collectPackagesFromExpression(expr *Expression, dependenciesToQuery, dependentsToQuery *[]purlData, defaultNodeName string) {
 	if expr == nil {
 		return
 	}
@@ -111,7 +124,7 @@ func collectPackagesFromExpression(expr *Expression, dependenciesToQuery, depend
 	collectPackagesFromExpression(expr.Right, dependenciesToQuery, dependentsToQuery, defaultNodeName)
 }
 
-func collectPackagesFromTerm(term *Term, dependenciesToQuery, dependentsToQuery *[]string, defaultNodeName string) {
+func collectPackagesFromTerm(term *Term, dependenciesToQuery, dependentsToQuery *[]purlData, defaultNodeName string) {
 	if term == nil {
 		return
 	}
@@ -120,15 +133,15 @@ func collectPackagesFromTerm(term *Term, dependenciesToQuery, dependentsToQuery 
 		switch term.Query.QueryType {
 		case dependencies:
 			if term.Query.NodeName != nil {
-				*dependenciesToQuery = append(*dependenciesToQuery, *term.Query.NodeName)
+				*dependenciesToQuery = append(*dependenciesToQuery, purlData{purl: *term.Query.NodeName, _type: term.Query.NodeType})
 			} else {
-				*dependenciesToQuery = append(*dependenciesToQuery, defaultNodeName)
+				*dependenciesToQuery = append(*dependenciesToQuery, purlData{purl: defaultNodeName, _type: term.Query.NodeType})
 			}
 		case dependents:
 			if term.Query.NodeName != nil {
-				*dependentsToQuery = append(*dependentsToQuery, *term.Query.NodeName)
+				*dependentsToQuery = append(*dependentsToQuery, purlData{purl: *term.Query.NodeName, _type: term.Query.NodeType})
 			} else {
-				*dependentsToQuery = append(*dependentsToQuery, defaultNodeName)
+				*dependentsToQuery = append(*dependentsToQuery, purlData{purl: defaultNodeName, _type: term.Query.NodeType})
 			}
 		}
 	}
@@ -138,18 +151,18 @@ func collectPackagesFromTerm(term *Term, dependenciesToQuery, dependentsToQuery 
 	}
 }
 
-func iterateExpression(expr *Expression, dependenciesForID, dependentsForID map[uint32]*roaring.Bitmap, nameToIDs map[string]uint32, defaultNodeName string) (*roaring.Bitmap, error) {
+func iterateExpression(expr *Expression, dependenciesForID, dependentsForID map[uint32]*roaring.Bitmap, nameToIDs map[string]uint32, nodes map[uint32]*Node, defaultNodeName string) (*roaring.Bitmap, error) {
 	if expr == nil {
 		return nil, nil
 	}
 
-	bm, err := iterateTerm(expr.Left, dependenciesForID, dependentsForID, nameToIDs, defaultNodeName)
+	bm, err := iterateTerm(expr.Left, dependenciesForID, dependentsForID, nameToIDs, nodes, defaultNodeName)
 	if err != nil {
 		return nil, err
 	}
 
 	if expr.Op != nil {
-		bm2, err := iterateExpression(expr.Right, dependenciesForID, dependentsForID, nameToIDs, defaultNodeName)
+		bm2, err := iterateExpression(expr.Right, dependenciesForID, dependentsForID, nameToIDs, nodes, defaultNodeName)
 
 		if err != nil {
 			return nil, err
@@ -170,7 +183,7 @@ func iterateExpression(expr *Expression, dependenciesForID, dependentsForID map[
 	return bm, nil
 }
 
-func iterateTerm(term *Term, dependenciesForID, dependentsForID map[uint32]*roaring.Bitmap, nameToIDs map[string]uint32, defaultNodeName string) (*roaring.Bitmap, error) {
+func iterateTerm(term *Term, dependenciesForID, dependentsForID map[uint32]*roaring.Bitmap, nameToIDs map[string]uint32, nodes map[uint32]*Node, defaultNodeName string) (*roaring.Bitmap, error) {
 	if term == nil {
 		return nil, nil
 	}
@@ -187,16 +200,24 @@ func iterateTerm(term *Term, dependenciesForID, dependentsForID map[uint32]*roar
 
 		switch term.Query.QueryType {
 		case dependencies:
-			bm = dependenciesForID[id]
+			for _, depId := range dependenciesForID[id].ToArray() {
+				if nodes[depId] != nil && nodes[depId].Type == term.Query.NodeType {
+					bm.Add(depId)
+				}
+			}
 		case dependents:
-			bm = dependentsForID[id]
+			for _, depId := range dependentsForID[id].ToArray() {
+				if nodes[depId] != nil && nodes[depId].Type == term.Query.NodeType {
+					bm.Add(depId)
+				}
+			}
 		default:
 			return nil, fmt.Errorf("unknown query: %s", term.Query.QueryType)
 		}
 	}
 
 	if term.Expression != nil {
-		_, err := iterateExpression(term.Expression, dependenciesForID, dependentsForID, nameToIDs, defaultNodeName)
+		_, err := iterateExpression(term.Expression, dependenciesForID, dependentsForID, nameToIDs, nodes, defaultNodeName)
 		if err != nil {
 			return nil, err
 		}
