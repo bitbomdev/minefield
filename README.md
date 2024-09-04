@@ -16,7 +16,6 @@ BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s FAST
 3. [To start using Minefield](#to-start-using-minefield)
    - [Using Docker](#using-docker)
    - [Building from source](#building-from-source)
-   - [Using go install](#using-go-install)
 4. [How Minefield works](#how-minefield-works)
 5. [Custom Query Commands](#custom-query-commands)
 6. [Visualization of a query](#visualization-of-a-query)
@@ -28,12 +27,13 @@ BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s FAST
 [View Minefield demo on asciinema](https://asciinema.org/a/674302)
 ## Quickstart guide
 
-1. Ingest some data: 'minefield ingest sbom <sbom_file or sbom_dir>'  
-2. Cache the data: 'minefield cache'
-3. Run a query: 'minefield query <query_string>'
+1. Ingest some data: `minefield ingest sbom <sbom_file or sbom_dir>`  
+2. Cache the data: `minefield cache`
+3. Run a query: `minefield query <query_string>`
 
 ### Example
 
+_Redis must be running at `localhost:6379`, if not please use `make docker-up` to start Redis._
 1. Ingest the `test` SBOM directory:
     ```sh
     minefield ingest sbom test
@@ -70,25 +70,19 @@ BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s FAST
 ### Using Docker
 
 ```sh
-docker pull ghcr.io/bit-bom/minefield:latest
-docker run -it ghcr.io/bit-bom/minefield:latest
+docker pull ghcr.io/bitbomdev/minefield:latest
+docker run -it ghcr.io/bitbomdev/minefield:latest
 ```
 
 ### Building from source
 
 ```sh
-git clone https://github.com/bit-bom/minefield.git
+git clone https://github.com/bitbomdev/minefield.git
 cd minefield
 go build -o minefield main.go
 ./minefield
 ```
 
-### Using go install
-
-```sh
-go install github.com/bit-bom/minefield@latest
-minefield
-```
 ## How Minefield works
 
 The design decisions and architecture of Minefield can be found [here](docs/bitbom.pdf).
