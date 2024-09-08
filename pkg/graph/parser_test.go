@@ -80,6 +80,12 @@ func TestParseAndExecute(t *testing.T) {
 			wantErr:         true,
 			defaultNodeName: "",
 		},
+		{
+			name:            "Empty node name",
+			script:          "dependents PACKAGE or dependencies PACKAGE",
+			want:            roaring.BitmapOf(1, 3, 4),
+			defaultNodeName: "pkg:generic/lib-A@1.0.0",
+		},
 	}
 
 	for _, tt := range tests {

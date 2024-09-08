@@ -278,7 +278,14 @@ func BatchQueryDependents(storage Storage, nodes []*Node, caches map[uint32]*Nod
 			result[node.ID] = ans
 
 		} else {
-			result[node.ID] = caches[node.ID].AllParents
+			if node == nil {
+				return nil, fmt.Errorf("node is nil is because the node was not found in the cache. Please check the cache for the node before querying dependents.")
+			}
+			cache, exists := caches[node.ID]
+			if !exists || cache == nil {
+				return nil, fmt.Errorf("cache for node ID %d is nil or does not exist", node.ID)
+			}
+			result[node.ID] = cache.AllParents
 		}
 	}
 	return result, nil
@@ -306,6 +313,9 @@ func BatchQueryDependencies(storage Storage, nodes []*Node, caches map[uint32]*N
 	result := map[uint32]*roaring.Bitmap{}
 
 	for _, node := range nodes {
+		if node == nil {
+			return nil, fmt.Errorf("node is nil is because the node was not found in the cache. Please check the cache for the node before querying dependencies")
+		}
 		if !isCached {
 			ans, err := node.QueryDependenciesNoCache(storage)
 			if err != nil {

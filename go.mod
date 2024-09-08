@@ -1,9 +1,10 @@
 module github.com/bit-bom/minefield
 
-go 1.22.5
+go 1.23.1
 
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
+	github.com/alecthomas/participle/v2 v2.1.1
 	github.com/go-echarts/go-echarts/v2 v2.4.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/goccy/go-json v0.10.3
@@ -24,6 +25,8 @@ require (
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.0 // indirect
+	github.com/alecthomas/assert/v2 v2.6.0 // indirect
+	github.com/alecthomas/repr v0.4.0 // indirect
 	github.com/anchore/go-struct-converter v0.0.0-20230627203149-c72ef8859ca9 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -33,13 +36,16 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
+	github.com/onsi/gomega v1.30.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spdx/tools-golang v0.5.4 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	sigs.k8s.io/release-utils v0.8.2 // indirect
 )

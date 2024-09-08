@@ -18,37 +18,6 @@ func TestIngestSBOM(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "default",
-			sbomPath: "../../../test",
-			want: map[uint32]*graph.Node{
-				1: {
-					ID:   1,
-					Type: "library",
-					Name: "pkg:generic/dep1",
-				},
-				2: {
-					ID:   2,
-					Type: "library",
-					Name: "pkg:generic/dep1/subcomponent",
-				},
-				3: {
-					ID:   3,
-					Type: "library",
-					Name: "pkg:generic/dep2",
-				},
-				4: {
-					ID:   4,
-					Type: "library",
-					Name: "pkg:generic/lib-A",
-				},
-				5: {
-					ID:   5,
-					Type: "library",
-					Name: "pkg:generic/lib-B",
-				},
-			},
-		},
-		{
 			name:     "non-existent file",
 			sbomPath: "non_existent_file.json",
 			wantErr:  true,

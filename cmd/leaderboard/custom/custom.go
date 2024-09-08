@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/olekukonko/tablewriter"
@@ -71,6 +72,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	errChan := make(chan error, len(nodes))
 
 	var wg sync.WaitGroup
+	var atomicCounter int64
 	for _, node := range nodes {
 		if node.Name == "" {
 			continue
@@ -89,10 +91,12 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 			}
 
 			output := execute.ToArray()
+			atomic.AddInt64(&atomicCounter, 1)
 			queryChan <- &query{node: node, output: output}
+			printProgress(int(atomicCounter), len(nodes))
 		}(node)
 	}
-
+	fmt.Println("all done")
 	// Close channels once all goroutines are done
 	go func() {
 		wg.Wait()
@@ -100,13 +104,6 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 		close(errChan)
 		close(semaphore) // Close the semaphore channel
 	}()
-	counter := 0
-	// Collect results from channels
-	for q := range queryChan {
-		heap.Push(h, q)
-		counter++
-		printProgress(counter, len(nodes))
-	}
 
 	// Check for errors
 	select {
@@ -115,6 +112,9 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 			return err
 		}
 	default:
+	}
+	for q := range queryChan {
+		heap.Push(h, q)
 	}
 
 	queries := make([]query, h.Len())

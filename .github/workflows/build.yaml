@@ -40,11 +40,11 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v2
         with:
-          go-version: '1.22.5'
+          go-version: '1.23'
       - name: Docker Up
         run: make docker-up
       - name: Test
-        run: make test
+        run: make test-e2e
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
         with:
