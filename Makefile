@@ -9,6 +9,9 @@ build:
 test:
 	go test -v -coverprofile=coverage.out ./...
 
+test-e2e: docker-up
+	e2e=true go test -v -coverprofile=coverage.out ./...
+
 # Clean target
 clean:
 	rm -rf bin

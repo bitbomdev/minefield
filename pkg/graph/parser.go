@@ -2,163 +2,243 @@ package graph
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/RoaringBitmap/roaring"
+	"github.com/alecthomas/participle/v2"
+	"github.com/alecthomas/participle/v2/lexer"
+)
+
+const (
+	dependencies = "dependencies"
+	dependents   = "dependents"
+	or           = "or"
+	and          = "and"
+	xor          = "xor"
+)
+
+// Define the grammar using Go structs and Participle tags
+type Expression struct {
+	Left  *Term       `@@`
+	Op    *string     `@("and" | "or" | "xor")?`
+	Right *Expression `@@?`
+}
+
+type Term struct {
+	Query      *Query      `@@`
+	Expression *Expression `| "(" @@ ")" | "[" @@ "]"`
+}
+
+type Query struct {
+	QueryType string  `@Ident`  // For example "dependencies" or "dependents"
+	NodeType  string  `@Ident`  // For example "library" or "vulns"
+	NodeName  *string `@Ident?` // NodeName is now optional // The purl being inputted
+}
+
+var (
+	simpleLexer = lexer.MustSimple([]lexer.SimpleRule{
+		{"Operator", `\b(?:and|or|xor)\b`},      // Prioritize operators
+		{"Ident", `[a-zA-Z][a-zA-Z0-9:/._@-]*`}, // Updated to handle colons, slashes, dots, underscores, hyphens, and @
+		{"String", `"(?:\\.|[^"])*"`},
+		{"Whitespace", `[ \t\n\r]+`},
+		{"LBracket", `\[`},
+		{"RBracket", `\]`},
+		{"LParen", `\(`},
+		{"RParen", `\)`},
+	})
+	parser = participle.MustBuild[Expression](
+		participle.Lexer(simpleLexer),
+		participle.Elide("Whitespace"),
+	)
 )
 
 // ParseAndExecute parses and executes a script using the given storage backend.
 func ParseAndExecute(script string, storage Storage, defaultNodeName string, nodes map[uint32]*Node, caches map[uint32]*NodeCache, isCached bool) (*roaring.Bitmap, error) {
-	var stack []*roaring.Bitmap
-	var operators []string
-
 	nameToIDs := make(map[string]uint32, len(nodes))
 	for _, node := range nodes {
+		if node == nil {
+			return nil, fmt.Errorf("node is nil is because the node was not found in the cache. Please check the cache for the node before querying dependencies.")
+		}
 		nameToIDs[node.Name] = node.ID
 	}
 
-	applyOperator := func() error {
-		if len(stack) < 2 {
-			return fmt.Errorf("not enough operands for operation")
-		}
-		right := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-		left := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		if len(operators) == 0 {
-			return fmt.Errorf("operator stack underflow")
-		}
-		op := operators[len(operators)-1]
-		operators = operators[:len(operators)-1]
-
-		var result *roaring.Bitmap
-		switch op {
-		case "or":
-			result = roaring.Or(left, right)
-		case "xor":
-			result = roaring.Xor(left, right)
-		case "and":
-			result = roaring.And(left, right)
-		default:
-			return fmt.Errorf("unknown operator: %s", op)
-		}
-
-		stack = append(stack, result)
-		return nil
+	expression, err := parser.ParseString("", script)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse expression: %v", err)
 	}
 
-	tokens := strings.Fields(script) // Split script into tokens based on spaces
-	dependentsToBeQueried, dependenciesToBeQueried := []*Node{}, []*Node{}
-	for tokenIndex := 0; tokenIndex < len(tokens); tokenIndex++ {
-		token := tokens[tokenIndex]
+	// Collect all packages for batch querying
+	dependenciesToQuery, dependentsToQuery := collectPackages(expression, defaultNodeName)
 
-		if strings.HasPrefix(token, "dependents") || strings.HasPrefix(token, "dependencies") {
-			dir := token
-			tokenIndex++
-			if defaultNodeName != "" {
-				token = defaultNodeName
+	var nodeDependencies, nodeDependents []*Node
+
+	for _, dependency := range dependenciesToQuery {
+		id, exists := nameToIDs[dependency.purl]
+		if !exists {
+			return nil, fmt.Errorf("dependency not found: %s", dependency.purl)
+		}
+		nodeDependencies = append(nodeDependencies, nodes[id])
+	}
+
+	for _, dependent := range dependentsToQuery {
+		id, exists := nameToIDs[dependent.purl]
+		if !exists {
+			return nil, fmt.Errorf("dependent not found: %s", dependent.purl)
+		}
+		nodeDependents = append(nodeDependents, nodes[id])
+	}
+
+	if nodeDependents == nil {
+		nodeDependents = []*Node{}
+	}
+
+	if caches == nil {
+		caches = make(map[uint32]*NodeCache)
+	}
+
+	dependenciesForID, err := BatchQueryDependencies(storage, nodeDependencies, caches, isCached)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dependencies from batch query: %v", err)
+	}
+	dependentsForID, err := BatchQueryDependents(storage, nodeDependents, caches, isCached)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dependents from batch query: %v", err)
+	}
+
+	// Iterate through the parsed structure
+	bm, err := iterateExpression(expression, dependenciesForID, dependentsForID, nameToIDs, nodes, defaultNodeName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to iterate expression: %v", err)
+	}
+
+	if bm == nil {
+		bm = roaring.New()
+	}
+
+	return bm, nil
+}
+
+type purlData struct {
+	purl  string
+	_type string
+}
+
+// collectPackages collects the packages from the expression
+func collectPackages(expr *Expression, defaultNodeName string) ([]purlData, []purlData) {
+	var dependenciesToQuery []purlData
+	var dependentsToQuery []purlData
+	collectPackagesFromExpression(expr, &dependenciesToQuery, &dependentsToQuery, defaultNodeName)
+	return dependenciesToQuery, dependentsToQuery
+}
+
+// collectPackagesFromExpression collects the packages from the expression
+func collectPackagesFromExpression(expr *Expression, dependenciesToQuery, dependentsToQuery *[]purlData, defaultNodeName string) {
+	if expr == nil {
+		return
+	}
+
+	collectPackagesFromTerm(expr.Left, dependenciesToQuery, dependentsToQuery, defaultNodeName)
+	collectPackagesFromExpression(expr.Right, dependenciesToQuery, dependentsToQuery, defaultNodeName)
+}
+
+func collectPackagesFromTerm(term *Term, dependenciesToQuery, dependentsToQuery *[]purlData, defaultNodeName string) {
+	if term == nil {
+		return
+	}
+
+	if term.Query != nil {
+		switch term.Query.QueryType {
+		case dependencies:
+			if term.Query.NodeName != nil {
+				*dependenciesToQuery = append(*dependenciesToQuery, purlData{purl: *term.Query.NodeName, _type: term.Query.NodeType})
 			} else {
-				tokenIndex++
-				token = tokens[tokenIndex]
+				*dependenciesToQuery = append(*dependenciesToQuery, purlData{purl: defaultNodeName, _type: term.Query.NodeType})
 			}
-			nodeID := nameToIDs[token]
-			node := nodes[nodeID]
-
-			if strings.TrimSpace(dir) == "dependents" {
-				dependentsToBeQueried = append(dependentsToBeQueried, node)
+		case dependents:
+			if term.Query.NodeName != nil {
+				*dependentsToQuery = append(*dependentsToQuery, purlData{purl: *term.Query.NodeName, _type: term.Query.NodeType})
 			} else {
-				dependenciesToBeQueried = append(dependenciesToBeQueried, node)
+				*dependentsToQuery = append(*dependentsToQuery, purlData{purl: defaultNodeName, _type: term.Query.NodeType})
 			}
 		}
 	}
 
-	nodeToDependents, err := BatchQueryDependents(storage, dependentsToBeQueried, caches, isCached)
+	if term.Expression != nil {
+		collectPackagesFromExpression(term.Expression, dependenciesToQuery, dependentsToQuery, defaultNodeName)
+	}
+}
+
+// iterateExpression iterates through the expression and returns the result
+func iterateExpression(expr *Expression, dependenciesForID, dependentsForID map[uint32]*roaring.Bitmap, nameToIDs map[string]uint32, nodes map[uint32]*Node, defaultNodeName string) (*roaring.Bitmap, error) {
+	if expr == nil {
+		return nil, nil
+	}
+
+	bm, err := iterateTerm(expr.Left, dependenciesForID, dependentsForID, nameToIDs, nodes, defaultNodeName)
 	if err != nil {
 		return nil, err
 	}
-	nodeToDependencies, err := BatchQueryDependencies(storage, dependenciesToBeQueried, caches, isCached)
-	if err != nil {
-		return nil, err
-	}
 
-	for tokenIndex := 0; tokenIndex < len(tokens); tokenIndex++ {
-		token := tokens[tokenIndex]
-		switch {
-		case strings.HasPrefix(token, "dependents") || strings.HasPrefix(token, "dependencies"):
-			dir := token
-			tokenIndex++
-			nodeTypeQueried := tokens[tokenIndex]
-			if defaultNodeName != "" {
-				token = defaultNodeName
-			} else {
-				tokenIndex++
-				token = tokens[tokenIndex]
-			}
-			nodeID := nameToIDs[token]
+	if expr.Op != nil {
+		bm2, err := iterateExpression(expr.Right, dependenciesForID, dependentsForID, nameToIDs, nodes, defaultNodeName)
 
-			node := nodes[nodeID]
-			var bitmap *roaring.Bitmap
-			if strings.TrimSpace(dir) == "dependents" {
-				bitmap = nodeToDependents[node.ID]
-			} else {
-				bitmap = nodeToDependencies[node.ID]
-			}
-			if bitmap == nil {
-				continue
-			}
+		if err != nil {
+			return nil, err
+		}
 
-			for _, id := range bitmap.ToArray() {
-				checkNode := nodes[id]
-				if checkNode.Type != nodeTypeQueried {
-					bitmap.Remove(id)
-				}
-			}
-
-			stack = append(stack, bitmap)
-
-		case token == "or", token == "xor", token == "and":
-			// Before pushing new operator, apply any previous operators if not blocked by '('
-			for len(operators) > 0 && operators[len(operators)-1] != "[" {
-				if err := applyOperator(); err != nil {
-					return nil, err
-				}
-			}
-			operators = append(operators, token)
-
-		case token == "[":
-			operators = append(operators, token)
-
-		case token == "]":
-			// Apply all operators until the opening '('
-			for len(operators) > 0 && operators[len(operators)-1] != "[" {
-				if err := applyOperator(); err != nil {
-					return nil, err
-				}
-			}
-			if len(operators) == 0 {
-				return nil, fmt.Errorf("mismatched parentheses")
-			}
-			// Pop the '(' operator
-			operators = operators[:len(operators)-1]
-
+		switch *expr.Op {
+		case or:
+			bm.Or(bm2)
+		case and:
+			bm.And(bm2)
+		case xor:
+			bm.Xor(bm2)
 		default:
-			return nil, fmt.Errorf("unrecognized token: %s", token)
+			return nil, fmt.Errorf("unknown operator: %s", *expr.Op)
 		}
 	}
 
-	// Apply remaining operators
-	for len(operators) > 0 {
-		if operators[len(operators)-1] == "[" {
-			return nil, fmt.Errorf("mismatched parentheses")
+	return bm, nil
+}
+
+func iterateTerm(term *Term, dependenciesForID, dependentsForID map[uint32]*roaring.Bitmap, nameToIDs map[string]uint32, nodes map[uint32]*Node, defaultNodeName string) (*roaring.Bitmap, error) {
+	if term == nil {
+		return nil, nil
+	}
+
+	bm := roaring.New()
+
+	if term.Query != nil {
+		id := uint32(0)
+		if term.Query.NodeName != nil {
+			id = nameToIDs[*term.Query.NodeName]
+		} else {
+			id = nameToIDs[defaultNodeName]
 		}
-		if err := applyOperator(); err != nil {
+
+		switch term.Query.QueryType {
+		case dependencies:
+			for _, depId := range dependenciesForID[id].ToArray() {
+				if nodes[depId] != nil && nodes[depId].Type == term.Query.NodeType {
+					bm.Add(depId)
+				}
+			}
+		case dependents:
+			for _, depId := range dependentsForID[id].ToArray() {
+				if nodes[depId] != nil && nodes[depId].Type == term.Query.NodeType {
+					bm.Add(depId)
+				}
+			}
+		default:
+			return nil, fmt.Errorf("unknown query: %s", term.Query.QueryType)
+		}
+	}
+
+	if term.Expression != nil {
+		_, err := iterateExpression(term.Expression, dependenciesForID, dependentsForID, nameToIDs, nodes, defaultNodeName)
+		if err != nil {
 			return nil, err
 		}
 	}
 
-	if len(stack) != 1 {
-		return nil, fmt.Errorf("invalid expression or incomplete operations")
-	}
-	return stack[0], nil
+	return bm, nil
 }
