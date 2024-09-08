@@ -96,7 +96,6 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 			printProgress(int(atomicCounter), len(nodes))
 		}(node)
 	}
-	fmt.Println("all done")
 	// Close channels once all goroutines are done
 	go func() {
 		wg.Wait()

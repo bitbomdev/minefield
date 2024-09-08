@@ -84,7 +84,10 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 	nameToId := map[string]uint32{}
 
 	for _, node := range nodeList.GetNodes() {
-		purl := fmt.Sprintf("pkg:generic/%s", node.GetName())
+		purl := string(node.Purl())
+		if purl == "" {
+			purl = fmt.Sprintf("pkg:generic/%s@%s", node.GetName(), node.GetVersion())
+		}
 		graphNode, err := graph.AddNode(storage, "library", file, purl)
 		if err != nil {
 			if errors.Is(err, graph.ErrNodeAlreadyExists) {
@@ -121,4 +124,3 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 
 	return nil
 }
-

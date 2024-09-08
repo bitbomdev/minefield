@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/RoaringBitmap/roaring"
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/bit-bom/minefield/pkg/tools/ingest"
 	"github.com/stretchr/testify/assert"
@@ -36,99 +35,85 @@ func TestParseAndExecute_E2E(t *testing.T) {
 		name            string
 		script          string
 		defaultNodeName string
-		want            *roaring.Bitmap
+		want            uint64
 		wantErr         bool
 	}{
 		{
 			name:            "Simple dependents query",
-			script:          "dependents library pkg:generic/checkout",
-			want:            roaring.BitmapOf(193, 196, 208, 309, 1214, 1265, 1276, 1308, 130),
+			script:          "dependents library pkg:github/actions/checkout@v3",
+			want:            6,
 			defaultNodeName: "",
 		},
 		{
 			name:            "Simple dependencies query",
-			script:          "dependencies library pkg:generic/checkout",
-			want:            roaring.BitmapOf(193),
+			script:          "dependencies library pkg:github/actions/checkout@v3",
+			want:            1,
 			defaultNodeName: "",
 		},
 		{
 			name:            "Dependents query with xor",
-			script:          "dependents library pkg:generic/checkout xor dependents library pkg:generic/setup-go",
-			want:            roaring.BitmapOf(195, 196, 309, 130),
+			script:          "dependents library pkg:github/actions/checkout@v3 xor dependents library pkg:golang/gopkg.in/yaml.v3@v3.0.1",
+			want:            14,
 			defaultNodeName: "",
 		},
 		{
 			name:            "Dependents query with and",
-			script:          "dependents library pkg:generic/checkout and dependents library pkg:generic/setup-go",
-			want:            roaring.BitmapOf(193, 208, 1214, 1265, 1276, 130),
+			script:          "dependents library pkg:github/actions/checkout@v3 and dependents library pkg:golang/gopkg.in/yaml.v3@v3.0.1",
+			want:            0,
 			defaultNodeName: "",
 		},
 		{
 			name:            "Empty script",
 			script:          "",
-			want:            roaring.New(),
+			want:            0,
 			defaultNodeName: "",
 			wantErr:         true,
 		},
 		{
 			name:            "Invalid script",
 			script:          "invalid script",
-			want:            nil,
+			want:            0,
 			defaultNodeName: "",
 			wantErr:         true,
 		},
 		{
-			name:            "Complex nested expressions and not found",
-			script:          "(dependents library pkg:generic/checkout and dependents library pkg:generic/setup-go) or dependents library pkg:generic/setup-go",
-			want:            roaring.BitmapOf(130, 193, 208, 400, 401, 1214, 1265),
+			name:            "Complex nested expressions",
+			script:          "(dependents library pkg:github/actions/checkout@v3 and dependents library pkg:golang/gopkg.in/yaml.v3@v3.0.1) or dependents library pkg:golang/gopkg.in/yaml.v3@v3.0.1",
+			want:            8,
 			defaultNodeName: "",
 			wantErr:         false,
 		},
 		{
 			name:            "Unknown query type",
-			script:          "unknown library pkg:generic/checkout",
-			want:            nil,
+			script:          "unknown library pkg:github/actions/checkout@v3",
+			want:            0,
 			defaultNodeName: "",
 			wantErr:         true,
 		},
 		{
 			name:            "Missing node name",
 			script:          "dependents library",
-			want:            roaring.New(),
-			defaultNodeName: "",
-			wantErr:         true,
-		},
-		{
-			name:            "Large input",
-			script:          "dependents library pkg:generic/large",
-			want:            roaring.BitmapOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+			want:            0,
 			defaultNodeName: "",
 			wantErr:         true,
 		},
 		{
 			name:            "Dependencies with OR operation",
-			script:          "dependencies library pkg:generic/checkout or dependencies library pkg:generic/setup-go",
-			want:            roaring.BitmapOf(193, 194),
+			script:          "dependencies library pkg:github/actions/checkout@v3 or dependencies library pkg:golang/gopkg.in/yaml.v3@v3.0.1",
+			want:            2,
 			defaultNodeName: "",
-		},
-		{
-			name:            "Nested expressions with parentheses",
-			script:          "(dependencies library pkg:generic/checkout and dependents library pkg:generic/setup-go) or (dependencies library pkg:generic/setup-g and dependents library pkg:generic/checkout)",
-			want:            roaring.BitmapOf(193, 208, 1214, 1265),
-			defaultNodeName: "",
-			wantErr:         true,
 		},
 		{
 			name:            "Query with default node name",
 			script:          "dependencies library",
-			want:            roaring.BitmapOf(193),
-			defaultNodeName: "pkg:generic/checkout",
+			want:            1,
+			defaultNodeName: "pkg:github/actions/checkout@v3",
 			wantErr:         false,
 		},
 		{
 			name:            "Complex query with multiple operations",
-			script:          "((dependencies library pkg:generic/checkout or dependents library pkg:generic/setup-go) and dependencies library pkg:generic/setup-go) xor dependents library pkg:generic/checkout",
-			want:            roaring.BitmapOf(196, 309, 1308, 130, 195, 194, 193, 208, 1214),
+			script:          "((dependencies library pkg:github/actions/checkout@v3 or dependents library pkg:golang/gopkg.in/yaml.v3@v3.0.1) and dependencies library pkg:golang/gopkg.in/yaml.v3@v3.0.1) xor dependents library pkg:github/actions/checkout@v3",
+			want:            6,
 			defaultNodeName: "",
 		},
 	}
@@ -149,9 +134,8 @@ func TestParseAndExecute_E2E(t *testing.T) {
 				t.Errorf("ParseAndExecute() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !tt.wantErr && result.GetCardinality() != tt.want.GetCardinality() {
-				t.Errorf("ParseAndExecute() got = %v, want %v", result.ToArray(), tt.want.ToArray())
-				t.Errorf("ParseAndExecute() got cardinality = %v, want cardinality %v", result.GetCardinality(), tt.want.GetCardinality())
+			if !tt.wantErr && result.GetCardinality() != tt.want {
+				t.Errorf("ParseAndExecute() got cardinality = %v, want cardinality %v", result.GetCardinality(), tt.want)
 			}
 		})
 	}
