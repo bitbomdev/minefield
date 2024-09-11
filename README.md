@@ -1,4 +1,8 @@
-# Minefield
+<p align="center">
+  <img src="images/bitbomLongLogo.png" alt="BitBom Long Logo" >
+</p>
+
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/bit-bom/minefield)](https://goreportcard.com/report/github.com/bit-bom/minefield)
 [![Build and Test](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml/badge.svg)](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml)
 
