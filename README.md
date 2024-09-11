@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/bitbomLongLogo.png" alt="BitBom Long Logo" >
+  <img src="images/bitbomLogoAndName.png" alt="BitBom Long Logo" >
 </p>
 
 
