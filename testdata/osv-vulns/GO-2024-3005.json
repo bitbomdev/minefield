@@ -1,0 +1,288 @@
+{
+  "id": "GO-2024-3005",
+  "summary": "Moby authz zero length regression in github.com/moby/moby",
+  "details": "Moby authz zero length regression in github.com/moby/moby",
+  "aliases": [
+    "CVE-2024-41110",
+    "GHSA-v23v-6jw2-98fq"
+  ],
+  "modified": "2024-07-29T18:28:57.256503Z",
+  "published": "2024-07-29T18:08:44Z",
+  "database_specific": {
+    "review_status": "REVIEWED",
+    "url": "https://pkg.go.dev/vuln/GO-2024-3005"
+  },
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-41110"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/moby/moby/commit/411e817ddf710ff8e08fa193da80cb78af708191"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/moby/moby/commit/42f40b1d6dd7562342f832b9cd2adf9e668eeb76"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/moby/moby/commit/65cc597cea28cdc25bea3b8a86384b4251872919"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/moby/moby/commit/852759a7df454cbf88db4e954c919becd48faa9b"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/moby/moby/commit/a31260625655cff9ae226b51757915e275e304b0"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/moby/moby/commit/a79fabbfe84117696a19671f4aa88b82d0f64fc1"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/moby/moby/commit/ae160b4edddb72ef4bd71f66b975a1a1cc434f00"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/moby/moby/commit/ae2b3666c517c96cbc2adf1af5591a6b00d4ec0f"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/moby/moby/commit/cc13f952511154a2866bddbb7dddebfe9e83b801"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/moby/moby/commit/fc274cd2ff4cf3b48c91697fb327dd1fb95588fb"
+    },
+    {
+      "type": "WEB",
+      "url": "https://github.com/moby/moby/security/advisories/GHSA-v23v-6jw2-98fq"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.docker.com/blog/docker-security-advisory-docker-engine-authz-plugin"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "name": "github.com/moby/moby",
+        "ecosystem": "Go",
+        "purl": "pkg:golang/github.com/moby/moby"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "20.10.0+incompatible"
+            },
+            {
+              "fixed": "25.0.6+incompatible"
+            },
+            {
+              "introduced": "26.0.0+incompatible"
+            },
+            {
+              "fixed": "26.1.5+incompatible"
+            },
+            {
+              "introduced": "27.0.0+incompatible"
+            },
+            {
+              "fixed": "27.1.1+incompatible"
+            }
+          ]
+        }
+      ],
+      "ecosystem_specific": {
+        "custom_ranges": [
+          {
+            "events": [
+              {
+                "introduced": "19.0.0"
+              },
+              {
+                "fixed": "19.03.16"
+              },
+              {
+                "introduced": "23.0.0"
+              },
+              {
+                "fixed": "23.0.15"
+              },
+              {
+                "introduced": "24.0.0"
+              },
+              {
+                "fixed": "24.0.10"
+              },
+              {
+                "introduced": "20.0.0"
+              },
+              {
+                "fixed": "20.10.28"
+              },
+              {
+                "introduced": "25.0.0"
+              },
+              {
+                "fixed": "25.0.6"
+              },
+              {
+                "introduced": "26.0.0"
+              },
+              {
+                "fixed": "26.0.3"
+              },
+              {
+                "introduced": "26.1.0"
+              },
+              {
+                "fixed": "26.1.15"
+              },
+              {
+                "introduced": "27.0.0"
+              },
+              {
+                "fixed": "27.0.4"
+              },
+              {
+                "introduced": "27.1.0"
+              },
+              {
+                "fixed": "27.1.1"
+              }
+            ],
+            "type": "ECOSYSTEM"
+          }
+        ],
+        "imports": [
+          {
+            "path": "github.com/moby/moby/pkg/authorization",
+            "symbols": [
+              "Ctx.AuthZRequest",
+              "Ctx.AuthZResponse",
+              "sendBody"
+            ]
+          }
+        ]
+      },
+      "database_specific": {
+        "source": "https://vuln.go.dev/ID/GO-2024-3005.json"
+      }
+    },
+    {
+      "package": {
+        "name": "github.com/docker/docker",
+        "ecosystem": "Go",
+        "purl": "pkg:golang/github.com/docker/docker"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "20.10.0+incompatible"
+            },
+            {
+              "fixed": "25.0.6+incompatible"
+            },
+            {
+              "introduced": "26.0.0+incompatible"
+            },
+            {
+              "fixed": "26.1.5+incompatible"
+            },
+            {
+              "introduced": "27.0.0+incompatible"
+            },
+            {
+              "fixed": "27.1.1+incompatible"
+            }
+          ]
+        }
+      ],
+      "ecosystem_specific": {
+        "custom_ranges": [
+          {
+            "events": [
+              {
+                "introduced": "19.0.0"
+              },
+              {
+                "fixed": "19.03.16"
+              },
+              {
+                "introduced": "23.0.0"
+              },
+              {
+                "fixed": "23.0.15"
+              },
+              {
+                "introduced": "24.0.0"
+              },
+              {
+                "fixed": "24.0.10"
+              },
+              {
+                "introduced": "20.0.0"
+              },
+              {
+                "fixed": "20.10.28"
+              },
+              {
+                "introduced": "25.0.0"
+              },
+              {
+                "fixed": "25.0.6"
+              },
+              {
+                "introduced": "26.0.0"
+              },
+              {
+                "fixed": "26.0.3"
+              },
+              {
+                "introduced": "26.1.0"
+              },
+              {
+                "fixed": "26.1.15"
+              },
+              {
+                "introduced": "27.0.0"
+              },
+              {
+                "fixed": "27.0.4"
+              },
+              {
+                "introduced": "27.1.0"
+              },
+              {
+                "fixed": "27.1.1"
+              }
+            ],
+            "type": "ECOSYSTEM"
+          }
+        ],
+        "imports": [
+          {
+            "path": "github.com/docker/docker/pkg/authorization",
+            "symbols": [
+              "Ctx.AuthZRequest",
+              "Ctx.AuthZResponse",
+              "sendBody"
+            ]
+          }
+        ]
+      },
+      "database_specific": {
+        "source": "https://vuln.go.dev/ID/GO-2024-3005.json"
+      }
+    }
+  ],
+  "schema_version": "1.6.0"
+}

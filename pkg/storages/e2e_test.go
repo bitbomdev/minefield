@@ -12,12 +12,13 @@ import (
 )
 
 func TestParseAndExecute_E2E(t *testing.T) {
-	if _, ok := os.LookupEnv("e2e"); !ok {
-		t.Skip("E2E tests are not enabled")
-	}
+	//if _, ok := os.LookupEnv("e2e"); !ok {
+	//	t.Skip("E2E tests are not enabled")
+	//}
 	redisStorage := setupTestRedis()
 
-	sbomPath := filepath.Join("..", "..", "test", "sboms")
+	sbomPath := filepath.Join("..", "..", "testdata", "sboms")
+	vulnsPath := filepath.Join("..", "..", "testdata", "osv-vulns")
 
 	// Ingest data from the folder
 	progress := func(count int, path string) {
@@ -26,9 +27,31 @@ func TestParseAndExecute_E2E(t *testing.T) {
 	count, err := ingest.SBOM(sbomPath, redisStorage, progress)
 	assert.NoError(t, err)
 	assert.Greater(t, count, 0)
+	err = filepath.Walk(vulnsPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			fileContent, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			err = ingest.LoadVulnerabilities(redisStorage, fileContent)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	assert.NoError(t, err)
+
+	assert.Greater(t, count, 0)
+
+	err = ingest.Vulnerabilities(redisStorage, progress)
+	assert.NoError(t, err)
 
 	// Cache data
-	err = graph.Cache(redisStorage, nil, nil)
+	err = graph.Cache(redisStorage)
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -115,6 +138,13 @@ func TestParseAndExecute_E2E(t *testing.T) {
 			script:          "((dependencies library pkg:github/actions/checkout@v3 or dependents library pkg:golang/gopkg.in/yaml.v3@v3.0.1) and dependencies library pkg:golang/gopkg.in/yaml.v3@v3.0.1) xor dependents library pkg:github/actions/checkout@v3",
 			want:            6,
 			defaultNodeName: "",
+		},
+		{
+			name:            "Query with vulnerability",
+			script:          "dependencies vuln pkg:github.com/google/agi@",
+			want:            1,
+			defaultNodeName: "",
+			wantErr:         false,
 		},
 	}
 

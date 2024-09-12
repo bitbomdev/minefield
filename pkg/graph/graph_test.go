@@ -169,7 +169,7 @@ func TestQueryDependentsAndDependenciesNoCache(t *testing.T) {
 }
 
 func TestNodeJSONMarshalUnmarshal(t *testing.T) {
-	// Create a test Node
+	// Create a testdata Node
 	node := &Node{
 		ID:       1,
 		Type:     "testType",
@@ -198,7 +198,7 @@ func TestNodeJSONMarshalUnmarshal(t *testing.T) {
 }
 
 func TestNodeCacheJSONMarshalUnmarshal(t *testing.T) {
-	// Create a test NodeCache
+	// Create a testdata NodeCache
 	nodeCache := &NodeCache{
 		ID:          1,
 		AllParents:  roaring.New(),

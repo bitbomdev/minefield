@@ -86,7 +86,7 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 	for _, node := range nodeList.GetNodes() {
 		purl := string(node.Purl())
 		if purl == "" {
-			purl = fmt.Sprintf("pkg:generic/%s@%s", node.GetName(), node.GetVersion())
+			purl = fmt.Sprintf("pkg:%s@%s", node.GetName(), node.GetVersion())
 		}
 		graphNode, err := graph.AddNode(storage, "library", file, purl)
 		if err != nil {

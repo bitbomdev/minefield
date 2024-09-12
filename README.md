@@ -48,9 +48,15 @@ BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s FAST
 
 _Redis must be running at `localhost:6379`. If not, please use `make docker-up` to start Redis._
 
-1. **Ingest the `test` SBOM directory:**
+_Redis must be running at `localhost:6379`, if not please use `make docker-up` to start Redis._
+1. Start the api server
+   ```shell
+   minefield start-service 
+   ```
+
+2. Ingest the `test` SBOM directory:
     ```sh
-    minefield ingest sbom test
+    minefield ingest sbom testdata
     ```
 2. **Cache the data:**
     ```sh
@@ -63,22 +69,14 @@ _Redis must be running at `localhost:6379`. If not, please use `make docker-up` 
     ```
 4. **Run a query on the top value from the leaderboard:**
    - This command queries the dependents for a specific package, in this case `dep2`.
-    ```sh
-    minefield query "dependents PACKAGE pkg:generic/dep2@1.0.0"
-    ```
 5. **Run queries to see the shared dependencies of `lib-A` and `dep1`, and `lib-A` and `lib-B`:**
    - These queries output the intersection of two queries, finding package dependencies shared between each pair.
-    ```sh
-    minefield query "dependencies PACKAGE pkg:generic/dep1@1.0.0 and dependencies PACKAGE pkg:generic/lib-A@1.0.0"
-    ```
     ```sh
     minefield query "dependencies PACKAGE pkg:generic/lib-B@1.0.0 and dependencies PACKAGE pkg:generic/lib-A@1.0.0"
     ```
 6. **Run queries with the visualizer:**
     ```sh
     minefield query "dependents PACKAGE pkg:generic/dep2@1.0.0 --visualize"
-    ```
-
 ## To Start Using Minefield
 
 ### Using Docker

@@ -100,7 +100,7 @@ func TestRandomGraphDependenciesWithControlledCircles(t *testing.T) {
 		start := time.Now()
 
 		// Cache the current state
-		err := Cache(storage, nil, nil)
+		err := Cache(storage)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -174,7 +174,7 @@ func TestRandomGraphDependenciesNoCircles(t *testing.T) {
 		start := time.Now()
 
 		// Cache the current state
-		err := Cache(storage, nil, nil)
+		err := Cache(storage)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -258,7 +258,7 @@ func TestComplexCircularDependency(t *testing.T) {
 	err = nodes[12].SetDependency(storage, nodes[10])
 	assert.NoError(t, err)
 
-	if err := Cache(storage, nil, nil); err != nil {
+	if err := Cache(storage); err != nil {
 		t.Fatal(err)
 	}
 
@@ -312,7 +312,7 @@ func TestIntermediateSimpleCircles(t *testing.T) {
 	// err = nodes[5].SetDependency(storages, nodes[0])
 	// assert.NoError(t, err)
 
-	if err := Cache(storage, nil, nil); err != nil {
+	if err := Cache(storage); err != nil {
 		t.Fatal(err)
 	}
 
@@ -353,7 +353,7 @@ func TestSimpleCircle(t *testing.T) {
 	err = nodes[2].SetDependency(storage, nodes[0])
 	assert.NoError(t, err)
 
-	if err := Cache(storage, nil, nil); err != nil {
+	if err := Cache(storage); err != nil {
 		t.Fatal(err)
 	}
 

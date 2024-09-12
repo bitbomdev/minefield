@@ -15,6 +15,7 @@ type MockStorage struct {
 	nameToID     map[string]uint32
 	cache        map[uint32]*NodeCache
 	toBeCached   []uint32
+	db           map[string]map[string][]byte
 	mu           sync.Mutex
 	idCounter    uint32
 	fullyCached  bool
@@ -171,4 +172,23 @@ func (m *MockStorage) RemoveAllCaches() error {
 	m.cache = make(map[uint32]*NodeCache)
 
 	return nil
+}
+
+func (m *MockStorage) AddOrUpdateCustomData(tag, key, datakey string, data []byte) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.db == nil {
+		m.db = make(map[string]map[string][]byte)
+	}
+	if m.db[fmt.Sprintf("%s:%s", tag, key)] == nil {
+		m.db[fmt.Sprintf("%s:%s", tag, key)] = make(map[string][]byte)
+	}
+	m.db[fmt.Sprintf("%s:%s", tag, key)][datakey] = data
+	return nil
+}
+
+func (m *MockStorage) GetCustomData(tag, key string) (map[string][]byte, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.db[fmt.Sprintf("%s:%s", tag, key)], nil
 }

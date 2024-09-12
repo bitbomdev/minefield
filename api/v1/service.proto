@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package api.v1;
+
+option go_package = "github.com/bit-bom/minefield/gen/api/v1;apiv1";
+
+message QueryRequest {
+  string script = 1;
+}
+
+message QueryResponse {
+  repeated Node nodes = 1;
+}
+
+message AllKeysResponse {
+  repeated Node nodes = 1;
+}
+
+message Node {
+  uint32 id = 1;
+  string name = 2;
+  string type = 3;
+  string dependencies = 4;
+  string dependents = 5;
+  bytes  metadata = 6;
+}
+
+message Query {
+  Node node = 1;
+  repeated uint32 output = 2;
+}
+
+message CustomLeaderboardRequest {
+  string script = 1;
+}
+
+message CustomLeaderboardResponse {
+  repeated Query queries = 1;
+}
+
+message GetNodeRequest {
+  uint32 id = 1;
+}
+
+message GetNodeResponse {
+  Node node = 1;
+}
+
+message GetNodeByNameRequest {
+  string name = 1;
+}
+
+message GetNodeByNameResponse {
+  Node node = 1;
+}
+
+service QueryService {
+  rpc Query(QueryRequest) returns (QueryResponse) {}
+}
+
+service CacheService {
+  rpc Cache(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+  rpc Clear(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+}
+
+service LeaderboardService {
+  rpc CustomLeaderboard(CustomLeaderboardRequest) returns (CustomLeaderboardResponse) {}
+  rpc AllKeys(google.protobuf.Empty) returns (AllKeysResponse) {}
+}
+
+service GraphService {
+  rpc GetNode(GetNodeRequest) returns (GetNodeResponse) {}
+  rpc GetNodeByName(GetNodeByNameRequest) returns (GetNodeByNameResponse) {}
+}

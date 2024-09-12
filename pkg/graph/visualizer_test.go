@@ -37,7 +37,7 @@ func TestRunGraphVisualizer(t *testing.T) {
 				node3.SetDependency(ms, node4)
 			},
 			ids:         roaring.BitmapOf(1),
-			query:       "test query",
+			query:       "testdata query",
 			addr:        "8081",
 			expectError: false,
 		},
@@ -58,7 +58,7 @@ func TestRunGraphVisualizer(t *testing.T) {
 			mockStorage := NewMockStorage()
 			tt.setupMock(mockStorage)
 
-			// Create a test server
+			// Create a testdata server
 			testServer := httptest.NewServer(nil)
 			defer testServer.Close()
 
@@ -183,7 +183,7 @@ func TestGraphVisualizerHTTPHandler(t *testing.T) {
 				node3.SetDependency(ms, node4)
 			},
 			ids:          roaring.BitmapOf(1),
-			query:        "test query",
+			query:        "testdata query",
 			expectedCode: http.StatusOK,
 		},
 	}

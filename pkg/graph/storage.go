@@ -16,4 +16,6 @@ type Storage interface {
 	GetCaches(ids []uint32) (map[uint32]*NodeCache, error)
 	ClearCacheStack() error
 	GenerateID() (uint32, error)
+	GetCustomData(tag, key string) (map[string][]byte, error)
+	AddOrUpdateCustomData(tag, key string, datakey string, data []byte) error
 }

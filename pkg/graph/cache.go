@@ -7,7 +7,7 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
-func Cache(storage Storage, progressDependents func(int, int, bool), progressDependencies func(int, int, bool)) error {
+func Cache(storage Storage) error {
 	uncachedNodes, err := storage.ToBeCached()
 	if err != nil {
 		return err
@@ -28,12 +28,12 @@ func Cache(storage Storage, progressDependents func(int, int, bool), progressDep
 
 	scc := findCycles(len(keys), allNodes)
 
-	cachedChildren, err := buildCache(uncachedNodes, ChildrenDirection, scc, allNodes, progressDependencies)
+	cachedChildren, err := buildCache(uncachedNodes, ChildrenDirection, scc, allNodes)
 	if err != nil {
 		return err
 	}
 
-	cachedParents, err := buildCache(uncachedNodes, ParentsDirection, scc, allNodes, progressDependents)
+	cachedParents, err := buildCache(uncachedNodes, ParentsDirection, scc, allNodes)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ type todoFuturePair struct {
 	futureNodes []uint32
 }
 
-func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint32, allNodes map[uint32]*Node, progress func(int, int, bool)) (*NativeKeyManagement, error) {
+func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint32, allNodes map[uint32]*Node) (*NativeKeyManagement, error) {
 	cache, children, parents := NewNativeKeyManagement(), NewNativeKeyManagement(), NewNativeKeyManagement()
 	alreadyCached := roaring.New()
 	todoFutureCache := make(map[uint32]todoFuturePair)
@@ -138,8 +138,6 @@ func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint
 	if err != nil {
 		return nil, err
 	}
-
-	count := 0
 
 	nodesToCache := roaring.New()
 
@@ -187,11 +185,6 @@ func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint
 				}
 			}
 
-		}
-		// Update the progress bar
-		count++
-		if progress != nil {
-			progress(count, len(nodesToProcess), direction == ParentsDirection)
 		}
 	}
 
