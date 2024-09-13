@@ -5,7 +5,7 @@ go 1.23.1
 require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/alecthomas/participle/v2 v2.1.1
-	github.com/go-echarts/go-echarts/v2 v2.4.1
+	github.com/go-echarts/go-echarts/v2 v2.4.2
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/goccy/go-json v0.10.3
 	github.com/google/go-cmp v0.6.0
