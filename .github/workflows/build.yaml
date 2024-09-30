@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v2
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v2
       - name: Set up Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v2
         with:
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v2
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v2
       - name: Set up Docker
         uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
       - name: Docker
@@ -36,7 +36,7 @@ jobs:
     needs: [build, docker]
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v2
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v2
       - name: Set up Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v2
         with:
