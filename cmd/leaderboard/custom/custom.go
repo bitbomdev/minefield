@@ -17,10 +17,9 @@ import (
 )
 
 type options struct {
-	storage     graph.Storage
-	all         bool
-	maxOutput   int
-	concurrency int
+	storage   graph.Storage
+	all       bool
+	maxOutput int
 }
 
 type query struct {
@@ -31,7 +30,6 @@ type query struct {
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&o.all, "all", false, "show the queries output for each node")
 	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
-	cmd.Flags().IntVar(&o.concurrency, "concurrency", 100, "max concurrency")
 }
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
@@ -72,14 +70,14 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func New(storage graph.Storage, maxConcurrency int) *cobra.Command {
+func New(storage graph.Storage) *cobra.Command {
 	o := &options{
 		storage: storage,
 	}
 	cmd := &cobra.Command{
 		Use:               "custom [script]",
 		Short:             "returns all the keys based on the fed in script",
-		Args:              cobra.ExactArgs(1),
+		Args:              cobra.MinimumNArgs(1),
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}

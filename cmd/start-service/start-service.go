@@ -2,6 +2,7 @@ package start_service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -28,9 +29,12 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 }
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
-	addr := os.Getenv("BITBOMDEV_ADDR")
-	if addr == "" {
-		addr = "localhost:8089"
+	if o.concurrency <= 0 {
+		return fmt.Errorf("Concurrency must be greater than zero")
+	}
+	serviceAddr := os.Getenv("BITBOMDEV_ADDR")
+	if serviceAddr == "" {
+		serviceAddr = "localhost:8089"
 	}
 	newService := service.NewService(o.storage, o.concurrency)
 	mux := http.NewServeMux()
@@ -42,7 +46,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	mux.Handle(path, handler)
 
 	server := &http.Server{
-		Addr:    addr,
+		Addr:    serviceAddr,
 		Handler: h2c.NewHandler(mux, &http2.Server{}),
 	}
 
@@ -51,8 +55,8 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		fmt.Printf("Server is starting on %s\n", addr)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		fmt.Printf("Server is starting on %s\n", serviceAddr)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			fmt.Printf("ListenAndServe(): %s\n", err)
 		}
 	}()

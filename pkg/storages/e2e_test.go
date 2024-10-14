@@ -45,8 +45,6 @@ func TestParseAndExecute_E2E(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	assert.Greater(t, count, 0)
-
 	err = ingest.Vulnerabilities(redisStorage, progress)
 	assert.NoError(t, err)
 

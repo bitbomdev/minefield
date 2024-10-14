@@ -24,7 +24,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	progress := func(count int, path string) {
 		fmt.Printf("\r\033[K%s", printProgress(count, path))
 	}
-	if err := ingest.Vulnerabilities(o.storage, progress); err != nil {
+	if _, err := o.VulnerabilitiesToStorage(args[0], progress); err != nil {
 		return fmt.Errorf("failed to load vuln data: %w", err)
 	}
 	fmt.Println("\nVulnerabilities loaded successfully")

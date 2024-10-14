@@ -22,8 +22,8 @@ func setupService() *Service {
 
 func TestGetNode(t *testing.T) {
 	s := setupService()
-	node, _ := graph.AddNode(s.storage, "type1", "metadata1", "name1")
-
+	node, err := graph.AddNode(s.storage, "type1", "metadata1", "name1")
+	require.NoError(t, err)
 	req := connect.NewRequest(&service.GetNodeRequest{Id: node.ID})
 	resp, err := s.GetNode(context.Background(), req)
 	require.NoError(t, err)
@@ -33,8 +33,8 @@ func TestGetNode(t *testing.T) {
 
 func TestGetNodeByName(t *testing.T) {
 	s := setupService()
-	node, _ := graph.AddNode(s.storage, "type1", "metadata1", "name1")
-
+	node, err := graph.AddNode(s.storage, "type1", "metadata1", "name1")
+	require.NoError(t, err)
 	req := connect.NewRequest(&service.GetNodeByNameRequest{Name: node.Name})
 	resp, err := s.GetNodeByName(context.Background(), req)
 	require.NoError(t, err)
@@ -74,10 +74,10 @@ func TestQueriesAndCache(t *testing.T) {
 
 	if len(customLeaderboardResp.Msg.Queries) > 0 {
 		if len(customLeaderboardResp.Msg.Queries[0].Output) == 0 {
-			t.Fatalf("Leaderboard top should have a vuln but got %s with %v vulns", customLeaderboardResp.Msg.Queries[0].Node, len(customLeaderboardResp.Msg.Queries[0].Output))
+			t.Fatalf("Leaderboard top should have a vuln but got %v with %v vulns", customLeaderboardResp.Msg.Queries[0].Node, len(customLeaderboardResp.Msg.Queries[0].Output))
 		}
 	} else {
-		t.Errorf("No queries found")
+		t.Fatalf("No queries found")
 	}
 
 	queryReq := connect.NewRequest(&service.QueryRequest{Script: "dependencies vuln pkg:github.com/google/agi@"})

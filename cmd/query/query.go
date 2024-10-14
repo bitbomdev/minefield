@@ -2,7 +2,6 @@ package query
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -22,21 +21,21 @@ import (
 )
 
 type options struct {
-	storage   graph.Storage
-	outputdir string
-	addr      string
-	maxOutput int
-	visualize bool
+	storage        graph.Storage
+	outputdir      string
+	visualizerAddr string
+	maxOutput      int
+	visualize      bool
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.outputdir, "output-dir", "", "specify dir to write the output to")
 	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
 	cmd.Flags().BoolVar(&o.visualize, "visualize", false, "visualize the query")
-	cmd.Flags().StringVar(&o.addr, "addr", "8081", "address to run the visualizer on")
+	cmd.Flags().StringVar(&o.visualizerAddr, "addr", "8081", "address to run the visualizer on")
 }
 
-func (o *options) Run(_ *cobra.Command, args []string) error {
+func (o *options) Run(cmd *cobra.Command, args []string) error {
 	script := strings.Join(args, " ")
 	httpClient := &http.Client{}
 	addr := os.Getenv("BITBOMDEV_ADDR")
@@ -46,7 +45,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	client := apiv1connect.NewQueryServiceClient(httpClient, addr)
 
 	// Create a new context
-	ctx := context.Background()
+	ctx := cmd.Context()
 
 	// Create a new QueryRequest
 	req := connect.NewRequest(&apiv1.QueryRequest{
@@ -92,12 +91,12 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 				return fmt.Errorf("failed to write data to file: %w", err)
 			}
 		}
-
+		count++
 	}
 
 	if o.visualize {
 		server := &http.Server{
-			Addr: ":" + o.addr,
+			Addr: ":" + o.visualizerAddr,
 		}
 
 		ids := roaring.New()
