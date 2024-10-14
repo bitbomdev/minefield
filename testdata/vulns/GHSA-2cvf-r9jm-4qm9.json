@@ -1,0 +1,89 @@
+{
+  "id": "GHSA-2cvf-r9jm-4qm9",
+  "summary": "Ceilometer Prints Sensitive Configuration Data to Log",
+  "details": "A vulnerability was found in ceilometer before version 12.0.0.0rc1. An Information Exposure in ceilometer-agent prints sensitive configuration data to log files without DEBUG logging being activated.",
+  "aliases": [
+    "CVE-2019-3830",
+    "PYSEC-2019-78"
+  ],
+  "modified": "2024-02-16T08:13:46.652427Z",
+  "published": "2022-05-13T01:14:22Z",
+  "database_specific": {
+    "nvd_published_at": "2019-03-26T18:29:00Z",
+    "cwe_ids": [
+      "CWE-532"
+    ],
+    "severity": "HIGH",
+    "github_reviewed": true,
+    "github_reviewed_at": "2023-07-19T20:01:06Z"
+  },
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-3830"
+    },
+    {
+      "type": "WEB",
+      "url": "https://github.com/openstack/ceilometer/commit/8881a42af169a2d7c912b1434911f978883c83f3"
+    },
+    {
+      "type": "WEB",
+      "url": "https://github.com/openstack/ceilometer/commit/8881a42af169a2d7c912b1434911f978883c83f3#diff-f2d2273521cce7e69f7032c6185936736a5acc70b2b2f90d956b9a7998b087cd"
+    },
+    {
+      "type": "WEB",
+      "url": "https://access.redhat.com/errata/RHSA-2019:0919"
+    },
+    {
+      "type": "WEB",
+      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2019-3830"
+    },
+    {
+      "type": "PACKAGE",
+      "url": "https://github.com/openstack/ceilometer"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "name": "ceilometer",
+        "ecosystem": "PyPI",
+        "purl": "pkg:pypi/ceilometer"
+      },
+      "ranges": [
+        {
+          "type": "ECOSYSTEM",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "12.0.0.0rc1"
+            }
+          ]
+        }
+      ],
+      "versions": [
+        "0.1",
+        "0.2",
+        "10.0.1",
+        "11.0.0",
+        "11.0.1",
+        "11.1.0",
+        "8.1.5",
+        "9.0.6",
+        "9.0.7"
+      ],
+      "database_specific": {
+        "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2022/05/GHSA-2cvf-r9jm-4qm9/GHSA-2cvf-r9jm-4qm9.json"
+      }
+    }
+  ],
+  "schema_version": "1.6.0",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+    }
+  ]
+}

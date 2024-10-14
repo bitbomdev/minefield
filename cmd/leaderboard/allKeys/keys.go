@@ -1,13 +1,18 @@
 package allKeys
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 
+	"connectrpc.com/connect"
+	"github.com/bit-bom/minefield/gen/api/v1/apiv1connect"
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type options struct {
@@ -20,25 +25,29 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 }
 
 func (o *options) Run(_ *cobra.Command, _ []string) error {
-	keys, err := o.storage.GetAllKeys()
+	httpClient := &http.Client{}
+	addr := os.Getenv("BITBOMDEV_ADDR")
+	if addr == "" {
+		addr = "http://localhost:8089"
+	}
+	client := apiv1connect.NewLeaderboardServiceClient(httpClient, addr)
+
+	ctx := context.Background()
+
+	req := connect.NewRequest(&emptypb.Empty{})
+	res, err := client.AllKeys(ctx, req)
 	if err != nil {
-		return fmt.Errorf("failed to query keys: %w", err)
+		return fmt.Errorf("failed to get all keys: %w", err)
 	}
 
-	// Print dependencies
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Type", "ID"})
 
-	for index, key := range keys {
+	for index, node := range res.Msg.Nodes {
 		if index > o.maxOutput {
 			break
 		}
-		node, err := o.storage.GetNode(key)
-		if err != nil {
-			fmt.Println("Failed to get name for ID:", err)
-			continue
-		}
-		table.Append([]string{node.Name, node.Type, strconv.Itoa(int(node.ID))})
+		table.Append([]string{node.Name, node.Type, strconv.Itoa(int(node.Id))})
 	}
 
 	table.Render()

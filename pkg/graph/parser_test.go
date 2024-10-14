@@ -39,7 +39,7 @@ func TestParseAndExecute(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := Cache(storage, nil, nil); err != nil {
+	if err := Cache(storage); err != nil {
 		t.Fatal(err)
 	}
 

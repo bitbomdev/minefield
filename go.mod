@@ -3,6 +3,8 @@ module github.com/bit-bom/minefield
 go 1.23.1
 
 require (
+	connectrpc.com/connect v1.17.0
+	github.com/Masterminds/semver v1.5.0
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/alecthomas/participle/v2 v2.1.1
 	github.com/go-echarts/go-echarts/v2 v2.4.2
@@ -15,6 +17,8 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/fx v1.22.2
+	golang.org/x/net v0.29.0
+	google.golang.org/protobuf v1.34.2
 )
 
 require (
@@ -43,9 +47,8 @@ require (
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
-	google.golang.org/protobuf v1.34.1 // indirect
+	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	sigs.k8s.io/release-utils v0.8.2 // indirect
 )

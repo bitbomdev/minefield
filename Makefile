@@ -36,4 +36,4 @@ docker-build:
 
 all: build test docker-build 
 
-.PHONY: test build clean clean-redis docker-up docker-down docker-logs docker-build all
+.PHONY: test test-e2e build clean clean-redis docker-up docker-down docker-logs docker-build all

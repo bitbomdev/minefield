@@ -24,7 +24,7 @@ func TestNewRedisStorageModule(t *testing.T) {
 
 	_, err = client.Ping(context.Background()).Result()
 	if err != nil {
-		t.Skipf("Skipping test: Redis is not available at %s", addr)
+		t.Skipf("Skipping testdata: Redis is not available at %s", addr)
 	}
 
 	// Create an fx.App for testing
@@ -36,7 +36,7 @@ func TestNewRedisStorageModule(t *testing.T) {
 			// Perform additional assertions on the storage instance
 			redisStorage, ok := storage.(*RedisStorage)
 			assert.True(t, ok, "Expected storage to be of type *RedisStorage")
-			assert.NotNil(t, redisStorage.client, "RedisStorage client should not be nil")
+			assert.NotNil(t, redisStorage.Client, "RedisStorage Client should not be nil")
 		}),
 	)
 

@@ -11,18 +11,18 @@ import (
 )
 
 type RedisStorage struct {
-	client *redis.Client
+	Client *redis.Client
 }
 
 func NewRedisStorage(addr string) graph.Storage {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: addr,
 	})
-	return &RedisStorage{client: rdb}
+	return &RedisStorage{Client: rdb}
 }
 
 func (r *RedisStorage) GenerateID() (uint32, error) {
-	id, err := r.client.Incr(context.Background(), "id_counter").Result()
+	id, err := r.Client.Incr(context.Background(), "id_counter").Result()
 	if err != nil {
 		return 0, fmt.Errorf("failed to generate ID: %w", err)
 	}
@@ -34,10 +34,10 @@ func (r *RedisStorage) SaveNode(node *graph.Node) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal node: %w", err)
 	}
-	if err := r.client.Set(context.Background(), fmt.Sprintf("node:%d", node.ID), data, 0).Err(); err != nil {
+	if err := r.Client.Set(context.Background(), fmt.Sprintf("node:%d", node.ID), data, 0).Err(); err != nil {
 		return fmt.Errorf("failed to save node data: %w", err)
 	}
-	if err := r.client.Set(context.Background(), fmt.Sprintf("name_to_id:%s", node.Name), strconv.Itoa(int(node.ID)), 0).Err(); err != nil {
+	if err := r.Client.Set(context.Background(), fmt.Sprintf("name_to_id:%s", node.Name), strconv.Itoa(int(node.ID)), 0).Err(); err != nil {
 		return fmt.Errorf("failed to save node name to ID mapping: %w", err)
 	}
 	if err := r.AddNodeToCachedStack(node.ID); err != nil {
@@ -47,7 +47,7 @@ func (r *RedisStorage) SaveNode(node *graph.Node) error {
 }
 
 func (r *RedisStorage) NameToID(name string) (uint32, error) {
-	id, err := r.client.Get(context.Background(), fmt.Sprintf("name_to_id:%s", name)).Result()
+	id, err := r.Client.Get(context.Background(), fmt.Sprintf("name_to_id:%s", name)).Result()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get ID for name %s: %w", name, err)
 	}
@@ -61,7 +61,7 @@ func (r *RedisStorage) NameToID(name string) (uint32, error) {
 
 func (r *RedisStorage) GetNode(id uint32) (*graph.Node, error) {
 	ctx := context.Background()
-	data, err := r.client.Get(ctx, fmt.Sprintf("node:%d", id)).Result()
+	data, err := r.Client.Get(ctx, fmt.Sprintf("node:%d", id)).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node data for ID %d: %w", id, err)
 	}
@@ -73,7 +73,7 @@ func (r *RedisStorage) GetNode(id uint32) (*graph.Node, error) {
 }
 
 func (r *RedisStorage) GetAllKeys() ([]uint32, error) {
-	keys, err := r.client.Keys(context.Background(), "node:*").Result()
+	keys, err := r.Client.Keys(context.Background(), "node:*").Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all keys: %w", err)
 	}
@@ -94,12 +94,12 @@ func (r *RedisStorage) SaveCache(cache *graph.NodeCache) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal cache: %w", err)
 	}
-	return r.client.Set(ctx, fmt.Sprintf("cache:%d", cache.ID), data, 0).Err()
+	return r.Client.Set(ctx, fmt.Sprintf("cache:%d", cache.ID), data, 0).Err()
 }
 
 func (r *RedisStorage) ToBeCached() ([]uint32, error) {
 	ctx := context.Background()
-	data, err := r.client.LRange(ctx, "to_be_cached", 0, -1).Result()
+	data, err := r.Client.LRange(ctx, "to_be_cached", 0, -1).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get to_be_cached data: %w", err)
 	}
@@ -118,7 +118,7 @@ func (r *RedisStorage) ToBeCached() ([]uint32, error) {
 
 func (r *RedisStorage) AddNodeToCachedStack(nodeID uint32) error {
 	ctx := context.Background()
-	err := r.client.RPush(ctx, "to_be_cached", nodeID).Err()
+	err := r.Client.RPush(ctx, "to_be_cached", nodeID).Err()
 	if err != nil {
 		return fmt.Errorf("failed to add node %d to cached stack: %w", nodeID, err)
 	}
@@ -127,7 +127,7 @@ func (r *RedisStorage) AddNodeToCachedStack(nodeID uint32) error {
 
 func (r *RedisStorage) ClearCacheStack() error {
 	ctx := context.Background()
-	err := r.client.Del(ctx, "to_be_cached").Err()
+	err := r.Client.Del(ctx, "to_be_cached").Err()
 	if err != nil {
 		return fmt.Errorf("failed to clear cache stack: %w", err)
 	}
@@ -136,7 +136,7 @@ func (r *RedisStorage) ClearCacheStack() error {
 
 func (r *RedisStorage) GetCache(nodeID uint32) (*graph.NodeCache, error) {
 	ctx := context.Background()
-	data, err := r.client.Get(ctx, fmt.Sprintf("cache:%d", nodeID)).Result()
+	data, err := r.Client.Get(ctx, fmt.Sprintf("cache:%d", nodeID)).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cache for node %d: %w", nodeID, err)
 	}
@@ -149,7 +149,7 @@ func (r *RedisStorage) GetCache(nodeID uint32) (*graph.NodeCache, error) {
 
 func (r *RedisStorage) GetNodes(ids []uint32) (map[uint32]*graph.Node, error) {
 	ctx := context.Background()
-	pipe := r.client.Pipeline()
+	pipe := r.Client.Pipeline()
 
 	cmds := make([]*redis.StringCmd, len(ids))
 	for i, id := range ids {
@@ -182,7 +182,7 @@ func (r *RedisStorage) GetNodes(ids []uint32) (map[uint32]*graph.Node, error) {
 
 func (r *RedisStorage) SaveCaches(caches []*graph.NodeCache) error {
 	ctx := context.Background()
-	pipe := r.client.Pipeline()
+	pipe := r.Client.Pipeline()
 
 	for _, cache := range caches {
 		data, err := cache.MarshalJSON()
@@ -201,7 +201,7 @@ func (r *RedisStorage) SaveCaches(caches []*graph.NodeCache) error {
 
 func (r *RedisStorage) GetCaches(ids []uint32) (map[uint32]*graph.NodeCache, error) {
 	ctx := context.Background()
-	pipe := r.client.Pipeline()
+	pipe := r.Client.Pipeline()
 
 	cmds := make([]*redis.StringCmd, len(ids))
 	for i, id := range ids {
@@ -239,13 +239,13 @@ func (r *RedisStorage) RemoveAllCaches() error {
 
 	for {
 		var keys []string
-		keys, cursor, err = r.client.Scan(ctx, cursor, "cache:*", 1000).Result()
+		keys, cursor, err = r.Client.Scan(ctx, cursor, "cache:*", 1000).Result()
 		if err != nil {
 			return fmt.Errorf("failed to scan cache keys: %w", err)
 		}
 
 		if len(keys) > 0 {
-			pipe := r.client.Pipeline()
+			pipe := r.Client.Pipeline()
 
 			// Extract IDs and add them to the cache stack
 			for _, key := range keys {
@@ -268,4 +268,35 @@ func (r *RedisStorage) RemoveAllCaches() error {
 	}
 
 	return nil
+}
+
+func (r *RedisStorage) AddOrUpdateCustomData(tag, key string, datakey string, data []byte) error {
+	ctx := context.Background()
+	redisKey := fmt.Sprintf("%s:%s", tag, key)
+
+	// Use HSet to add or update the field in the hash
+	err := r.Client.HSet(ctx, redisKey, datakey, data).Err()
+	if err != nil {
+		return fmt.Errorf("failed to set hash field: %w", err)
+	}
+
+	return nil
+}
+
+// GetCustomData gets data from the database.
+func (r *RedisStorage) GetCustomData(tag, key string) (map[string][]byte, error) {
+	ctx := context.Background()
+	redisKey := fmt.Sprintf("%s:%s", tag, key)
+
+	data, err := r.Client.HGetAll(ctx, redisKey).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get data from DB: %w", err)
+	}
+
+	result := make(map[string][]byte, len(data))
+	for field, value := range data {
+		result[field] = []byte(value)
+	}
+
+	return result, nil
 }

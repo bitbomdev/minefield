@@ -1,0 +1,89 @@
+{
+  "id": "GHSA-2cf3-g243-hhfx",
+  "summary": "MySQL Connectors Privilege Escalation",
+  "details": "Vulnerability in the MySQL Connectors component of Oracle MySQL (subcomponent: Connector/Python). Supported versions that are affected are 2.1.5 and earlier. Easily \"exploitable\" vulnerability allows low privileged attacker with logon to the infrastructure where MySQL Connectors executes to compromise MySQL Connectors. Successful attacks of this vulnerability can result in unauthorized update, insert or delete access to some of MySQL Connectors accessible data. CVSS 3.0 Base Score 3.3 (Integrity impacts). CVSS Vector: (CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N).",
+  "aliases": [
+    "CVE-2017-3590"
+  ],
+  "modified": "2024-04-22T23:11:50.146731Z",
+  "published": "2022-05-13T01:45:43Z",
+  "database_specific": {
+    "nvd_published_at": "2017-04-24T19:59:00Z",
+    "cwe_ids": [],
+    "severity": "LOW",
+    "github_reviewed": true,
+    "github_reviewed_at": "2024-04-22T22:58:16Z"
+  },
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2017-3590"
+    },
+    {
+      "type": "PACKAGE",
+      "url": "https://github.com/mysql/mysql-connector-python"
+    },
+    {
+      "type": "WEB",
+      "url": "http://www.oracle.com/technetwork/security-advisory/cpuapr2017-3236618.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://www.securityfocus.com/bid/97840"
+    },
+    {
+      "type": "WEB",
+      "url": "http://www.securitytracker.com/id/1038287"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "name": "mysql-connector-python",
+        "ecosystem": "PyPI",
+        "purl": "pkg:pypi/mysql-connector-python"
+      },
+      "ranges": [
+        {
+          "type": "ECOSYSTEM",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "last_affected": "2.1.5"
+            }
+          ]
+        }
+      ],
+      "versions": [
+        "1.0.10",
+        "1.0.12",
+        "1.0.5",
+        "1.0.5b1",
+        "1.0.6b2",
+        "1.0.7",
+        "1.0.9",
+        "1.1.4",
+        "1.1.5",
+        "1.1.6",
+        "1.2.2",
+        "1.2.3",
+        "2.0.1",
+        "2.0.2",
+        "2.0.3",
+        "2.0.4"
+      ],
+      "database_specific": {
+        "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2022/05/GHSA-2cf3-g243-hhfx/GHSA-2cf3-g243-hhfx.json"
+      }
+    }
+  ],
+  "schema_version": "1.6.0",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N"
+    }
+  ]
+}

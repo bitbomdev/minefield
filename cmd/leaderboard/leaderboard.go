@@ -8,13 +8,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type options struct {
-	maxConcurrency int
-}
+type options struct{}
 
-func (o *options) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().IntVar(&o.maxConcurrency, "max-concurrency", 25, "maximum number of concurrent goroutines")
-}
+func (o *options) AddFlags(_ *cobra.Command) {}
 
 func New(storage graph.Storage) *cobra.Command {
 	o := &options{}
@@ -29,7 +25,7 @@ func New(storage graph.Storage) *cobra.Command {
 
 	cmd.AddCommand(allKeys.New(storage))
 	cmd.AddCommand(weightedNACD.New(storage))
-	cmd.AddCommand(custom.New(storage, o.maxConcurrency))
+	cmd.AddCommand(custom.New(storage))
 
 	return cmd
 }

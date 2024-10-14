@@ -5,6 +5,7 @@ import (
 	"github.com/bit-bom/minefield/cmd/ingest"
 	"github.com/bit-bom/minefield/cmd/leaderboard"
 	"github.com/bit-bom/minefield/cmd/query"
+	start_service "github.com/bit-bom/minefield/cmd/start-service"
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
@@ -34,6 +35,7 @@ func New(storage graph.Storage) *cobra.Command {
 	cmd.AddCommand(ingest.New(storage))
 	cmd.AddCommand(cache.New(storage))
 	cmd.AddCommand(leaderboard.New(storage))
+	cmd.AddCommand(start_service.New(storage))
 
 	return cmd
 }
