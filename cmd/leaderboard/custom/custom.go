@@ -67,6 +67,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 			table.Append([]string{q.Node.Name, q.Node.Type, strconv.Itoa(int(q.Node.Id)), fmt.Sprint(len(q.Output))})
 		}
 	}
+	table.Render()
 	return nil
 }
 
