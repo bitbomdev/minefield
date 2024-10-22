@@ -7,7 +7,9 @@
 
 > Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
 
-BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s FAST.
+**BitBom Minefield is an air-gapped solution that uses roaring-**Bit**maps to graph S**BOM**s FAST.**
+
+*Designed for secure, offline environments, Minefield operates seamlessly without internet connectivity, ensuring data integrity and security.*
 
 ![Terminal Output](images/terminal.png)
 > Caching 10,000 SBOMs packages transitive dependents in 30 seconds.
@@ -20,12 +22,12 @@ BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s FAST
    - [Using Docker](#using-docker)
    - [Building From Source](#building-from-source)
 4. [How Minefield Works](#how-minefield-works)
-5. [Custom Query Commands](#custom-query-commands)
-6. [Visualization of a Query](#visualization-of-a-query)
-7. [Documentation](#documentation)
-8. [Blog](#blog)
-9. [Star History](#star-history)
-10. [Acknowledgements](#acknowledgements)
+   - [Air-Gapped Design Philosophy](#air-gapped-design-philosophy)
+5. [Visualization of a Query](#visualization-of-a-query)
+6. [Documentation](#documentation)
+7. [Blog](#blog)
+8. [Star History](#star-history)
+9. [Acknowledgements](#acknowledgements)
 
 [View Minefield demo on asciinema](https://asciinema.org/a/674302)
 
@@ -48,35 +50,39 @@ BitBom Minefield is a tool that uses roaring-**Bit**maps to graph S**BOM**s FAST
 
 _Redis must be running at `localhost:6379`. If not, please use `make docker-up` to start Redis._
 
-_Redis must be running at `localhost:6379`, if not please use `make docker-up` to start Redis._
-1. Start the api server
+1. **Start the API server:**
    ```shell
    minefield start-service 
    ```
 
-2. Ingest the `test` SBOM directory:
+2. **Ingest the `test` SBOM directory:**
     ```sh
     minefield ingest sbom testdata
     ```
-2. **Cache the data:**
+3. **Cache the data:**
     ```sh
     minefield cache
     ```
-3. **Run the leaderboard custom with "dependents PACKAGE":**
+4. **Run the leaderboard custom with "dependents PACKAGE":**
    - This command generates a ranked list of packages, ordered by the number of other packages that depend on them.
     ```sh
     minefield leaderboard custom "dependents PACKAGE"
     ```
-4. **Run a query on the top value from the leaderboard:**
+5. **Run a query on the top value from the leaderboard:**
    - This command queries the dependents for a specific package, in this case `dep2`.
-5. **Run queries to see the shared dependencies of `lib-A` and `dep1`, and `lib-A` and `lib-B`:**
+    ```sh
+    minefield query "dependents PACKAGE dep2"
+    ```
+6. **Run queries to see the shared dependencies of `lib-A` and `dep1`, and `lib-A` and `lib-B`:**
    - These queries output the intersection of two queries, finding package dependencies shared between each pair.
     ```sh
     minefield query "dependencies PACKAGE pkg:generic/lib-B@1.0.0 and dependencies PACKAGE pkg:generic/lib-A@1.0.0"
     ```
-6. **Run queries with the visualizer:**
+7. **Run queries with the visualizer:**
     ```sh
-    minefield query "dependents PACKAGE pkg:generic/dep2@1.0.0 --visualize"
+    minefield query "dependents PACKAGE pkg:generic/dep2@1.0.0" --visualize
+    ```
+
 ## To Start Using Minefield
 
 ### Using Docker
@@ -99,9 +105,23 @@ go build -o minefield main.go
 
 The design decisions and architecture of Minefield can be found [here](docs/bitbom.pdf).
 
+### Air-Gapped Design Philosophy
+
+Minefield is primarily designed as an air-gapped solution, operating seamlessly without internet connectivity. It makes it ideal for secure environments that require complete isolation from external networks.
+
+- **Offline Operation**: All functionalities, including data ingestion, caching, querying, and visualization, are performed locally without external dependencies.
+
+- **Enhanced Security**: Operating in an air-gapped environment minimizes the risk of data breaches and unauthorized access, ensuring that sensitive information remains within your controlled infrastructure.
+
+- **Data Sovereignty**: Users have complete control over their data, with no external transmissions, adhering to strict compliance and regulatory requirements.
+
+- **Efficiency**: Minefield is optimized for performance and can handle large datasets quickly even without network resources.
+
+Minefield makes it easy to securely and efficiently manage and explore your software dependencies within isolated environments by offline processing and analyzing SBOMs (Software Bill of Materials).
+
 ## Visualization of a Query
 
-![img.png](images/img.png)
+![Query Visualization](images/img.png)
 
 ## Documentation
 
