@@ -72,6 +72,34 @@ func (r *RedisStorage) GetNode(id uint32) (*graph.Node, error) {
 	return &node, nil
 }
 
+func (r *RedisStorage) GetNodesByGlob(pattern string) ([]*graph.Node, error) {
+	// Use pattern matching for Redis keys
+	keys, err := r.Client.Keys(context.Background(), fmt.Sprintf("name_to_id:%s", pattern)).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get nodes by pattern %s: %w", pattern, err)
+	}
+
+	nodes := make([]*graph.Node, 0, len(keys))
+	for _, key := range keys {
+		// Extract the name from the key
+		name := strings.TrimPrefix(key, "name_to_id:")
+		
+		// Get the ID using the name
+		id, err := r.NameToID(name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get ID for name %s: %w", name, err)
+		}
+		
+		node, err := r.GetNode(id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get node for ID %d: %w", id, err)
+		}
+		nodes = append(nodes, node)
+	}
+
+	return nodes, nil
+}
+
 func (r *RedisStorage) GetAllKeys() ([]uint32, error) {
 	keys, err := r.Client.Keys(context.Background(), "node:*").Result()
 	if err != nil {

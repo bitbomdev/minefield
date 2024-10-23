@@ -81,6 +81,22 @@ func (s *Service) GetNodeByName(ctx context.Context, req *connect.Request[servic
 	return connect.NewResponse(&service.GetNodeByNameResponse{Node: serviceNode}), nil
 }
 
+func (s *Service) GetNodesByGlob(ctx context.Context, req *connect.Request[service.GetNodesByGlobRequest]) (*connect.Response[service.GetNodesByGlobResponse], error) {
+	nodes, err := s.storage.GetNodesByGlob(req.Msg.Pattern)
+	if err != nil {
+		return nil, err
+	}
+	serviceNodes := make([]*service.Node, 0, len(nodes))
+	for _, node := range nodes {
+		serviceNode, err := NodeToServiceNode(node)
+		if err != nil {
+			return nil, err
+		}
+		serviceNodes = append(serviceNodes, serviceNode)
+	}
+	return connect.NewResponse(&service.GetNodesByGlobResponse{Nodes: serviceNodes}), nil
+}
+
 func (s *Service) Cache(ctx context.Context, req *connect.Request[emptypb.Empty]) (*connect.Response[emptypb.Empty], error) {
 	err := graph.Cache(s.storage)
 	if err != nil {

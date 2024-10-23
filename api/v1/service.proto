@@ -56,6 +56,14 @@ message GetNodeByNameResponse {
   Node node = 1;
 }
 
+message GetNodesByGlobRequest {
+  string pattern = 1;
+}
+
+message GetNodesByGlobResponse {
+  repeated Node nodes = 1;
+}
+
 service QueryService {
   rpc Query(QueryRequest) returns (QueryResponse) {}
 }
@@ -72,5 +80,6 @@ service LeaderboardService {
 
 service GraphService {
   rpc GetNode(GetNodeRequest) returns (GetNodeResponse) {}
+  rpc GetNodesByGlob(GetNodesByGlobRequest) returns (GetNodesByGlobResponse) {}
   rpc GetNodeByName(GetNodeByNameRequest) returns (GetNodeByNameResponse) {}
 }

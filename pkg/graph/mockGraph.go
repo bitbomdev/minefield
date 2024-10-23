@@ -3,6 +3,7 @@ package graph
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"sync"
 
 	"github.com/RoaringBitmap/roaring"
@@ -48,6 +49,23 @@ func (m *MockStorage) GetNode(id uint32) (*Node, error) {
 		return nil, fmt.Errorf("node %v not found", id)
 	}
 	return node, nil
+}
+
+func (m *MockStorage) GetNodesByGlob(pattern string) ([]*Node, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	nodes := make([]*Node, 0)
+	for _, node := range m.nodes {
+		matched, err := filepath.Match(pattern, node.Name)
+		if err != nil {
+			return nil, fmt.Errorf("invalid glob pattern: %v", err)
+		}
+		if matched {
+			nodes = append(nodes, node)
+		}
+	}
+	return nodes, nil
 }
 
 func (m *MockStorage) GetAllKeys() ([]uint32, error) {
