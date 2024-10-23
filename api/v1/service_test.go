@@ -42,6 +42,20 @@ func TestGetNodeByName(t *testing.T) {
 	assert.Equal(t, node.Name, resp.Msg.Node.Name)
 }
 
+func TestGetNodesByGlob(t *testing.T) {
+	s := setupService()
+	node, err := graph.AddNode(s.storage, "type1", "metadata1", "name1")
+	require.NoError(t, err)
+	node2, err := graph.AddNode(s.storage, "type1", "metadata1", "name2")
+	require.NoError(t, err)
+	req := connect.NewRequest(&service.GetNodesByGlobRequest{Pattern: "name"})
+	resp, err := s.GetNodesByGlob(context.Background(), req)
+	require.NoError(t, err)
+	for _, respNode := range resp.Msg.Nodes {
+		assert.Contains(t, []string{node.Name, node2.Name}, respNode.Name)
+	}
+}
+
 func TestQueriesAndCache(t *testing.T) {
 	s := setupService()
 	_, err := ingest.SBOM("../../testdata/osv-sboms/google_agi.sbom.json", s.storage, nil)

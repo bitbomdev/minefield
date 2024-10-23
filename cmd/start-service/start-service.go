@@ -44,6 +44,8 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	mux.Handle(path, handler)
 	path, handler = apiv1connect.NewCacheServiceHandler(newService)
 	mux.Handle(path, handler)
+	path, handler = apiv1connect.NewGraphServiceHandler(newService)
+	mux.Handle(path, handler)
 
 	server := &http.Server{
 		Addr:    serviceAddr,

@@ -6,6 +6,7 @@ type Storage interface {
 	SaveNode(node *Node) error
 	GetNode(id uint32) (*Node, error)
 	GetNodes(ids []uint32) (map[uint32]*Node, error)
+	GetNodesByGlob(pattern string) ([]*Node, error)
 	GetAllKeys() ([]uint32, error)
 	SaveCache(cache *NodeCache) error
 	SaveCaches(cache []*NodeCache) error

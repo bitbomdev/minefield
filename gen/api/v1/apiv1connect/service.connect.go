@@ -5,14 +5,13 @@
 package apiv1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	http "net/http"
-	strings "strings"
-
-	connect "connectrpc.com/connect"
 	v1 "github.com/bit-bom/minefield/gen/api/v1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	http "net/http"
+	strings "strings"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -55,6 +54,9 @@ const (
 	LeaderboardServiceAllKeysProcedure = "/api.v1.LeaderboardService/AllKeys"
 	// GraphServiceGetNodeProcedure is the fully-qualified name of the GraphService's GetNode RPC.
 	GraphServiceGetNodeProcedure = "/api.v1.GraphService/GetNode"
+	// GraphServiceGetNodesByGlobProcedure is the fully-qualified name of the GraphService's
+	// GetNodesByGlob RPC.
+	GraphServiceGetNodesByGlobProcedure = "/api.v1.GraphService/GetNodesByGlob"
 	// GraphServiceGetNodeByNameProcedure is the fully-qualified name of the GraphService's
 	// GetNodeByName RPC.
 	GraphServiceGetNodeByNameProcedure = "/api.v1.GraphService/GetNodeByName"
@@ -72,6 +74,7 @@ var (
 	leaderboardServiceAllKeysMethodDescriptor           = leaderboardServiceServiceDescriptor.Methods().ByName("AllKeys")
 	graphServiceServiceDescriptor                       = v1.File_api_v1_service_proto.Services().ByName("GraphService")
 	graphServiceGetNodeMethodDescriptor                 = graphServiceServiceDescriptor.Methods().ByName("GetNode")
+	graphServiceGetNodesByGlobMethodDescriptor          = graphServiceServiceDescriptor.Methods().ByName("GetNodesByGlob")
 	graphServiceGetNodeByNameMethodDescriptor           = graphServiceServiceDescriptor.Methods().ByName("GetNodeByName")
 )
 
@@ -334,6 +337,7 @@ func (UnimplementedLeaderboardServiceHandler) AllKeys(context.Context, *connect.
 // GraphServiceClient is a client for the api.v1.GraphService service.
 type GraphServiceClient interface {
 	GetNode(context.Context, *connect.Request[v1.GetNodeRequest]) (*connect.Response[v1.GetNodeResponse], error)
+	GetNodesByGlob(context.Context, *connect.Request[v1.GetNodesByGlobRequest]) (*connect.Response[v1.GetNodesByGlobResponse], error)
 	GetNodeByName(context.Context, *connect.Request[v1.GetNodeByNameRequest]) (*connect.Response[v1.GetNodeByNameResponse], error)
 }
 
@@ -353,6 +357,12 @@ func NewGraphServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(graphServiceGetNodeMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getNodesByGlob: connect.NewClient[v1.GetNodesByGlobRequest, v1.GetNodesByGlobResponse](
+			httpClient,
+			baseURL+GraphServiceGetNodesByGlobProcedure,
+			connect.WithSchema(graphServiceGetNodesByGlobMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 		getNodeByName: connect.NewClient[v1.GetNodeByNameRequest, v1.GetNodeByNameResponse](
 			httpClient,
 			baseURL+GraphServiceGetNodeByNameProcedure,
@@ -364,13 +374,19 @@ func NewGraphServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // graphServiceClient implements GraphServiceClient.
 type graphServiceClient struct {
-	getNode       *connect.Client[v1.GetNodeRequest, v1.GetNodeResponse]
-	getNodeByName *connect.Client[v1.GetNodeByNameRequest, v1.GetNodeByNameResponse]
+	getNode        *connect.Client[v1.GetNodeRequest, v1.GetNodeResponse]
+	getNodesByGlob *connect.Client[v1.GetNodesByGlobRequest, v1.GetNodesByGlobResponse]
+	getNodeByName  *connect.Client[v1.GetNodeByNameRequest, v1.GetNodeByNameResponse]
 }
 
 // GetNode calls api.v1.GraphService.GetNode.
 func (c *graphServiceClient) GetNode(ctx context.Context, req *connect.Request[v1.GetNodeRequest]) (*connect.Response[v1.GetNodeResponse], error) {
 	return c.getNode.CallUnary(ctx, req)
+}
+
+// GetNodesByGlob calls api.v1.GraphService.GetNodesByGlob.
+func (c *graphServiceClient) GetNodesByGlob(ctx context.Context, req *connect.Request[v1.GetNodesByGlobRequest]) (*connect.Response[v1.GetNodesByGlobResponse], error) {
+	return c.getNodesByGlob.CallUnary(ctx, req)
 }
 
 // GetNodeByName calls api.v1.GraphService.GetNodeByName.
@@ -381,6 +397,7 @@ func (c *graphServiceClient) GetNodeByName(ctx context.Context, req *connect.Req
 // GraphServiceHandler is an implementation of the api.v1.GraphService service.
 type GraphServiceHandler interface {
 	GetNode(context.Context, *connect.Request[v1.GetNodeRequest]) (*connect.Response[v1.GetNodeResponse], error)
+	GetNodesByGlob(context.Context, *connect.Request[v1.GetNodesByGlobRequest]) (*connect.Response[v1.GetNodesByGlobResponse], error)
 	GetNodeByName(context.Context, *connect.Request[v1.GetNodeByNameRequest]) (*connect.Response[v1.GetNodeByNameResponse], error)
 }
 
@@ -396,6 +413,12 @@ func NewGraphServiceHandler(svc GraphServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(graphServiceGetNodeMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	graphServiceGetNodesByGlobHandler := connect.NewUnaryHandler(
+		GraphServiceGetNodesByGlobProcedure,
+		svc.GetNodesByGlob,
+		connect.WithSchema(graphServiceGetNodesByGlobMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	graphServiceGetNodeByNameHandler := connect.NewUnaryHandler(
 		GraphServiceGetNodeByNameProcedure,
 		svc.GetNodeByName,
@@ -406,6 +429,8 @@ func NewGraphServiceHandler(svc GraphServiceHandler, opts ...connect.HandlerOpti
 		switch r.URL.Path {
 		case GraphServiceGetNodeProcedure:
 			graphServiceGetNodeHandler.ServeHTTP(w, r)
+		case GraphServiceGetNodesByGlobProcedure:
+			graphServiceGetNodesByGlobHandler.ServeHTTP(w, r)
 		case GraphServiceGetNodeByNameProcedure:
 			graphServiceGetNodeByNameHandler.ServeHTTP(w, r)
 		default:
@@ -419,6 +444,10 @@ type UnimplementedGraphServiceHandler struct{}
 
 func (UnimplementedGraphServiceHandler) GetNode(context.Context, *connect.Request[v1.GetNodeRequest]) (*connect.Response[v1.GetNodeResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.GraphService.GetNode is not implemented"))
+}
+
+func (UnimplementedGraphServiceHandler) GetNodesByGlob(context.Context, *connect.Request[v1.GetNodesByGlobRequest]) (*connect.Response[v1.GetNodesByGlobResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.GraphService.GetNodesByGlob is not implemented"))
 }
 
 func (UnimplementedGraphServiceHandler) GetNodeByName(context.Context, *connect.Request[v1.GetNodeByNameRequest]) (*connect.Response[v1.GetNodeByNameResponse], error) {
