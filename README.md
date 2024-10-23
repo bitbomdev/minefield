@@ -5,11 +5,19 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/bit-bom/minefield)](https://goreportcard.com/report/github.com/bit-bom/minefield)
 [![Build and Test](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml/badge.svg)](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml)
 
-> Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
 
-**BitBom Minefield is an air-gapped solution that uses roaring-**Bit**maps to graph S**BOM**s FAST.**
+**BitBom** Minefield uses roaring **Bit**maps to graph S**BOM**s with four main fundamentals:
 
-*Designed for secure, offline environments, Minefield operates seamlessly without internet connectivity, ensuring data integrity and security.*
+* **Speed**: Optimized for rapid data processing.
+* **Air-Gapped**: Operates securely in isolated environments.
+* **Scalable**: Supports millions of nodes effortlessly.
+* **Customizable**: Allows users to extend the project without relying on upstream changes.
+
+---
+
+>Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
+
+---
 
 ![Terminal Output](images/terminal.png)
 > Caching 10,000 SBOMs packages transitive dependents in 30 seconds.
