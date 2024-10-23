@@ -46,6 +46,11 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("query failed: %v", err)
 	}
 
+	if len(res.Msg.Nodes) == 0 {
+		fmt.Println("No nodes found matching pattern:", pattern)
+		return nil
+	}
+
 	// Print dependencies
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Name", "Type", "ID"})

@@ -37,6 +37,10 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 
 func (o *options) Run(cmd *cobra.Command, args []string) error {
 	script := strings.Join(args, " ")
+
+	if strings.TrimSpace(script) == "" {
+		return fmt.Errorf("script cannot be empty")
+	}
 	httpClient := &http.Client{}
 	addr := os.Getenv("BITBOMDEV_ADDR")
 	if addr == "" {
@@ -64,7 +68,7 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 
 	count := 0
 	for _, node := range res.Msg.Nodes {
-		if count > o.maxOutput {
+		if count >= o.maxOutput {
 			break
 		}
 
@@ -75,8 +79,12 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return fmt.Errorf("failed to marshal node metadata: %w", err)
 			}
-			if _, err := os.Stat(o.outputdir); err != nil {
-				return fmt.Errorf("output directory does not exist: %w", err)
+			if _, err := os.Stat(o.outputdir); os.IsNotExist(err) {
+				if err := os.MkdirAll(o.outputdir, os.ModePerm); err != nil {
+					return fmt.Errorf("failed to create output directory: %w", err)
+				}
+			} else if err != nil {
+				return fmt.Errorf("failed to check output directory: %w", err)
 			}
 
 			filePath := filepath.Join(o.outputdir, tools.SanitizeFilename(node.Name)+".json")
@@ -129,7 +137,7 @@ func New(storage graph.Storage) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "custom [script]",
 		Short:             "Quer dependencies and dependents of a project",
-		Args:              cobra.ExactArgs(1),
+		Args:              cobra.MinimumNArgs(1),
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}
