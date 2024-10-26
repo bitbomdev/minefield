@@ -59,36 +59,36 @@
 _Redis must be running at `localhost:6379`. If not, please use `make docker-up` to start Redis._
 
 1. **Start the API server:**
-   ```shell
+   ```sh
    minefield start-service 
    ```
 
-2. **Ingest the `test` SBOM directory:**
+2. **Ingest the `testdata/small` SBOM directory:**
     ```sh
-    minefield ingest sbom testdata
+    minefield ingest sbom testdata/small
     ```
 3. **Cache the data:**
     ```sh
     minefield cache
     ```
-4. **Run the leaderboard custom with "dependents PACKAGE":**
+4. **Run the leaderboard custom with "dependents library":**
    - This command generates a ranked list of packages, ordered by the number of other packages that depend on them.
     ```sh
-    minefield leaderboard custom "dependents PACKAGE"
+    minefield leaderboard custom "dependents library"
     ```
 5. **Run a query on the top value from the leaderboard:**
    - This command queries the dependents for a specific package, in this case `dep2`.
     ```sh
-    minefield query "dependents PACKAGE dep2"
+    minefield query custom "dependents library pkg:dep2@1.0.0"
     ```
 6. **Run queries to see the shared dependencies of `lib-A` and `dep1`, and `lib-A` and `lib-B`:**
    - These queries output the intersection of two queries, finding package dependencies shared between each pair.
     ```sh
-    minefield query "dependencies PACKAGE pkg:generic/lib-B@1.0.0 and dependencies PACKAGE pkg:generic/lib-A@1.0.0"
+    minefield query custom "dependencies library pkg:lib-B@1.0.0 and dependencies library pkg:lib-A@1.0.0"
     ```
 7. **Run queries with the visualizer:**
     ```sh
-    minefield query "dependents PACKAGE pkg:generic/dep2@1.0.0" --visualize
+    minefield query custom "dependents library pkg:dep2@1.0.0" --visualize
     ```
 
 ## To Start Using Minefield
