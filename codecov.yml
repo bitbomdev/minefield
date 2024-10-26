@@ -11,3 +11,4 @@ coverage:
 
   ignore:
     - "cmd/**/*"
+    - "gen/**/*"
