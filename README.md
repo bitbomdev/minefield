@@ -111,7 +111,7 @@ go build -o minefield main.go
 
 ## How Minefield Works
 
-The design decisions and architecture of Minefield can be found [here](docs/bitbom.pdf).
+The design decisions and architecture of Minefield can be found [here](paper.md).
 
 ### Air-Gapped Design Philosophy
 
