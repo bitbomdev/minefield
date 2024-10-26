@@ -59,11 +59,6 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 		return fmt.Errorf("file path is empty")
 	}
 
-	file, err := os.Open(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to open file %s: %w", filePath, err)
-	}
-
 	// Create a new protobom reader
 	r := reader.New()
 
@@ -88,7 +83,8 @@ func processSBOMFile(filePath string, storage graph.Storage) error {
 		if purl == "" {
 			purl = fmt.Sprintf("pkg:%s@%s", node.GetName(), node.GetVersion())
 		}
-		graphNode, err := graph.AddNode(storage, "library", file, purl)
+
+		graphNode, err := graph.AddNode(storage, "library", node, purl)
 		if err != nil {
 			if errors.Is(err, graph.ErrNodeAlreadyExists) {
 				// log.Printf("Skipping node %s: %s\n", node.GetName(), err)
