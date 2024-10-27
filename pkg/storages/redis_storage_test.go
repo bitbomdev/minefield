@@ -189,3 +189,37 @@ func TestAddAndGetDataToDB(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, string(t2), string(data["test_data2"]))
 }
+
+func TestGetNodesByGlob(t *testing.T) {
+	r := setupTestRedis()
+	// Add test nodes
+	node1 := &graph.Node{ID: 1, Name: "test_node1", Children: roaring.New(), Parents: roaring.New()}
+	node2 := &graph.Node{ID: 2, Name: "test_node2", Children: roaring.New(), Parents: roaring.New()}
+	node3 := &graph.Node{ID: 3, Name: "other_node", Children: roaring.New(), Parents: roaring.New()}
+	err := r.SaveNode(node1)
+	assert.NoError(t, err)
+	err = r.SaveNode(node2)
+	assert.NoError(t, err)
+	err = r.SaveNode(node3)
+	assert.NoError(t, err)
+
+	// Test GetNodesByGlob with pattern "test_*"
+	nodes, err := r.GetNodesByGlob("test_*")
+	assert.NoError(t, err)
+	assert.Len(t, nodes, 2)
+
+	// Verify the nodes returned match the expected nodes
+	nodeNames := []string{nodes[0].Name, nodes[1].Name}
+	assert.Contains(t, nodeNames, "test_node1")
+	assert.Contains(t, nodeNames, "test_node2")
+
+	// Test with a pattern that matches no nodes
+	nodes, err = r.GetNodesByGlob("nonexistent_*")
+	assert.NoError(t, err)
+	assert.Len(t, nodes, 0)
+
+	// Simulate an error by closing the Redis client
+	r.Client.Close()
+	_, err = r.GetNodesByGlob("test_*")
+	assert.Error(t, err)
+}

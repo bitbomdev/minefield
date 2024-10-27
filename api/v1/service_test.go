@@ -44,16 +44,30 @@ func TestGetNodeByName(t *testing.T) {
 
 func TestGetNodesByGlob(t *testing.T) {
 	s := setupService()
-	node, err := graph.AddNode(s.storage, "type1", "metadata1", "name1")
+	// Add test nodes
+	_, err := graph.AddNode(s.storage, "type1", "metadata1", "test_node1")
 	require.NoError(t, err)
-	node2, err := graph.AddNode(s.storage, "type1", "metadata1", "name2")
+	_, err = graph.AddNode(s.storage, "type1", "metadata1", "test_node2")
 	require.NoError(t, err)
-	req := connect.NewRequest(&service.GetNodesByGlobRequest{Pattern: "name"})
+	_, err = graph.AddNode(s.storage, "type1", "metadata1", "other_node")
+	require.NoError(t, err)
+
+	// Test GetNodesByGlob with pattern "test_*"
+	req := connect.NewRequest(&service.GetNodesByGlobRequest{Pattern: "test_*"})
 	resp, err := s.GetNodesByGlob(context.Background(), req)
 	require.NoError(t, err)
-	for _, respNode := range resp.Msg.Nodes {
-		assert.Contains(t, []string{node.Name, node2.Name}, respNode.Name)
-	}
+	assert.Len(t, resp.Msg.Nodes, 2)
+
+	// Verify the nodes returned match the expected nodes
+	nodeNames := []string{resp.Msg.Nodes[0].Name, resp.Msg.Nodes[1].Name}
+	assert.Contains(t, nodeNames, "test_node1")
+	assert.Contains(t, nodeNames, "test_node2")
+
+	// Test with a pattern that matches no nodes
+	req = connect.NewRequest(&service.GetNodesByGlobRequest{Pattern: "nonexistent_*"})
+	resp, err = s.GetNodesByGlob(context.Background(), req)
+	require.NoError(t, err)
+	assert.Len(t, resp.Msg.Nodes, 0)
 }
 
 func TestQueriesAndCache(t *testing.T) {
@@ -108,4 +122,28 @@ func TestQueriesAndCache(t *testing.T) {
 	clearReq := connect.NewRequest(&emptypb.Empty{})
 	_, err = s.Clear(context.Background(), clearReq)
 	require.NoError(t, err)
+}
+
+func TestQuery(t *testing.T) {
+	s := setupService()
+
+	// Add test nodes
+	_, err := graph.AddNode(s.storage, "type1", "metadata1", "node1")
+	require.NoError(t, err)
+	_, err = graph.AddNode(s.storage, "type2", "metadata2", "node2")
+	require.NoError(t, err)
+
+	// Test query with no results
+	req := connect.NewRequest(&service.QueryRequest{Script: "nonexistent"})
+	_, err = s.Query(context.Background(), req)
+	require.Error(t, err)
+
+	// Test with empty script
+	req = connect.NewRequest(&service.QueryRequest{Script: ""})
+	_, err = s.Query(context.Background(), req)
+	assert.Error(t, err)
+
+	// Test with nil request
+	_, err = s.Query(context.Background(), nil)
+	assert.Error(t, err)
 }
