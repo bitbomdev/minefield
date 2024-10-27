@@ -1,10 +1,12 @@
 name: Docker Image Scan
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose*.yml'
+      - '.docker/**'
 
 jobs:
   scan:
