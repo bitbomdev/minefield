@@ -12,7 +12,23 @@ jobs:
   scan:
     name: Build and Scan
     runs-on: ubuntu-latest
+    environment: security
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
     steps:
+    - name: Notify on failure
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '❌ Container security scan failed. Please check the workflow logs.'
+          })
       - name: Checkout code
         uses: actions/checkout@v3
 
