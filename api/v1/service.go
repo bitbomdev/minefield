@@ -241,6 +241,9 @@ func (s *Service) AllKeys(ctx context.Context, req *connect.Request[emptypb.Empt
 }
 
 func (s *Service) Query(ctx context.Context, req *connect.Request[service.QueryRequest]) (*connect.Response[service.QueryResponse], error) {
+	if req == nil {
+		return nil, fmt.Errorf("request is nil")
+	}
 	keys, err := s.storage.GetAllKeys()
 	if err != nil {
 		return nil, err
