@@ -3,6 +3,7 @@ package custom
 import (
 	"context"
 	"fmt"
+	"github.com/bit-bom/minefield/cmd/helpers"
 	"net/http"
 	"os"
 	"strconv"
@@ -20,6 +21,7 @@ type options struct {
 	storage   graph.Storage
 	all       bool
 	maxOutput int
+	showInfo  bool // New field to control the display of the Info column
 }
 
 type query struct {
@@ -28,8 +30,9 @@ type query struct {
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&o.all, "all", false, "show the queries output for each node")
-	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
+	cmd.Flags().BoolVar(&o.all, "all", false, "show the queries getMetadata for each node")
+	cmd.Flags().IntVar(&o.maxOutput, "max-getMetadata", 10, "max getMetadata length")
+	cmd.Flags().BoolVar(&o.showInfo, "show-info", true, "display the info column")
 }
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
@@ -56,16 +59,43 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
+	table.SetAutoWrapText(false)
+	table.SetRowLine(true)
+	headers := []string{"Name", "Type", "ID", "Output"}
+	if o.showInfo {
+		headers = append(headers, "Info")
+	}
+	table.SetHeader(headers)
 
 	for index, q := range res.Msg.Queries {
-		if index > o.maxOutput {
+		if index >= o.maxOutput {
 			break
 		}
+
+		// Determine the Output value
+		var output string
 		if o.all {
-			table.Append([]string{q.Node.Name, q.Node.Type, strconv.Itoa(int(q.Node.Id)), fmt.Sprint(q.Output)})
+			output = fmt.Sprint(q.Output)
 		} else {
-			table.Append([]string{q.Node.Name, q.Node.Type, strconv.Itoa(int(q.Node.Id)), fmt.Sprint(len(q.Output))})
+			output = fmt.Sprint(len(q.Output))
 		}
+
+		// Build the common row data
+		row := []string{
+			q.Node.Name,
+			q.Node.Type,
+			strconv.Itoa(int(q.Node.Id)),
+			output,
+		}
+
+		// If showInfo is true, compute the additionalInfo and append it
+		if o.showInfo {
+			additionalInfo := helpers.ComputeAdditionalInfo(q.Node)
+			row = append(row, additionalInfo)
+		}
+
+		// Append the row to the table
+		table.Append(row)
 	}
 	table.Render()
 	return nil
@@ -85,25 +115,6 @@ func New(storage graph.Storage) *cobra.Command {
 	o.AddFlags(cmd)
 
 	return cmd
-}
-
-type queryHeap []*query
-
-func (h queryHeap) Len() int { return len(h) }
-func (h queryHeap) Less(i, j int) bool {
-	return len(h[i].output) < len(h[j].output)
-}
-func (h queryHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
-func (h *queryHeap) Push(x interface{}) {
-	*h = append(*h, x.(*query))
-}
-
-func (h *queryHeap) Pop() interface{} {
-	old := *h
-	n := len(old)
-	x := old[n-1]
-	*h = old[0 : n-1]
-	return x
 }
 
 func printProgress(progress, total int) {

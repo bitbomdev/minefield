@@ -1,4 +1,4 @@
-package output
+package getMetadata
 
 import (
 	"encoding/json"
@@ -15,12 +15,11 @@ import (
 )
 
 type options struct {
-	storage   graph.Storage
+	storage    graph.Storage
 	outputFile string
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
-	
 	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "output file")
 }
 
@@ -89,8 +88,8 @@ func New(storage graph.Storage) *cobra.Command {
 		storage: storage,
 	}
 	cmd := &cobra.Command{
-		Use:               "output [node name]",
-		Short:             "Output the node, with its metadata",
+		Use:               "get-metadata [node name]",
+		Short:             "Outputs the node with its metadata",
 		Args:              cobra.ExactArgs(1),
 		RunE:              o.Run,
 		DisableAutoGenTag: true,

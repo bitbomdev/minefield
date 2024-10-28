@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	
+
 	"connectrpc.com/connect"
+	"github.com/bit-bom/minefield/cmd/helpers"
 	apiv1 "github.com/bit-bom/minefield/gen/api/v1"
 	"github.com/bit-bom/minefield/gen/api/v1/apiv1connect"
 	"github.com/bit-bom/minefield/pkg/graph"
@@ -17,10 +18,12 @@ import (
 type options struct {
 	storage   graph.Storage
 	maxOutput int
+	showInfo  bool // New field to control the display of the Info column
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
+	cmd.Flags().IntVar(&o.maxOutput, "max-getMetadata", 10, "max getMetadata length")
+	cmd.Flags().BoolVar(&o.showInfo, "show-info", true, "display the info column")
 }
 
 func (o *options) Run(cmd *cobra.Command, args []string) error {
@@ -51,17 +54,39 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Print dependencies
+	// Initialize the table
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Type", "ID"})
+	table.SetAutoWrapText(false)
+	table.SetRowLine(true)
+
+	// Dynamically set the header based on the showInfo flag
+	headers := []string{"Name", "Type", "ID"}
+	if o.showInfo {
+		headers = append(headers, "Info")
+	}
+	table.SetHeader(headers)
 
 	count := 0
 	for _, node := range res.Msg.Nodes {
-		if count > o.maxOutput {
+		if count >= o.maxOutput {
 			break
 		}
 
-		table.Append([]string{node.Name, node.Type, strconv.Itoa(int(node.Id))})
+		// Build the common row data
+		row := []string{
+			node.Name,
+			node.Type,
+			strconv.Itoa(int(node.Id)),
+		}
+
+		// If showInfo is true, compute the additionalInfo and append it
+		if o.showInfo {
+			additionalInfo := helpers.ComputeAdditionalInfo(node)
+			row = append(row, additionalInfo)
+		}
+
+		// Append the row to the table
+		table.Append(row)
 		count++
 	}
 

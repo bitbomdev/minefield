@@ -1,0 +1,98 @@
+[
+  {
+    "purl": "pkg:golang/github.com/stretchr/testify@v1.9.0",
+    "success": true,
+    "scorecard": {
+      "date": "2024-10-14",
+      "repo": {
+        "name": "github.com/stretchr/testify",
+        "commit": "a012e45d185128fe5bf3370e42b0854856e0998e"
+      },
+      "scorecard": {
+        "version": "v5.0.0-68-g28db9a99",
+        "commit": "28db9a99a4c2e43e1f90a5afed6753e6ef2c36d3"
+      },
+      "score": 5.9,
+      "Checks": [
+        {
+          "Name": "Code-Review",
+          "Score": 10,
+          "Reason": "all changesets reviewed"
+        },
+        {
+          "Name": "Maintained",
+          "Score": 10,
+          "Reason": "29 commit(s) and 24 issue activity found in the last 90 days -- score normalized to 10"
+        },
+        {
+          "Name": "CII-Best-Practices",
+          "Score": 0,
+          "Reason": "no effort to earn an OpenSSF best practices badge detected"
+        },
+        {
+          "Name": "License",
+          "Score": 10,
+          "Reason": "license file detected"
+        },
+        {
+          "Name": "Signed-Releases",
+          "Score": -1,
+          "Reason": "no releases found"
+        },
+        {
+          "Name": "Packaging",
+          "Score": -1,
+          "Reason": "packaging workflow not detected"
+        },
+        {
+          "Name": "Dangerous-Workflow",
+          "Score": 10,
+          "Reason": "no dangerous workflow patterns detected"
+        },
+        {
+          "Name": "Binary-Artifacts",
+          "Score": 10,
+          "Reason": "no binaries found in the repo"
+        },
+        {
+          "Name": "Token-Permissions",
+          "Score": 0,
+          "Reason": "detected GitHub workflow tokens with excessive permissions"
+        },
+        {
+          "Name": "Pinned-Dependencies",
+          "Score": 0,
+          "Reason": "dependency not pinned by hash detected -- score normalized to 0"
+        },
+        {
+          "Name": "Branch-Protection",
+          "Score": -1,
+          "Reason": "internal error: error during branchesHandler.setup: internal error: githubv4.Query: Resource not accessible by integration"
+        },
+        {
+          "Name": "Fuzzing",
+          "Score": 0,
+          "Reason": "project is not fuzzed"
+        },
+        {
+          "Name": "Security-Policy",
+          "Score": 0,
+          "Reason": "security policy file not detected"
+        },
+        {
+          "Name": "SAST",
+          "Score": 0,
+          "Reason": "SAST tool is not run on all commits -- score normalized to 0"
+        },
+        {
+          "Name": "Vulnerabilities",
+          "Score": 10,
+          "Reason": "0 existing vulnerabilities detected"
+        }
+      ],
+      "purl": "pkg:golang/github.com/stretchr/testify@v1.9.0"
+    },
+    "github_url": "https://github.com/stretchr/testify",
+    "date": "2024-10-26T00:48:32.26303Z"
+  }
+]

@@ -3,15 +3,13 @@ package ingest
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bit-bom/minefield/pkg/tools"
 	"sort"
 	"strings"
 
 	"github.com/Masterminds/semver"
 	"github.com/bit-bom/minefield/pkg/graph"
-	"github.com/package-url/packageurl-go"
 )
-
-const OSVTagName = "osv-vulns"
 
 type Vulnerability struct {
 	SchemaVersion    string                 `json:"schema_version"`
@@ -74,102 +72,9 @@ type Credit struct {
 	Contact []string `json:"contact"`
 	Type    string   `json:"type"`
 }
-type Ecosystem string
-
-const (
-	EcosystemGo        Ecosystem = "Go"
-	EcosystemNPM       Ecosystem = "npm"
-	EcosystemOSSFuzz   Ecosystem = "OSS-Fuzz"
-	EcosystemPyPI      Ecosystem = "PyPI"
-	EcosystemRubyGems  Ecosystem = "RubyGems"
-	EcosystemCratesIO  Ecosystem = "crates.io"
-	EcosystemPackagist Ecosystem = "Packagist"
-	EcosystemMaven     Ecosystem = "Maven"
-	EcosystemNuGet     Ecosystem = "NuGet"
-	EcosystemDebian    Ecosystem = "Debian"
-	EcosystemAlpine    Ecosystem = "Alpine"
-	EcosystemHex       Ecosystem = "Hex"
-)
-
-// used like so: purlEcosystems[PkgURL.Type][PkgURL.Namespace]
-// * means it should match any namespace string
-var purlEcosystems = map[string]map[string]Ecosystem{
-	"apk":      {"alpine": EcosystemAlpine},
-	"cargo":    {"*": EcosystemCratesIO},
-	"deb":      {"debian": EcosystemDebian},
-	"hex":      {"*": EcosystemHex},
-	"golang":   {"*": EcosystemGo},
-	"maven":    {"*": EcosystemMaven},
-	"nuget":    {"*": EcosystemNuGet},
-	"npm":      {"*": EcosystemNPM},
-	"composer": {"*": EcosystemPackagist},
-	"generic":  {"*": EcosystemOSSFuzz},
-	"pypi":     {"*": EcosystemPyPI},
-	"gem":      {"*": EcosystemRubyGems},
-}
-
-// Specific package information
-type PackageInfo struct {
-	Name      string `json:"name"`
-	Version   string `json:"version"`
-	Ecosystem string `json:"ecosystem"`
-	Commit    string `json:"commit,omitempty"`
-}
-
-func getPURLEcosystem(pkgURL packageurl.PackageURL) Ecosystem {
-	ecoMap, ok := purlEcosystems[pkgURL.Type]
-	if !ok {
-		return Ecosystem(pkgURL.Type + ":" + pkgURL.Namespace)
-	}
-
-	wildcardRes, hasWildcard := ecoMap["*"]
-	if hasWildcard {
-		return wildcardRes
-	}
-
-	ecosystem, ok := ecoMap[pkgURL.Namespace]
-	if !ok {
-		return Ecosystem(pkgURL.Type + ":" + pkgURL.Namespace)
-	}
-
-	return ecosystem
-}
-
-// PURLToPackage converts a Package URL string to models.PackageInfo
-func PURLToPackage(purl string) (PackageInfo, error) {
-	parsedPURL, err := packageurl.FromString(purl)
-	if err != nil {
-		return PackageInfo{}, err
-	}
-	ecosystem := getPURLEcosystem(parsedPURL)
-
-	// PackageInfo expects the full namespace in the name for ecosystems that specify it.
-	name := parsedPURL.Name
-	if parsedPURL.Namespace != "" {
-		switch ecosystem { //nolint:exhaustive
-		case EcosystemMaven:
-			// Maven uses : to separate namespace and package
-			name = parsedPURL.Namespace + ":" + parsedPURL.Name
-		case EcosystemDebian, EcosystemAlpine:
-			// Debian and Alpine repeats their namespace in PURL, so don't add it to the name
-			name = parsedPURL.Name
-		default:
-			name = parsedPURL.Namespace + "/" + parsedPURL.Name
-		}
-	}
-
-	return PackageInfo{
-		Name:      name,
-		Ecosystem: string(ecosystem),
-		Version:   parsedPURL.Version,
-	}, nil
-}
 
 // Vulnerabilities ingests vulnerabilities from redis into the graph
 func Vulnerabilities(storage graph.Storage, progress func(count int, id string)) error {
-	const pkg = "pkg:"
-	const library = "library"
-	const vulnerability = "vuln"
 	keys, err := storage.GetAllKeys()
 	if err != nil {
 		return err
@@ -182,39 +87,34 @@ func Vulnerabilities(storage graph.Storage, progress func(count int, id string))
 	count := 0
 
 	for _, node := range nodes {
-		if node.Type == library && strings.HasPrefix(node.Name, pkg) {
-			purl, err := PURLToPackage(node.Name)
+		if node.Type == tools.LibraryType && strings.HasPrefix(node.Name, pkg) {
+			pkgInfo, err := PURLToPackage(node.Name)
 			if err != nil {
 				continue
 			}
-			vulnsData, err := storage.GetCustomData(OSVTagName, purl.Name)
+			vulnsData, err := storage.GetCustomData(tools.VulnerabilityType, pkgInfo.Name)
 			if err != nil {
-				return fmt.Errorf("failed to get vulnerability data from storage: %w", err)
+				return fmt.Errorf("failed to get vulnerabilityType data from storage: %w", err)
 			}
 			if len(vulnsData) == 0 {
 				continue
 			}
 			for vulnID, vulndata := range vulnsData {
-				// We are using the vuln ID from the map instead of the vulnID from the vuln data, since the map key could be an alias of a vulnerability ID
+				// We are using the vuln ID from the map instead of the vulnID from the vuln data, since the map key could be an alias of a vulnerabilityType ID
 				var vuln Vulnerability
 
 				if err := json.Unmarshal(vulndata, &vuln); err != nil {
-					return fmt.Errorf("failed to unmarshal vulnerability data: %w", err)
-				}
-
-				pkgInfo, err := PURLToPackage(node.Name)
-				if err != nil {
-					return fmt.Errorf("failed to convert PURL to package info: %w", err)
+					return fmt.Errorf("failed to unmarshal vulnerabilityType data: %w", err)
 				}
 
 				if isPackageAffected(vuln, pkgInfo) {
-					vulnNode, err := graph.AddNode(storage, vulnerability, vuln, vulnID)
+					vulnNode, err := graph.AddNode(storage, tools.VulnerabilityType, vuln, vulnID)
 					if err != nil {
-						return fmt.Errorf("failed to add vulnerability node to storage: %w", err)
+						return fmt.Errorf("failed to add vulnerabilityType node to storage: %w", err)
 					}
 
 					if err := node.SetDependency(storage, vulnNode); err != nil {
-						return fmt.Errorf("failed to add dependency edge to vulnerability node: %w", err)
+						return fmt.Errorf("failed to add dependency edge to vulnerabilityType node: %w", err)
 					}
 
 					count++
@@ -228,7 +128,7 @@ func Vulnerabilities(storage graph.Storage, progress func(count int, id string))
 	return nil
 }
 
-// LoadVulnerabilities processes the vulnerability data and adds it to the storage.
+// LoadVulnerabilities processes the vulnerabilityType data and adds it to the storage.
 func LoadVulnerabilities(storage graph.Storage, data []byte) error {
 	if len(data) == 0 {
 		return fmt.Errorf("data is empty")
@@ -236,24 +136,24 @@ func LoadVulnerabilities(storage graph.Storage, data []byte) error {
 
 	vuln := Vulnerability{}
 	if err := json.Unmarshal(data, &vuln); err != nil {
-		return fmt.Errorf("failed to unmarshal vulnerability data: %w", err)
+		return fmt.Errorf("failed to unmarshal vulnerabilityType data: %w", err)
 	}
 
 	errors := []error{}
 
 	vulnData, err := json.Marshal(vuln)
 	if err != nil {
-		return fmt.Errorf("failed to marshal vulnerability data: %w", err)
+		return fmt.Errorf("failed to marshal vulnerabilityType data: %w", err)
 	}
 
 	for _, affected := range vuln.Affected {
-		if err := storage.AddOrUpdateCustomData(OSVTagName, affected.Package.Name, vuln.ID, vulnData); err != nil {
-			errors = append(errors, fmt.Errorf("failed to add vulnerability to storage: %w", err))
+		if err := storage.AddOrUpdateCustomData(tools.VulnerabilityType, affected.Package.Name, vuln.ID, vulnData); err != nil {
+			errors = append(errors, fmt.Errorf("failed to add vulnerabilityType to storage: %w", err))
 		}
 
 		for _, alias := range vuln.Aliases {
-			if err := storage.AddOrUpdateCustomData(OSVTagName, alias, vuln.ID, vulnData); err != nil {
-				errors = append(errors, fmt.Errorf("failed to add vulnerability alias to storage: %w", err))
+			if err := storage.AddOrUpdateCustomData(tools.VulnerabilityType, alias, vuln.ID, vulnData); err != nil {
+				errors = append(errors, fmt.Errorf("failed to add vulnerabilityType alias to storage: %w", err))
 			}
 		}
 	}
@@ -265,7 +165,7 @@ func LoadVulnerabilities(storage graph.Storage, data []byte) error {
 	return nil
 }
 
-// isPackageAffected checks if the package is affected by the vulnerability.
+// isPackageAffected checks if the package is affected by the vulnerabilityType.
 func isPackageAffected(vuln Vulnerability, pkgInfo PackageInfo) bool {
 	for _, affected := range vuln.Affected {
 		if affected.Package.Name != pkgInfo.Name || affected.Package.Ecosystem != pkgInfo.Ecosystem {
