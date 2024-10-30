@@ -22,7 +22,7 @@ type options struct {
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().IntVar(&o.maxOutput, "max-getMetadata", 10, "max getMetadata length")
+	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "maximum number of results to display")
 	cmd.Flags().BoolVar(&o.showInfo, "show-info", true, "display the info column")
 }
 
