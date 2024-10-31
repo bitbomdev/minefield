@@ -24,6 +24,7 @@ type options struct {
 	visualizerAddr string
 	maxOutput      int
 	showInfo       bool
+	saveQuery      string
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
@@ -31,6 +32,7 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&o.visualize, "visualize", false, "visualize the query")
 	cmd.Flags().StringVar(&o.visualizerAddr, "addr", "8081", "address to run the visualizer on")
 	cmd.Flags().BoolVar(&o.showInfo, "show-info", true, "display the info column")
+	cmd.Flags().StringVar(&o.saveQuery, "save-query", "", "save the query to a specific file")
 }
 
 func (o *options) Run(cmd *cobra.Command, args []string) error {
@@ -74,6 +76,14 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 
 	// Build the rows
 	count := 0
+	var f *os.File
+	if o.saveQuery != "" {
+		f, err = os.Create(o.saveQuery)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+	}
 	for _, node := range res.Msg.Nodes {
 		if count >= o.maxOutput {
 			break
@@ -94,6 +104,10 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 
 		// Append the row to the table
 		table.Append(row)
+
+		if o.saveQuery != "" {
+			f.WriteString(node.Name + "\n")
+		}
 		count++
 	}
 

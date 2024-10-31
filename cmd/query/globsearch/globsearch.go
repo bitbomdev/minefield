@@ -19,11 +19,13 @@ type options struct {
 	storage   graph.Storage
 	maxOutput int
 	showInfo  bool // New field to control the display of the Info column
+	saveQuery string
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "maximum number of results to display")
 	cmd.Flags().BoolVar(&o.showInfo, "show-info", true, "display the info column")
+	cmd.Flags().StringVar(&o.saveQuery, "save-query", "", "save the query to a specific file")
 }
 
 func (o *options) Run(cmd *cobra.Command, args []string) error {
@@ -67,6 +69,15 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 	table.SetHeader(headers)
 
 	count := 0
+	var f *os.File
+	if o.saveQuery != "" {
+		f, err = os.Create(o.saveQuery)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+	}
+	
 	for _, node := range res.Msg.Nodes {
 		if count >= o.maxOutput {
 			break
@@ -87,6 +98,10 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 
 		// Append the row to the table
 		table.Append(row)
+
+		if o.saveQuery != "" {
+			f.WriteString(node.Name + "\n")
+		}
 		count++
 	}
 
