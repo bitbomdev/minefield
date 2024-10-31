@@ -21,7 +21,7 @@ type options struct {
 
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.weightsFile, "weights", "cmd/leaderboard/weightedNACD/defaultWeights.json", "path to the JSON file with weights (optional, default weights will be used if not provided)")
-	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
+	cmd.Flags().IntVar(&o.maxOutput, "max-getMetadata", 10, "max getMetadata length")
 }
 
 func (o *options) validateWeights(weights *weightedNACD.Weights) error {

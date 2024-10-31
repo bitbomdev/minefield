@@ -3,6 +3,7 @@ package ingest
 import (
 	"github.com/bit-bom/minefield/cmd/ingest/osv"
 	"github.com/bit-bom/minefield/cmd/ingest/sbom"
+	"github.com/bit-bom/minefield/cmd/ingest/scorecard"
 	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
@@ -22,5 +23,6 @@ func New(storage graph.Storage) *cobra.Command {
 
 	cmd.AddCommand(osv.New(storage))
 	cmd.AddCommand(sbom.New(storage))
+	cmd.AddCommand(scorecard.New(storage))
 	return cmd
 }

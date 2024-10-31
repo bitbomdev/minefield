@@ -10,6 +10,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/RoaringBitmap/roaring"
+	"github.com/bit-bom/minefield/cmd/helpers"
 	apiv1 "github.com/bit-bom/minefield/gen/api/v1"
 	"github.com/bit-bom/minefield/gen/api/v1/apiv1connect"
 	"github.com/bit-bom/minefield/pkg/graph"
@@ -19,15 +20,17 @@ import (
 
 type options struct {
 	storage        graph.Storage
+	visualize      bool
 	visualizerAddr string
 	maxOutput      int
-	visualize      bool
+	showInfo       bool
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "max output length")
+	cmd.Flags().IntVar(&o.maxOutput, "max-getMetadata", 10, "max getMetadata length")
 	cmd.Flags().BoolVar(&o.visualize, "visualize", false, "visualize the query")
 	cmd.Flags().StringVar(&o.visualizerAddr, "addr", "8081", "address to run the visualizer on")
+	cmd.Flags().BoolVar(&o.showInfo, "show-info", true, "display the info column")
 }
 
 func (o *options) Run(cmd *cobra.Command, args []string) error {
@@ -57,20 +60,47 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("query failed: %v", err)
 	}
 
-	// Print dependencies
+	// Initialize the table
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Type", "ID"})
+	table.SetAutoWrapText(false)
+	table.SetRowLine(true)
 
+	// Dynamically set the header based on the showInfo flag
+	headers := []string{"Name", "Type", "ID"}
+	if o.showInfo {
+		headers = append(headers, "Info")
+	}
+	table.SetHeader(headers)
+
+	// Build the rows
 	count := 0
 	for _, node := range res.Msg.Nodes {
 		if count >= o.maxOutput {
 			break
 		}
 
-		table.Append([]string{node.Name, node.Type, strconv.Itoa(int(node.Id))})
+		// Build the common row data
+		row := []string{
+			node.Name,
+			node.Type,
+			strconv.Itoa(int(node.Id)),
+		}
+
+		// If showInfo is true, compute the additionalInfo and append it
+		if o.showInfo {
+			additionalInfo := helpers.ComputeAdditionalInfo(node)
+			row = append(row, additionalInfo)
+		}
+
+		// Append the row to the table
+		table.Append(row)
 		count++
 	}
 
+	// Render the table
+	table.Render()
+
+	// Visualization logic (remaining the same)
 	if o.visualize {
 		server := &http.Server{
 			Addr: ":" + o.visualizerAddr,
@@ -94,8 +124,6 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	table.Render()
-
 	return nil
 }
 
@@ -105,7 +133,7 @@ func New(storage graph.Storage) *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:               "custom [script]",
-		Short:             "Quer dependencies and dependents of a project",
+		Short:             "Query dependencies and dependents of a project",
 		Args:              cobra.MinimumNArgs(1),
 		RunE:              o.Run,
 		DisableAutoGenTag: true,

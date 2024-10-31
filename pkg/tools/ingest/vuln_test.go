@@ -1,6 +1,7 @@
 package ingest
 
 import (
+	"github.com/bit-bom/minefield/pkg/tools"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,7 +31,7 @@ func TestVulnerabilitiesToStorage(t *testing.T) {
 		}
 	}
 	// Verify data in storage
-	data, err := storage.GetCustomData(OSVTagName, "setuptools")
+	data, err := storage.GetCustomData(tools.VulnerabilityType, "setuptools")
 	if err != nil {
 		t.Fatalf("Failed to get data from storage: %v", err)
 	}
