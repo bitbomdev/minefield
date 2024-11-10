@@ -255,7 +255,7 @@ type Query struct {
 	unknownFields protoimpl.UnknownFields
 
 	Node   *Node    `protobuf:"bytes,1,opt,name=node,proto3" json:"node,omitempty"`
-	Output []uint32 `protobuf:"varint,2,rep,packed,name=getMetadata,proto3" json:"getMetadata,omitempty"`
+	Output []uint32 `protobuf:"varint,2,rep,packed,name=output,proto3" json:"output,omitempty"`
 }
 
 func (x *Query) Reset() {
