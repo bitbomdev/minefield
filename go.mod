@@ -11,7 +11,6 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/goccy/go-json v0.10.3
 	github.com/google/go-cmp v0.6.0
-	github.com/google/wire v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/package-url/packageurl-go v0.1.3
 	github.com/protobom/protobom v0.5.0
@@ -21,7 +20,6 @@ require (
 	go.uber.org/fx v1.23.0
 	golang.org/x/net v0.30.0
 	google.golang.org/protobuf v1.35.1
-	gorm.io/gorm v1.25.12
 )
 
 require (
@@ -41,14 +39,9 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/onsi/gomega v1.30.0 // indirect
-	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spdx/tools-golang v0.5.5 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -59,5 +52,4 @@ require (
 	golang.org/x/text v0.19.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	sigs.k8s.io/release-utils v0.8.4 // indirect
-	sigs.k8s.io/yaml v1.4.0 // indirect
 )
