@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"connectrpc.com/connect"
-	"github.com/bit-bom/minefield/gen/api/v1/apiv1connect"
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/types/known/emptypb"
 )

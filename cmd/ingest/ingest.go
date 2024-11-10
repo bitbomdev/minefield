@@ -1,10 +1,10 @@
 package ingest
 
 import (
-	"github.com/bit-bom/minefield/cmd/ingest/osv"
-	"github.com/bit-bom/minefield/cmd/ingest/sbom"
-	"github.com/bit-bom/minefield/cmd/ingest/scorecard"
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/cmd/ingest/osv"
+	"github.com/bitbomdev/minefield/cmd/ingest/sbom"
+	"github.com/bitbomdev/minefield/cmd/ingest/scorecard"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
 

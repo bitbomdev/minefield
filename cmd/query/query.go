@@ -1,10 +1,10 @@
 package query
 
 import (
-	"github.com/bit-bom/minefield/cmd/query/custom"
-	"github.com/bit-bom/minefield/cmd/query/getMetadata"
-	"github.com/bit-bom/minefield/cmd/query/globsearch"
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/cmd/query/custom"
+	"github.com/bitbomdev/minefield/cmd/query/getMetadata"
+	"github.com/bitbomdev/minefield/cmd/query/globsearch"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
 

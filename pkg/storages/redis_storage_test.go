@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/RoaringBitmap/roaring"
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/go-redis/redis/v8"
 	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"

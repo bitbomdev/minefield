@@ -7,9 +7,9 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/RoaringBitmap/roaring"
-	service "github.com/bit-bom/minefield/gen/api/v1"
-	"github.com/bit-bom/minefield/pkg/graph"
-	"github.com/bit-bom/minefield/pkg/tools/ingest"
+	service "github.com/bitbomdev/minefield/gen/api/v1"
+	"github.com/bitbomdev/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/tools/ingest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"

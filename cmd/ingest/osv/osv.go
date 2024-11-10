@@ -1,9 +1,9 @@
 package osv
 
 import (
-	graphData "github.com/bit-bom/minefield/cmd/ingest/osv/graph"
-	loadData "github.com/bit-bom/minefield/cmd/ingest/osv/load"
-	"github.com/bit-bom/minefield/pkg/graph"
+	graphData "github.com/bitbomdev/minefield/cmd/ingest/osv/graph"
+	loadData "github.com/bitbomdev/minefield/cmd/ingest/osv/load"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
 

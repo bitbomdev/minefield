@@ -5,9 +5,9 @@ import (
 	"net/http"
 	_ "net/http/pprof" // Import for side-effect
 
-	"github.com/bit-bom/minefield/cmd/root"
-	"github.com/bit-bom/minefield/pkg/graph"
-	"github.com/bit-bom/minefield/pkg/storages"
+	"github.com/bitbomdev/minefield/cmd/root"
+	"github.com/bitbomdev/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/storages"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 )

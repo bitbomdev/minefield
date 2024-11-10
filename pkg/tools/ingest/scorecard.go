@@ -3,8 +3,8 @@ package ingest
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bit-bom/minefield/pkg/graph"
-	"github.com/bit-bom/minefield/pkg/tools"
+	"github.com/bitbomdev/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/tools"
 	"strings"
 )
 

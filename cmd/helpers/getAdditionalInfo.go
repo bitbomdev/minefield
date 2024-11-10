@@ -3,9 +3,9 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
-	apiv1 "github.com/bit-bom/minefield/gen/api/v1"
-	"github.com/bit-bom/minefield/pkg/tools"
-	"github.com/bit-bom/minefield/pkg/tools/ingest"
+	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
+	"github.com/bitbomdev/minefield/pkg/tools"
+	"github.com/bitbomdev/minefield/pkg/tools/ingest"
 	"strings"
 )
 

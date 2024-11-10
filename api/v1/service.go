@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 
 	"connectrpc.com/connect"
-	service "github.com/bit-bom/minefield/gen/api/v1"
-	"github.com/bit-bom/minefield/pkg/graph"
+	service "github.com/bitbomdev/minefield/gen/api/v1"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/goccy/go-json"
 	"google.golang.org/protobuf/types/known/emptypb"
 )

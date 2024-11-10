@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	service "github.com/bit-bom/minefield/api/v1"
-	"github.com/bit-bom/minefield/gen/api/v1/apiv1connect"
-	"github.com/bit-bom/minefield/pkg/graph"
+	service "github.com/bitbomdev/minefield/api/v1"
+	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"

@@ -1,10 +1,10 @@
 package leaderboard
 
 import (
-	"github.com/bit-bom/minefield/cmd/leaderboard/allKeys"
-	"github.com/bit-bom/minefield/cmd/leaderboard/custom"
-	"github.com/bit-bom/minefield/cmd/leaderboard/weightedNACD"
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/cmd/leaderboard/allKeys"
+	"github.com/bitbomdev/minefield/cmd/leaderboard/custom"
+	"github.com/bitbomdev/minefield/cmd/leaderboard/weightedNACD"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
 

@@ -3,9 +3,9 @@ package sbom
 import (
 	"fmt"
 
-	"github.com/bit-bom/minefield/pkg/graph"
-	"github.com/bit-bom/minefield/pkg/tools"
-	"github.com/bit-bom/minefield/pkg/tools/ingest"
+	"github.com/bitbomdev/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/tools"
+	"github.com/bitbomdev/minefield/pkg/tools/ingest"
 	"github.com/spf13/cobra"
 )
 

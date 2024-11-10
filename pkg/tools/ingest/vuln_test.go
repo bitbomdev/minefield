@@ -1,12 +1,12 @@
 package ingest
 
 import (
-	"github.com/bit-bom/minefield/pkg/tools"
+	"github.com/bitbomdev/minefield/pkg/tools"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/graph"
 )
 
 func TestVulnerabilitiesToStorage(t *testing.T) {

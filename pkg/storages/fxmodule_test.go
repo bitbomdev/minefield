@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx"

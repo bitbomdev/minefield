@@ -1,7 +1,7 @@
 package storages
 
 import (
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"go.uber.org/fx"
 )
 
