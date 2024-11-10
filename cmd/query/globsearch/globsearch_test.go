@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
+	apiv1 "github.com/bit-bom/minefield/gen/api/v1"
 	"github.com/spf13/cobra"
 	"github.com/zeebo/assert"
 )
@@ -60,7 +60,7 @@ func TestFormatTable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := &bytes.Buffer{}
-			err := formatTable(buf, tt.nodes, tt.maxOutput, false)
+			err := formatTable(buf, tt.nodes, tt.maxOutput)
 			if err != nil {
 				t.Errorf("formatTable() error = %v", err)
 				return
