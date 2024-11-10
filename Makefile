@@ -34,6 +34,12 @@ docker-logs:
 docker-build:
 	docker build -t ghcr.io/bitbomdev/minefield:latest .
 
-all: build test docker-build 
+go-mod-tidy:
+	go mod tidy
+
+git-porcelain:
+	git status --porcelain
+
+all: build test docker-build go-mod-tidy git-porcelain
 
 .PHONY: test test-e2e build clean clean-redis docker-up docker-down docker-logs docker-build all
