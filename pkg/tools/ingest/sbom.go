@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/protobom/protobom/pkg/reader"
 )
 

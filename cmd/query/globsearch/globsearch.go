@@ -8,9 +8,9 @@ import (
 	"strconv"
 
 	"connectrpc.com/connect"
-	"github.com/bit-bom/minefield/cmd/helpers"
-	apiv1 "github.com/bit-bom/minefield/gen/api/v1"
-	"github.com/bit-bom/minefield/gen/api/v1/apiv1connect"
+	"github.com/bitbomdev/minefield/cmd/helpers"
+	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
+	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )

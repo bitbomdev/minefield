@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/graph"
 )
 
 // LoadDataFromPath takes in a directory or file path and processes the data into the storage.

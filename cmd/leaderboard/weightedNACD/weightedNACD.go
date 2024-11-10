@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bit-bom/minefield/pkg/graph"
-	"github.com/bit-bom/minefield/pkg/tools/weightedNACD"
+	"github.com/bitbomdev/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/tools/weightedNACD"
 	"github.com/goccy/go-json"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"

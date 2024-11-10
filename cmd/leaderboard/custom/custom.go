@@ -3,16 +3,16 @@ package custom
 import (
 	"context"
 	"fmt"
-	"github.com/bit-bom/minefield/cmd/helpers"
+	"github.com/bitbomdev/minefield/cmd/helpers"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 
 	"connectrpc.com/connect"
-	apiv1 "github.com/bit-bom/minefield/gen/api/v1"
-	"github.com/bit-bom/minefield/gen/api/v1/apiv1connect"
-	"github.com/bit-bom/minefield/pkg/graph"
+	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
+	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )

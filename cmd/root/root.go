@@ -1,12 +1,12 @@
 package root
 
 import (
-	"github.com/bit-bom/minefield/cmd/cache"
-	"github.com/bit-bom/minefield/cmd/ingest"
-	"github.com/bit-bom/minefield/cmd/leaderboard"
-	"github.com/bit-bom/minefield/cmd/query"
-	start_service "github.com/bit-bom/minefield/cmd/start-service"
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/cmd/cache"
+	"github.com/bitbomdev/minefield/cmd/ingest"
+	"github.com/bitbomdev/minefield/cmd/leaderboard"
+	"github.com/bitbomdev/minefield/cmd/query"
+	start_service "github.com/bitbomdev/minefield/cmd/start-service"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
 

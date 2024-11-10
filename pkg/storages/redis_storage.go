@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bit-bom/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -83,13 +83,13 @@ func (r *RedisStorage) GetNodesByGlob(pattern string) ([]*graph.Node, error) {
 	for _, key := range keys {
 		// Extract the name from the key
 		name := strings.TrimPrefix(key, "name_to_id:")
-		
+
 		// Get the ID using the name
 		id, err := r.NameToID(name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get ID for name %s: %w", name, err)
 		}
-		
+
 		node, err := r.GetNode(id)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get node for ID %d: %w", id, err)
