@@ -16,7 +16,7 @@ func New(storage graph.Storage) *cobra.Command {
 	}
 
 	cmd.AddCommand(custom.New(storage))
-	cmd.AddCommand(globsearch.New(storage))
 	cmd.AddCommand(getMetadata.New(storage))
+	cmd.AddCommand(globsearch.New())
 	return cmd
 }
