@@ -1,127 +1,157 @@
 package globsearch
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-	"os"
 	"strconv"
 
 	"connectrpc.com/connect"
 	"github.com/bit-bom/minefield/cmd/helpers"
 	apiv1 "github.com/bit-bom/minefield/gen/api/v1"
 	"github.com/bit-bom/minefield/gen/api/v1/apiv1connect"
-	"github.com/bit-bom/minefield/pkg/graph"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	storage   graph.Storage
-	maxOutput int
-	showInfo  bool // New field to control the display of the Info column
-	saveQuery string
+	maxOutput          int
+	addr               string
+	output             string
+	showAdditionalInfo bool
+	graphServiceClient apiv1connect.GraphServiceClient
 }
 
+// AddFlags adds command-line flags to the provided cobra command.
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "maximum number of results to display")
-	cmd.Flags().BoolVar(&o.showInfo, "show-info", true, "display the info column")
-	cmd.Flags().StringVar(&o.saveQuery, "save-query", "", "save the query to a specific file")
+	cmd.Flags().StringVar(&o.addr, "addr", "http://localhost:8089", "address of the minefield server")
+	cmd.Flags().StringVar(&o.output, "output", "table", "output format (table or json)")
+	cmd.Flags().BoolVar(&o.showAdditionalInfo, "show-additional-info", false, "show additional info")
 }
 
+// Run executes the globsearch command with the provided arguments.
 func (o *options) Run(cmd *cobra.Command, args []string) error {
 	pattern := args[0]
-	httpClient := &http.Client{}
-	addr := os.Getenv("BITBOMDEV_ADDR")
-	if addr == "" {
-		addr = "http://localhost:8089"
+	if pattern == "" {
+		return fmt.Errorf("pattern is required")
 	}
-	client := apiv1connect.NewGraphServiceClient(httpClient, addr)
 
-	// Create a new context
-	ctx := cmd.Context()
+	// Initialize client if not injected (for testing)
+	if o.graphServiceClient == nil {
+		o.graphServiceClient = apiv1connect.NewGraphServiceClient(
+			http.DefaultClient,
+			o.addr,
+		)
+	}
 
-	// Create a new QueryRequest
-	req := connect.NewRequest(&apiv1.GetNodesByGlobRequest{
-		Pattern: pattern,
-	})
-
-	// Make the Query request
-	res, err := client.GetNodesByGlob(ctx, req)
+	// Query nodes matching pattern
+	res, err := o.graphServiceClient.GetNodesByGlob(
+		cmd.Context(),
+		connect.NewRequest(&apiv1.GetNodesByGlobRequest{Pattern: pattern}),
+	)
 	if err != nil {
-		return fmt.Errorf("query failed: %v", err)
+		return fmt.Errorf("query failed: %w", err)
 	}
 
 	if len(res.Msg.Nodes) == 0 {
-		fmt.Println("No nodes found matching pattern:", pattern)
-		return nil
+		return fmt.Errorf("no nodes found matching pattern: %s", pattern)
 	}
 
-	// Initialize the table
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAutoWrapText(false)
-	table.SetRowLine(true)
-
-	// Dynamically set the header based on the showInfo flag
-	headers := []string{"Name", "Type", "ID"}
-	if o.showInfo {
-		headers = append(headers, "Info")
-	}
-	table.SetHeader(headers)
-
-	count := 0
-	var f *os.File
-	if o.saveQuery != "" {
-		f, err = os.Create(o.saveQuery)
+	// Format and display results
+	switch o.output {
+	case "json":
+		jsonOutput, err := FormatNodeJSON(res.Msg.Nodes)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to format nodes as JSON: %w", err)
 		}
-		defer f.Close()
+		cmd.Println(string(jsonOutput))
+		return nil
+	case "table":
+		return formatTable(cmd.OutOrStdout(), res.Msg.Nodes, o.maxOutput, o.showAdditionalInfo)
+	default:
+		return fmt.Errorf("unknown output format: %s", o.output)
 	}
-	
-	for _, node := range res.Msg.Nodes {
-		if count >= o.maxOutput {
+}
+
+// formatTable formats the nodes into a table and writes it to the provided writer.
+func formatTable(w io.Writer, nodes []*apiv1.Node, maxOutput int, showAdditionalInfo bool) error {
+	table := tablewriter.NewWriter(w)
+	table.SetHeader([]string{"Name", "Type", "ID"})
+	table.SetAutoWrapText(false)
+	table.SetAutoFormatHeaders(true)
+	if showAdditionalInfo {
+		table.SetHeader([]string{"Name", "Type", "ID", "Info"})
+	}
+	for i, node := range nodes {
+		if i >= maxOutput {
 			break
 		}
-
-		// Build the common row data
 		row := []string{
 			node.Name,
 			node.Type,
-			strconv.Itoa(int(node.Id)),
+			strconv.FormatUint(uint64(node.Id), 10),
 		}
-
-		// If showInfo is true, compute the additionalInfo and append it
-		if o.showInfo {
+		if showAdditionalInfo {
 			additionalInfo := helpers.ComputeAdditionalInfo(node)
 			row = append(row, additionalInfo)
 		}
-
-		// Append the row to the table
 		table.Append(row)
-
-		if o.saveQuery != "" {
-			f.WriteString(node.Name + "\n")
-		}
-		count++
 	}
 
 	table.Render()
-
 	return nil
 }
 
-func New(storage graph.Storage) *cobra.Command {
-	o := &options{
-		storage: storage,
-	}
+// New returns a new cobra command for globsearch.
+func New() *cobra.Command {
+	o := &options{}
 	cmd := &cobra.Command{
 		Use:               "globsearch [pattern]",
 		Short:             "Search for nodes by glob pattern",
+		Long:              "Search for nodes in the graph using a glob pattern",
 		Args:              cobra.ExactArgs(1),
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}
 	o.AddFlags(cmd)
-
 	return cmd
+}
+
+type nodeOutput struct {
+	Name     string                 `json:"name"`
+	Type     string                 `json:"type"`
+	ID       string                 `json:"id"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// FormatNodeJSON formats the nodes as JSON.
+func FormatNodeJSON(nodes []*apiv1.Node) ([]byte, error) {
+	if nodes == nil {
+		return nil, fmt.Errorf("nodes cannot be nil")
+	}
+
+	if len(nodes) == 0 {
+		return nil, fmt.Errorf("no nodes found")
+	}
+
+	outputs := make([]nodeOutput, 0, len(nodes))
+	for _, node := range nodes {
+		var metadata map[string]interface{}
+		if len(node.Metadata) > 0 {
+			if err := json.Unmarshal(node.Metadata, &metadata); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal metadata for node %s: %w", node.Name, err)
+			}
+		}
+
+		outputs = append(outputs, nodeOutput{
+			Name:     node.Name,
+			Type:     node.Type,
+			ID:       strconv.FormatUint(uint64(node.Id), 10),
+			Metadata: metadata,
+		})
+	}
+
+	return json.MarshalIndent(outputs, "", "  ")
 }

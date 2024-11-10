@@ -16,6 +16,7 @@ require (
 	github.com/protobom/protobom v0.5.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
+	github.com/zeebo/assert v1.3.1
 	go.uber.org/fx v1.23.0
 	golang.org/x/net v0.30.0
 	google.golang.org/protobuf v1.35.1
