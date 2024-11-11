@@ -249,7 +249,7 @@ func compareVersions(v1, v2, eventType, ecosystem string) int {
 	}
 }
 
-func compareEcosystemVersions(v1, v2, ecosystem string) int {
+func compareEcosystemVersions(v1, v2, _ string) int {
 	// Implement ecosystem-specific version comparison logic here.
 	// Placeholder implementation:
 	return strings.Compare(v1, v2)
