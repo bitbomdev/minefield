@@ -147,3 +147,10 @@ func TestQuery(t *testing.T) {
 	_, err = s.Query(context.Background(), nil)
 	assert.Error(t, err)
 }
+func TestHealthCheck(t *testing.T) {
+	s := setupService()
+	req := connect.NewRequest(&emptypb.Empty{})
+	resp, err := s.Check(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp.Msg.Status)
+}

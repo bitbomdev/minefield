@@ -30,6 +30,8 @@ const (
 	LeaderboardServiceName = "api.v1.LeaderboardService"
 	// GraphServiceName is the fully-qualified name of the GraphService service.
 	GraphServiceName = "api.v1.GraphService"
+	// HealthServiceName is the fully-qualified name of the HealthService service.
+	HealthServiceName = "api.v1.HealthService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -60,6 +62,8 @@ const (
 	// GraphServiceGetNodeByNameProcedure is the fully-qualified name of the GraphService's
 	// GetNodeByName RPC.
 	GraphServiceGetNodeByNameProcedure = "/api.v1.GraphService/GetNodeByName"
+	// HealthServiceCheckProcedure is the fully-qualified name of the HealthService's Check RPC.
+	HealthServiceCheckProcedure = "/api.v1.HealthService/Check"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -76,6 +80,8 @@ var (
 	graphServiceGetNodeMethodDescriptor                 = graphServiceServiceDescriptor.Methods().ByName("GetNode")
 	graphServiceGetNodesByGlobMethodDescriptor          = graphServiceServiceDescriptor.Methods().ByName("GetNodesByGlob")
 	graphServiceGetNodeByNameMethodDescriptor           = graphServiceServiceDescriptor.Methods().ByName("GetNodeByName")
+	healthServiceServiceDescriptor                      = v1.File_api_v1_service_proto.Services().ByName("HealthService")
+	healthServiceCheckMethodDescriptor                  = healthServiceServiceDescriptor.Methods().ByName("Check")
 )
 
 // QueryServiceClient is a client for the api.v1.QueryService service.
@@ -452,4 +458,72 @@ func (UnimplementedGraphServiceHandler) GetNodesByGlob(context.Context, *connect
 
 func (UnimplementedGraphServiceHandler) GetNodeByName(context.Context, *connect.Request[v1.GetNodeByNameRequest]) (*connect.Response[v1.GetNodeByNameResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.GraphService.GetNodeByName is not implemented"))
+}
+
+// HealthServiceClient is a client for the api.v1.HealthService service.
+type HealthServiceClient interface {
+	Check(context.Context, *connect.Request[emptypb.Empty]) (*connect.Response[v1.HealthCheckResponse], error)
+}
+
+// NewHealthServiceClient constructs a client for the api.v1.HealthService service. By default, it
+// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
+// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
+// connect.WithGRPCWeb() options.
+//
+// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
+// http://api.acme.com or https://acme.com/grpc).
+func NewHealthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) HealthServiceClient {
+	baseURL = strings.TrimRight(baseURL, "/")
+	return &healthServiceClient{
+		check: connect.NewClient[emptypb.Empty, v1.HealthCheckResponse](
+			httpClient,
+			baseURL+HealthServiceCheckProcedure,
+			connect.WithSchema(healthServiceCheckMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+	}
+}
+
+// healthServiceClient implements HealthServiceClient.
+type healthServiceClient struct {
+	check *connect.Client[emptypb.Empty, v1.HealthCheckResponse]
+}
+
+// Check calls api.v1.HealthService.Check.
+func (c *healthServiceClient) Check(ctx context.Context, req *connect.Request[emptypb.Empty]) (*connect.Response[v1.HealthCheckResponse], error) {
+	return c.check.CallUnary(ctx, req)
+}
+
+// HealthServiceHandler is an implementation of the api.v1.HealthService service.
+type HealthServiceHandler interface {
+	Check(context.Context, *connect.Request[emptypb.Empty]) (*connect.Response[v1.HealthCheckResponse], error)
+}
+
+// NewHealthServiceHandler builds an HTTP handler from the service implementation. It returns the
+// path on which to mount the handler and the handler itself.
+//
+// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
+// and JSON codecs. They also support gzip compression.
+func NewHealthServiceHandler(svc HealthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	healthServiceCheckHandler := connect.NewUnaryHandler(
+		HealthServiceCheckProcedure,
+		svc.Check,
+		connect.WithSchema(healthServiceCheckMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/api.v1.HealthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case HealthServiceCheckProcedure:
+			healthServiceCheckHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// UnimplementedHealthServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedHealthServiceHandler struct{}
+
+func (UnimplementedHealthServiceHandler) Check(context.Context, *connect.Request[emptypb.Empty]) (*connect.Response[v1.HealthCheckResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.HealthService.Check is not implemented"))
 }

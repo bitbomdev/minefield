@@ -306,3 +306,7 @@ func (h *queryHeap) Pop() interface{} {
 	*h = old[0 : n-1]
 	return x
 }
+
+func (s *Service) Check(ctx context.Context, req *connect.Request[emptypb.Empty]) (*connect.Response[service.HealthCheckResponse], error) {
+	return connect.NewResponse(&service.HealthCheckResponse{Status: "ok"}), nil
+}
