@@ -4,7 +4,7 @@ import "google/protobuf/empty.proto";
 
 package api.v1;
 
-option go_package = "github.com/bit-bom/minefield/gen/api/v1;apiv1";
+option go_package = "github.com/bitbomdev/minefield/gen/api/v1;apiv1";
 
 message QueryRequest {
   string script = 1;
