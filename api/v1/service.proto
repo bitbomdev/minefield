@@ -64,6 +64,10 @@ message GetNodesByGlobResponse {
   repeated Node nodes = 1;
 }
 
+message HealthCheckResponse {
+  string status = 1;
+}
+
 service QueryService {
   rpc Query(QueryRequest) returns (QueryResponse) {}
 }
@@ -82,4 +86,8 @@ service GraphService {
   rpc GetNode(GetNodeRequest) returns (GetNodeResponse) {}
   rpc GetNodesByGlob(GetNodesByGlobRequest) returns (GetNodesByGlobResponse) {}
   rpc GetNodeByName(GetNodeByNameRequest) returns (GetNodeByNameResponse) {}
+}
+
+service HealthService {
+  rpc Check(google.protobuf.Empty) returns (HealthCheckResponse) {}
 }
