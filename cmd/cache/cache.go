@@ -4,57 +4,83 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 
 	"connectrpc.com/connect"
 	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
-	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+const (
+	DefaultAddr = "http://localhost:8089" // Default address of the minefield server
+)
+
+// options for the cache command
 type options struct {
-	storage graph.Storage
-	clear   bool
+	clear bool   // Clear all cached graph data
+	addr  string // Address of the minefield server
+
+	cacheServiceClient apiv1connect.CacheServiceClient
 }
 
+// AddFlags adds command-line flags to the provided cobra command.
 func (o *options) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&o.clear, "clear", false, "Clear the cache instead of creating it")
+	cmd.Flags().BoolVar(&o.clear, "clear", false, "Clear all cached graph data")
+	cmd.Flags().StringVar(&o.addr, "addr", DefaultAddr, "Address of the minefield server")
 }
 
-func (o *options) Run(_ *cobra.Command, _ []string) error {
-	httpClient := &http.Client{}
-	addr := os.Getenv("BITBOMDEV_ADDR")
-	if addr == "" {
-		addr = "http://localhost:8089"
+// Run executes the cache command with the provided arguments.
+func (o *options) Run(cmd *cobra.Command, args []string) error {
+	// Initialize dependencies if not injected (for testing)
+	if err := o.initDependencies(); err != nil {
+		return fmt.Errorf("failed to initialize dependencies: %w", err)
 	}
-	client := apiv1connect.NewCacheServiceClient(httpClient, addr)
 
-	// Create a new context
-	ctx := context.Background()
+	ctx := cmd.Context()
 
 	if o.clear {
-		req := connect.NewRequest(&emptypb.Empty{})
-		_, err := client.Clear(ctx, req)
-		if err != nil {
-			return fmt.Errorf("failed to clear cache: %w", err)
-		}
-		fmt.Println("Cache cleared successfully")
-	} else {
-		req := connect.NewRequest(&emptypb.Empty{})
-		_, err := client.Cache(ctx, req)
-		if err != nil {
-			return fmt.Errorf("failed to cache: %w", err)
-		}
-		fmt.Println("Graph Fully Cached")
+		return o.clearCache(ctx)
+	}
+
+	return o.populateCache(ctx)
+}
+
+// initDependencies initializes dependencies if they are not already set.
+func (o *options) initDependencies() error {
+	if o.cacheServiceClient == nil {
+		o.cacheServiceClient = apiv1connect.NewCacheServiceClient(
+			http.DefaultClient,
+			o.addr,
+		)
 	}
 	return nil
 }
 
-func New(storage graph.Storage) *cobra.Command {
-	o := &options{
-		storage: storage,
+// clearCache clears the cache by calling the CacheService's Clear method.
+func (o *options) clearCache(ctx context.Context) error {
+	req := connect.NewRequest(&emptypb.Empty{})
+	_, err := o.cacheServiceClient.Clear(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to clear cache: %w", err)
 	}
+	fmt.Println("Cache cleared successfully")
+	return nil
+}
+
+// populateCache populates the cache by calling the CacheService's Cache method.
+func (o *options) populateCache(ctx context.Context) error {
+	req := connect.NewRequest(&emptypb.Empty{})
+	_, err := o.cacheServiceClient.Cache(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to populate cache: %w", err)
+	}
+	fmt.Println("Graph fully cached")
+	return nil
+}
+
+// New returns a new cobra command for the cache command.
+func New() *cobra.Command {
+	o := &options{}
 	cmd := &cobra.Command{
 		Use:               "cache",
 		Short:             "Cache all nodes or remove existing cache",
