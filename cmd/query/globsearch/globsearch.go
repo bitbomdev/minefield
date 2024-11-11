@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"connectrpc.com/connect"
-	"github.com/bitbomdev/minefield/cmd/helpers"
 	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
 	"github.com/olekukonko/tablewriter"
@@ -19,7 +18,6 @@ type options struct {
 	maxOutput          int
 	addr               string
 	output             string
-	showAdditionalInfo bool
 	graphServiceClient apiv1connect.GraphServiceClient
 }
 
@@ -28,7 +26,6 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "maximum number of results to display")
 	cmd.Flags().StringVar(&o.addr, "addr", "http://localhost:8089", "address of the minefield server")
 	cmd.Flags().StringVar(&o.output, "output", "table", "output format (table or json)")
-	cmd.Flags().BoolVar(&o.showAdditionalInfo, "show-additional-info", false, "show additional info")
 }
 
 // Run executes the globsearch command with the provided arguments.
@@ -69,35 +66,28 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 		cmd.Println(string(jsonOutput))
 		return nil
 	case "table":
-		return formatTable(cmd.OutOrStdout(), res.Msg.Nodes, o.maxOutput, o.showAdditionalInfo)
+		return formatTable(cmd.OutOrStdout(), res.Msg.Nodes, o.maxOutput)
 	default:
 		return fmt.Errorf("unknown output format: %s", o.output)
 	}
 }
 
 // formatTable formats the nodes into a table and writes it to the provided writer.
-func formatTable(w io.Writer, nodes []*apiv1.Node, maxOutput int, showAdditionalInfo bool) error {
+func formatTable(w io.Writer, nodes []*apiv1.Node, maxOutput int) error {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Name", "Type", "ID"})
 	table.SetAutoWrapText(false)
 	table.SetAutoFormatHeaders(true)
-	if showAdditionalInfo {
-		table.SetHeader([]string{"Name", "Type", "ID", "Info"})
-	}
+
 	for i, node := range nodes {
 		if i >= maxOutput {
 			break
 		}
-		row := []string{
+		table.Append([]string{
 			node.Name,
 			node.Type,
 			strconv.FormatUint(uint64(node.Id), 10),
-		}
-		if showAdditionalInfo {
-			additionalInfo := helpers.ComputeAdditionalInfo(node)
-			row = append(row, additionalInfo)
-		}
-		table.Append(row)
+		})
 	}
 
 	table.Render()
