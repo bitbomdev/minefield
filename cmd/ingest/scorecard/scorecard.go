@@ -16,12 +16,9 @@ type options struct {
 func (o *options) AddFlags(_ *cobra.Command) {}
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
-	sbomPath := args[0]
+	scorecardPath := args[0]
 
-	// Define the progress callback function
-
-	// Ingest SBOM
-	result, err := ingest.LoadDataFromPath(o.storage, sbomPath)
+	result, err := ingest.LoadDataFromPath(o.storage, scorecardPath)
 	if err != nil {
 		return fmt.Errorf("failed to ingest SBOM: %w", err)
 	}
@@ -30,10 +27,12 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 		if err := ingest.Scorecards(o.storage, data.Data); err != nil {
 			return fmt.Errorf("failed to ingest Scorecard: %w", err)
 		}
-		fmt.Printf("\r\033[K%s", printProgress(index+1, data.Path))
+		// Clear the line by overwriting with spaces
+		fmt.Printf("\r\033[1;36m%-80s\033[0m", " ")
+		fmt.Printf("\r\033[1;36mIngested %d/%d Scorecards\033[0m | \033[1;34m%s\033[0m", index+1, len(result), tools.TruncateString(data.Path, 50))
 	}
 
-	fmt.Println("\nSBOM ingested successfully")
+	fmt.Println("\nScorecards ingested successfully")
 	return nil
 }
 
@@ -42,8 +41,8 @@ func New(storage graph.Storage) *cobra.Command {
 		storage: storage,
 	}
 	cmd := &cobra.Command{
-		Use:               "sbom [sbomPath]",
-		Short:             "Ingest an SBOM into storage",
+		Use:               "scorecard [path to scorecard file/dir]",
+		Short:             "Graph scorecard data into the graph, and connect it to existing library nodes",
 		Args:              cobra.ExactArgs(1),
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
