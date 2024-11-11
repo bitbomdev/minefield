@@ -17,15 +17,17 @@ func (o *options) AddFlags(_ *cobra.Command) {}
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
 	sbomPath := args[0]
-
-	// Define the progress callback function
-	progress := func(count int, path string) {
-		fmt.Printf("\r\033[K%s", printProgress(count, path))
+	// Ingest SBOM
+	result, err := ingest.LoadDataFromPath(o.storage, sbomPath)
+	if err != nil {
+		return fmt.Errorf("failed to ingest SBOM: %w", err)
 	}
 
-	// Ingest SBOM
-	if _, err := ingest.SBOM(sbomPath, o.storage, progress); err != nil {
-		return fmt.Errorf("failed to ingest SBOM: %w", err)
+	for index, data := range result {
+		if err := ingest.SBOM(o.storage, data.Data); err != nil {
+			return fmt.Errorf("failed to ingest SBOM: %w", err)
+		}
+		fmt.Printf("\r\033[1;36mIngested %d SBOMs\033[0m | \033[1;34m%s\033[0m", index+1, tools.TruncateString(data.Path, 50))
 	}
 
 	fmt.Println("\nSBOM ingested successfully")
@@ -46,8 +48,4 @@ func New(storage graph.Storage) *cobra.Command {
 	o.AddFlags(cmd)
 
 	return cmd
-}
-
-func printProgress(count int, path string) string {
-	return fmt.Sprintf("\033[1;36mIngested %d SBOMs\033[0m | \033[1;34m%s\033[0m", count, tools.TruncateString(path, 50))
 }

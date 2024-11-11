@@ -3,9 +3,11 @@ package ingest
 import (
 	"encoding/json"
 	"fmt"
+
+	"strings"
+
 	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/bitbomdev/minefield/pkg/tools"
-	"strings"
 )
 
 type Repo struct {
@@ -41,8 +43,26 @@ type ScorecardResult struct {
 	GitHubURL string        `json:"github_url,omitempty"`
 }
 
-// Scorecards ingests Scorecard data from storage into the graph.
-func Scorecards(storage graph.Storage, progress func(count int, id string)) error {
+// Scorecard processes the Scorecard JSON data and stores it in the graph.
+func Scorecards(storage graph.Storage, data []byte) error {
+	if len(data) == 0 {
+		return fmt.Errorf("data is empty")
+	}
+
+	var results []ScorecardResult
+	if err := json.Unmarshal(data, &results); err != nil {
+		return fmt.Errorf("failed to decode Scorecard data: %w", err)
+	}
+
+	scorecardResults := map[string][]ScorecardResult{}
+
+	for _, result := range results {
+		if !result.Success {
+			continue
+		}
+		scorecardResults[result.PURL] = append(scorecardResults[result.PURL], result)
+	}
+
 	keys, err := storage.GetAllKeys()
 	if err != nil {
 		return err
@@ -52,7 +72,6 @@ func Scorecards(storage graph.Storage, progress func(count int, id string)) erro
 	if err != nil {
 		return fmt.Errorf("failed to get nodes from storage: %w", err)
 	}
-	count := 0
 
 	for _, node := range nodes {
 		if node.Type == tools.LibraryType && strings.HasPrefix(node.Name, pkg) {
@@ -61,20 +80,12 @@ func Scorecards(storage graph.Storage, progress func(count int, id string)) erro
 				continue
 			}
 
-			scorecardData, err := storage.GetCustomData(tools.ScorecardType, node.Name)
-			if err != nil {
-				return fmt.Errorf("failed to get Scorecard data from storage: %w", err)
-			}
-			if len(scorecardData) == 0 {
+			scorecardData, ok := scorecardResults[purl.Name]
+			if !ok {
 				continue
 			}
 
-			for _, data := range scorecardData {
-				var scorecardResult ScorecardResult
-
-				if err := json.Unmarshal(data, &scorecardResult); err != nil {
-					return fmt.Errorf("failed to unmarshal Scorecard data: %w", err)
-				}
+			for _, scorecardResult := range scorecardData {
 
 				if scorecardResult.Success {
 					scorecardPurl, err := PURLToPackage(scorecardResult.PURL)
@@ -93,42 +104,9 @@ func Scorecards(storage graph.Storage, progress func(count int, id string)) erro
 						if err := node.SetDependency(storage, scorecardNode); err != nil {
 							return fmt.Errorf("failed to add dependency edge to Scorecard node: %w", err)
 						}
-
-						count++
-						if progress != nil {
-							progress(count, scorecardPurl.Name)
-						}
 					}
 				}
 			}
-		}
-	}
-	return nil
-}
-
-// LoadScorecard processes the Scorecard JSON data and stores it in the graph.
-func LoadScorecard(storage graph.Storage, data []byte) error {
-	if len(data) == 0 {
-		return fmt.Errorf("data is empty")
-	}
-
-	var results []ScorecardResult
-	if err := json.Unmarshal(data, &results); err != nil {
-		return fmt.Errorf("failed to decode Scorecard data: %w", err)
-	}
-
-	for _, result := range results {
-		if !result.Success {
-			continue
-		}
-
-		scorecardResultData, err := json.Marshal(result)
-		if err != nil {
-			return fmt.Errorf("failed to marshal Scorecard data: %w", err)
-		}
-
-		if err := storage.AddOrUpdateCustomData(tools.ScorecardType, result.PURL, getScorecardNodeName(result.Scorecard.Repo.Name), scorecardResultData); err != nil {
-			return fmt.Errorf("failed to add Scorecard data to storage: %w", err)
 		}
 	}
 
