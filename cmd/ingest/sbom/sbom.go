@@ -24,13 +24,16 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	}
 
 	for index, data := range result {
+
 		if err := ingest.SBOM(o.storage, data.Data); err != nil {
 			return fmt.Errorf("failed to ingest SBOM: %w", err)
 		}
-		fmt.Printf("\r\033[1;36mIngested %d SBOMs\033[0m | \033[1;34m%s\033[0m", index+1, tools.TruncateString(data.Path, 50))
+		// Clear the line by overwriting with spaces
+		fmt.Printf("\r\033[1;36m%-80s\033[0m", " ")
+		fmt.Printf("\r\033[1;36mIngested %d/%d SBOMs\033[0m | \033[1;34m%s\033[0m", index+1, len(result), tools.TruncateString(data.Path, 50))
 	}
 
-	fmt.Println("\nSBOM ingested successfully")
+	fmt.Println("\nSBOMs ingested successfully")
 	return nil
 }
 
@@ -39,8 +42,8 @@ func New(storage graph.Storage) *cobra.Command {
 		storage: storage,
 	}
 	cmd := &cobra.Command{
-		Use:               "sbom [sbomPath]",
-		Short:             "Ingest an SBOM into storage",
+		Use:               "sbom [path to sbom file/dir]",
+		Short:             "Ingest an sbom into the graph ",
 		Args:              cobra.ExactArgs(1),
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
