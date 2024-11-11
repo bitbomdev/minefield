@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/alecthomas/participle/v2 v2.1.1
-	github.com/go-echarts/go-echarts/v2 v2.4.4
+	github.com/go-echarts/go-echarts/v2 v2.4.5
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/goccy/go-json v0.10.3
 	github.com/google/go-cmp v0.6.0
