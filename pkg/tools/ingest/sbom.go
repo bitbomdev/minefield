@@ -1,25 +1,71 @@
 package ingest
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/protobom/protobom/pkg/reader"
 )
 
-func SBOM(storage graph.Storage, data []byte) error {
-	if len(data) == 0 {
-		return fmt.Errorf("data is empty")
+// SBOM ingests a SBOM file or directory into the storage backend.
+func SBOM(sbomPath string, storage graph.Storage, progress func(count int, path string)) (int, error) {
+	info, err := os.Stat(sbomPath)
+	if err != nil {
+		return 0, fmt.Errorf("error accessing path %s: %w", sbomPath, err)
 	}
+
+	var errors []error
+	count := 0
+
+	if info.IsDir() {
+		entries, err := os.ReadDir(sbomPath)
+		if err != nil {
+			return 0, fmt.Errorf("failed to read directory %s: %w", sbomPath, err)
+		}
+		for _, entry := range entries {
+			entryPath := filepath.Join(sbomPath, entry.Name())
+			subCount, err := SBOM(entryPath, storage, progress)
+			count += subCount
+			if progress != nil {
+				progress(count, entryPath)
+			}
+			if err != nil {
+				errors = append(errors, fmt.Errorf("failed to ingest SBOM from path %s: %w", entryPath, err))
+			}
+		}
+	} else {
+		if err := processSBOMFile(sbomPath, storage); err != nil {
+			errors = append(errors, fmt.Errorf("failed to process SBOM file %s: %w", sbomPath, err))
+		} else {
+			count++
+			if progress != nil {
+				progress(count, sbomPath)
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return count, fmt.Errorf("errors occurred during SBOM ingestion: %v", errors)
+	}
+
+	return count, nil
+}
+
+func processSBOMFile(filePath string, storage graph.Storage) error {
+	if filePath == "" {
+		return fmt.Errorf("file path is empty")
+	}
+
 	// Create a new protobom reader
 	r := reader.New()
 
 	// Parse the SBOM file
-	document, err := r.ParseStream(bytes.NewReader(data))
+	document, err := r.ParseFile(filePath)
 	if err != nil {
-		return fmt.Errorf("failed to parse SBOM file: %w", err)
+		return fmt.Errorf("failed to parse SBOM file %s: %w", filePath, err)
 	}
 
 	// Get the node list from the document

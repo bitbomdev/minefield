@@ -1,6 +1,7 @@
 package storages
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,20 +21,32 @@ func TestParseAndExecute_E2E(t *testing.T) {
 	vulnsPath := filepath.Join("..", "..", "testdata", "osv-vulns")
 
 	// Ingest data from the folder
-	result, err := ingest.LoadDataFromPath(redisStorage, sbomPath)
-	assert.NoError(t, err)
-	for _, data := range result {
-		if err := ingest.SBOM(redisStorage, data.Data); err != nil {
-			t.Fatalf("Failed to load SBOM from data: %v", err)
-		}
+	progress := func(count int, path string) {
+		fmt.Printf("Ingested %d items from the folder %s\n", count, path)
 	}
-	result, err = ingest.LoadDataFromPath(redisStorage, vulnsPath)
+	count, err := ingest.SBOM(sbomPath, redisStorage, progress)
 	assert.NoError(t, err)
-	for _, data := range result {
-		if err := ingest.Vulnerabilities(redisStorage, data.Data); err != nil {
-			t.Fatalf("Failed to load vulnerabilities from data: %v", err)
+	assert.Greater(t, count, 0)
+	err = filepath.Walk(vulnsPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
-	}
+		if !info.IsDir() {
+			fileContent, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			err = ingest.LoadVulnerabilities(redisStorage, fileContent)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	assert.NoError(t, err)
+
+	err = ingest.Vulnerabilities(redisStorage, progress)
+	assert.NoError(t, err)
 
 	// Cache data
 	err = graph.Cache(redisStorage)

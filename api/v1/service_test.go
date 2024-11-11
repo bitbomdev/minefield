@@ -72,16 +72,14 @@ func TestGetNodesByGlob(t *testing.T) {
 
 func TestQueriesAndCache(t *testing.T) {
 	s := setupService()
-	result, err := ingest.LoadDataFromPath(s.storage, "../../testdata/osv-sboms/google_agi.sbom.json")
+	_, err := ingest.SBOM("../../testdata/osv-sboms/google_agi.sbom.json", s.storage, nil)
 	require.NoError(t, err)
-	for _, data := range result {
-		err = ingest.SBOM(s.storage, data.Data)
-		require.NoError(t, err)
-	}
 
 	content, err := os.ReadFile("../../testdata/osv-vulns/GHSA-cx63-2mw6-8hw5.json")
 	require.NoError(t, err)
-	err = ingest.Vulnerabilities(s.storage, content)
+	err = ingest.LoadVulnerabilities(s.storage, content)
+	require.NoError(t, err)
+	err = ingest.Vulnerabilities(s.storage, nil)
 	require.NoError(t, err)
 	// Check if the node with name "pkg:pypi/astroid@2.11.7" exists
 	req := connect.NewRequest(&service.GetNodeByNameRequest{Name: "pkg:pypi/astroid@2.11.7"})

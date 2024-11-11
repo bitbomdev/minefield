@@ -1,29 +1,56 @@
 package ingest
 
 import (
+	"github.com/bitbomdev/minefield/pkg/tools"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/bitbomdev/minefield/pkg/graph"
 )
 
+func TestVulnerabilitiesToStorage(t *testing.T) {
+	storage := graph.NewMockStorage()
+	vulnsDir := "../../../testdata/vulns"
+	entries, err := os.ReadDir(vulnsDir)
+	if err != nil {
+		t.Fatalf("Failed to read directory %s: %v", vulnsDir, err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		filePath := filepath.Join(vulnsDir, entry.Name())
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			t.Fatalf("Failed to read file %s: %v", filePath, err)
+		}
+		if err := LoadVulnerabilities(storage, content); err != nil {
+			t.Fatalf("Failed to load vulnerabilities from file %s: %v", filePath, err)
+		}
+	}
+	// Verify data in storage
+	data, err := storage.GetCustomData(tools.VulnerabilityType, "setuptools")
+	if err != nil {
+		t.Fatalf("Failed to get data from storage: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatalf("Expected vulnerabilities in storage, got %d", len(data))
+	}
+}
+
 func TestVulnerabilities(t *testing.T) {
 	storage := graph.NewMockStorage()
 
 	vulnsDir := "../../../testdata/osv-vulns"
-	sbomDir := "../../../testdata/osv-sboms"
 
-	result, err := LoadDataFromPath(storage, sbomDir)
+	count, err := SBOM("../../../testdata/osv-sboms", storage, nil)
 	if err != nil {
 		t.Fatalf("Failed to ingest SBOM: %v", err)
 	}
-	if len(result) == 0 {
-		t.Fatalf("Expected SBOM to be ingested, got %d", len(result))
-	}
-
-	for _, data := range result {
-		if err := SBOM(storage, data.Data); err != nil {
-			t.Fatalf("Failed to load SBOM from data: %v", err)
-		}
+	if count == 0 {
+		t.Fatalf("Expected SBOM to be ingested, got %d", count)
 	}
 
 	keys, err := storage.GetAllKeys()
@@ -32,18 +59,32 @@ func TestVulnerabilities(t *testing.T) {
 	}
 
 	numberOfNodes := len(keys)
-
-	result, err = LoadDataFromPath(storage, vulnsDir)
+	entries, err := os.ReadDir(vulnsDir)
 	if err != nil {
-		t.Fatalf("Failed to load vulnerabilities from directory %s: %v", vulnsDir, err)
+		t.Fatalf("Failed to read directory %s: %v", vulnsDir, err)
 	}
-	if len(result) == 0 {
-		t.Fatalf("Expected vulnerabilities to be ingested, got %d", len(result))
-	}
-	for _, data := range result {
-		if err := Vulnerabilities(storage, data.Data); err != nil {
-			t.Fatalf("Failed to load vulnerabilities from data: %v", err)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
 		}
+		filePath := filepath.Join(vulnsDir, entry.Name())
+		if filepath.Ext(filePath) == ".json" {
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				t.Fatalf("Failed to read file %s: %v", filePath, err)
+			}
+			err = LoadVulnerabilities(storage, content)
+			if err != nil {
+				t.Fatalf("Failed to load vulnerabilities from file %s: %v", filePath, err)
+			}
+		}
+	}
+	// Test ingestion of vulnerabilities
+
+	err = Vulnerabilities(storage, nil)
+
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	keys, err = storage.GetAllKeys()

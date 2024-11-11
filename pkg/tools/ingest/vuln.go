@@ -3,10 +3,9 @@ package ingest
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bitbomdev/minefield/pkg/tools"
 	"sort"
 	"strings"
-
-	"github.com/bitbomdev/minefield/pkg/tools"
 
 	"github.com/Masterminds/semver"
 	"github.com/bitbomdev/minefield/pkg/graph"
@@ -74,13 +73,63 @@ type Credit struct {
 	Type    string   `json:"type"`
 }
 
-type PairedVuln struct {
-	ID   string
-	Vuln Vulnerability
+// Vulnerabilities ingests vulnerabilities from redis into the graph
+func Vulnerabilities(storage graph.Storage, progress func(count int, id string)) error {
+	keys, err := storage.GetAllKeys()
+	if err != nil {
+		return err
+	}
+
+	nodes, err := storage.GetNodes(keys)
+	if err != nil {
+		return fmt.Errorf("failed to get nodes from storage: %w", err)
+	}
+	count := 0
+
+	for _, node := range nodes {
+		if node.Type == tools.LibraryType && strings.HasPrefix(node.Name, pkg) {
+			pkgInfo, err := PURLToPackage(node.Name)
+			if err != nil {
+				continue
+			}
+			vulnsData, err := storage.GetCustomData(tools.VulnerabilityType, pkgInfo.Name)
+			if err != nil {
+				return fmt.Errorf("failed to get vulnerabilityType data from storage: %w", err)
+			}
+			if len(vulnsData) == 0 {
+				continue
+			}
+			for vulnID, vulndata := range vulnsData {
+				// We are using the vuln ID from the map instead of the vulnID from the vuln data, since the map key could be an alias of a vulnerabilityType ID
+				var vuln Vulnerability
+
+				if err := json.Unmarshal(vulndata, &vuln); err != nil {
+					return fmt.Errorf("failed to unmarshal vulnerabilityType data: %w", err)
+				}
+
+				if isPackageAffected(vuln, pkgInfo) {
+					vulnNode, err := graph.AddNode(storage, tools.VulnerabilityType, vuln, vulnID)
+					if err != nil {
+						return fmt.Errorf("failed to add vulnerabilityType node to storage: %w", err)
+					}
+
+					if err := node.SetDependency(storage, vulnNode); err != nil {
+						return fmt.Errorf("failed to add dependency edge to vulnerabilityType node: %w", err)
+					}
+
+					count++
+					if progress != nil {
+						progress(count, vulnID)
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
-// Vulnerabilities processes the vulnerabilityType data and adds it to the storage.
-func Vulnerabilities(storage graph.Storage, data []byte) error {
+// LoadVulnerabilities processes the vulnerabilityType data and adds it to the storage.
+func LoadVulnerabilities(storage graph.Storage, data []byte) error {
 	if len(data) == 0 {
 		return fmt.Errorf("data is empty")
 	}
@@ -92,59 +141,25 @@ func Vulnerabilities(storage graph.Storage, data []byte) error {
 
 	errors := []error{}
 
-	vulnMap := map[string][]Vulnerability{}
+	vulnData, err := json.Marshal(vuln)
+	if err != nil {
+		return fmt.Errorf("failed to marshal vulnerabilityType data: %w", err)
+	}
 
 	for _, affected := range vuln.Affected {
-		vulnMap[affected.Package.Name] = append(vulnMap[affected.Package.Name], vuln)
+		if err := storage.AddOrUpdateCustomData(tools.VulnerabilityType, affected.Package.Name, vuln.ID, vulnData); err != nil {
+			errors = append(errors, fmt.Errorf("failed to add vulnerabilityType to storage: %w", err))
+		}
+
+		for _, alias := range vuln.Aliases {
+			if err := storage.AddOrUpdateCustomData(tools.VulnerabilityType, alias, vuln.ID, vulnData); err != nil {
+				errors = append(errors, fmt.Errorf("failed to add vulnerabilityType alias to storage: %w", err))
+			}
+		}
 	}
 
 	if len(errors) > 0 {
 		return fmt.Errorf("errors occurred during vulnerabilities ingestion: %v", errors)
-	}
-
-	keys, err := storage.GetAllKeys()
-	if err != nil {
-		return err
-	}
-
-	nodes, err := storage.GetNodes(keys)
-	if err != nil {
-		return fmt.Errorf("failed to get nodes from storage: %w", err)
-	}
-
-	for _, node := range nodes {
-		if node.Type == tools.LibraryType && strings.HasPrefix(node.Name, pkg) {
-			pkgInfo, err := PURLToPackage(node.Name)
-			if err != nil {
-				continue
-			}
-			vulnsData, ok := vulnMap[pkgInfo.Name]
-			if !ok {
-				continue
-			}
-			if len(vulnsData) == 0 {
-				continue
-			}
-			for _, vuln := range vulnsData {
-				// We are using the vuln ID from the map instead of the vulnID from the vuln data, since the map key could be an alias of a vulnerabilityType ID
-				vulnData, err := json.Marshal(vuln)
-				if err != nil {
-					errors = append(errors, err)
-					continue
-				}
-
-				if isPackageAffected(vuln, pkgInfo) {
-					vulnNode, err := graph.AddNode(storage, tools.VulnerabilityType, vulnData, vuln.ID)
-					if err != nil {
-						return fmt.Errorf("failed to add vulnerabilityType node to storage: %w", err)
-					}
-
-					if err := node.SetDependency(storage, vulnNode); err != nil {
-						return fmt.Errorf("failed to add dependency edge to vulnerabilityType node: %w", err)
-					}
-				}
-			}
-		}
 	}
 
 	return nil

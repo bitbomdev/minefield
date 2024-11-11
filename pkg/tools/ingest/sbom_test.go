@@ -1,7 +1,7 @@
 package ingest
 
 import (
-
+	"fmt"
 	"os"
 	"sort"
 	"testing"
@@ -29,6 +29,11 @@ func TestIngestSBOM(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "invalid SBOM file",
+			sbomPath: "../../../invalid_sbom.json",
+			wantErr:  true,
+		},
+		{
 			name:     "SBOM with no components",
 			sbomPath: "../../../no_components_sbom.json",
 			want:     map[uint32]*graph.Node{},
@@ -37,17 +42,8 @@ func TestIngestSBOM(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			storage := graph.NewMockStorage()
-			result, err := LoadDataFromPath(storage, test.sbomPath)
-			if test.wantErr != (err != nil) {
+			if _, err := SBOM(test.sbomPath, storage, nil); test.wantErr != (err != nil) {
 				t.Errorf("Sbom() error = %v, wantErr = %v", err, test.wantErr)
-			}
-
-			for _, data := range result {
-				if err := SBOM(storage, data.Data); err != nil {
-					if test.wantErr != (err != nil) {
-						t.Errorf("Sbom() error = %v, wantErr = %v", err, test.wantErr)
-					}				
-				}
 			}
 
 			keys, err := storage.GetAllKeys()
@@ -64,6 +60,7 @@ func TestIngestSBOM(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to get node, %v", err)
 				}
+				fmt.Println(node.Name)
 				if !nodeEquals(node, test.want[key]) {
 					t.Fatalf("expected node %v, got %v", test.want[key], node)
 				}
