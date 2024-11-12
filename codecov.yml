@@ -11,4 +11,5 @@ coverage:
 
   ignore:
     - "cmd/**/*"
-    - "gen/**/*"
+    - "gen/**/*" # generated code
+    - "pkg/graph/mockGraph.go" # mockGraph is not covered

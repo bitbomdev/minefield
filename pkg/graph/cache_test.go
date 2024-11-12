@@ -374,3 +374,64 @@ func TestSimpleCircle(t *testing.T) {
 		assert.Equal(t, dependenciesNoCache.ToArray(), dependencies.ToArray(), "Cached and non-cached dependencies should match")
 	}
 }
+
+// TestCacheErrors tests the Cache function for various error conditions.
+func TestCacheErrors(t *testing.T) {
+	tests := []struct {
+		name      string
+		setupMock func(*MockStorage)
+		wantErr   string
+	}{
+		{
+			name:      "ToBeCached error",
+			setupMock: func(m *MockStorage) { m.ToBeCachedErr = fmt.Errorf("ToBeCached error") },
+			wantErr:   "error getting uncached nodes: ToBeCached error",
+		},
+		{
+			name:      "GetAllKeys error",
+			setupMock: func(m *MockStorage) { m.GetAllKeysErr = fmt.Errorf("GetAllKeys error") },
+			wantErr:   "error getting keys: GetAllKeys error",
+		},
+		{
+			name:      "GetNodes error",
+			setupMock: func(m *MockStorage) { m.GetNodesErr = fmt.Errorf("GetNodes error") },
+			wantErr:   "error getting all nodes: GetNodes error",
+		},
+		{
+			name:      "SaveCaches error",
+			setupMock: func(m *MockStorage) { m.SaveCachesErr = fmt.Errorf("SaveCaches error") },
+			wantErr:   "error saving caches: SaveCaches error",
+		},
+		{
+			name:      "ClearCacheStack error",
+			setupMock: func(m *MockStorage) { m.ClearCacheStackErr = fmt.Errorf("ClearCacheStack error") },
+			wantErr:   "ClearCacheStack error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockStorage := NewMockStorage()
+			nodes := make([]*Node, 3)
+
+			// Create nodes
+			for i := 0; i < 3; i++ {
+				var err error
+				nodes[i], err = AddNode(mockStorage, fmt.Sprintf("type %d", i+1), fmt.Sprintf("metadata %d", i), fmt.Sprintf("name %d", i+1))
+				assert.NoError(t, err)
+			}
+
+			// Create circle: node0 -> node1 -> node2 -> node0
+			for i := 0; i < 3; i++ {
+				err := nodes[i].SetDependency(mockStorage, nodes[(i+1)%3])
+				assert.NoError(t, err)
+			}
+
+			tt.setupMock(mockStorage)
+			err := Cache(mockStorage)
+			if err == nil || err.Error() != tt.wantErr {
+				t.Errorf("Expected error %q, got %v", tt.wantErr, err)
+			}
+		})
+	}
+}
