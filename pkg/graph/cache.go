@@ -10,7 +10,7 @@ import (
 func Cache(storage Storage) error {
 	uncachedNodes, err := storage.ToBeCached()
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting uncached nodes: %w", err)
 	}
 	if len(uncachedNodes) == 0 {
 		return nil
@@ -30,17 +30,17 @@ func Cache(storage Storage) error {
 
 	cachedChildren, err := buildCache(uncachedNodes, ChildrenDirection, scc, allNodes)
 	if err != nil {
-		return err
+		return fmt.Errorf("error building cached children: %w", err)
 	}
 
 	cachedParents, err := buildCache(uncachedNodes, ParentsDirection, scc, allNodes)
 	if err != nil {
-		return err
+		return fmt.Errorf("error building cached parents: %w", err)
 	}
 
 	cachedChildKeys, cachedChildValues, err := cachedChildren.GetAllKeysAndValues()
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting cached child keys and values: %w", err)
 	}
 
 	var caches []*NodeCache
@@ -49,7 +49,7 @@ func Cache(storage Storage) error {
 		childId := cachedChildKeys[i]
 		childIntId, err := strconv.Atoi(childId)
 		if err != nil {
-			return err
+			return fmt.Errorf("error converting child key %s to int: %w", childId, err)
 		}
 
 		childBindValue := cachedChildValues[i].Clone()
@@ -65,7 +65,7 @@ func Cache(storage Storage) error {
 	}
 
 	if err := storage.SaveCaches(caches); err != nil {
-		return err
+		return fmt.Errorf("error saving caches: %w", err)
 	}
 	return storage.ClearCacheStack()
 }
@@ -136,7 +136,7 @@ func buildCache(uncachedNodes []uint32, direction Direction, scc map[uint32]uint
 
 	err := addCyclesToBindMap(scc, cache, children, parents, allNodes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error adding cycles to bind map: %w", err)
 	}
 
 	nodesToCache := roaring.New()
