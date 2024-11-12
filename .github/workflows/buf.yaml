@@ -1,0 +1,52 @@
+name: Buf Generate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      # Step to install buf CLI
+      - name: Install buf CLI
+        run: |
+          BIN="/usr/local/bin" && \
+          VERSION="1.46.0" && \
+          curl -sSL \
+          "https://github.com/bufbuild/buf/releases/download/v$VERSION/buf-$(uname -s)-$(uname -m)" \
+          -o "$BIN/buf" && \
+          chmod +x "$BIN/buf"
+
+      # Step to install protoc-gen-connect-go
+      - name: Install protoc-gen-connect-go
+        run: |
+          go install github.com/bufbuild/connect-go/cmd/protoc-gen-connect-go@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
+      # Step to install protoc-gen-go
+      - name: Install protoc-gen-go
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
+      # Verify buf and protoc-gen-connect-go installation
+      - name: Verify buf and protoc-gen-connect-go installation
+        run: |
+          buf --version
+          protoc-gen-connect-go --version
+          protoc-gen-go --version
+
+      - name: Generate code
+        run: |
+          buf generate
+          make git-porcelain
