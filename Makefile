@@ -37,9 +37,9 @@ docker-build:
 go-mod-tidy:
 	go mod tidy
 
-git-porcelain:
+git-porcelain: 
 	git status --porcelain
 
 all: build test docker-build go-mod-tidy git-porcelain
 
-.PHONY: test test-e2e build clean clean-redis docker-up docker-down docker-logs docker-build all
+.PHONY: test test-e2e build clean clean-redis docker-up docker-down docker-logs docker-build all buf-generate install-buf
