@@ -24,6 +24,6 @@ func New(storage graph.Storage) *cobra.Command {
 	o.AddFlags(cmd)
 
 	cmd.AddCommand(keys.New())
-	cmd.AddCommand(custom.New(storage))
+	cmd.AddCommand(custom.New())
 	return cmd
 }
