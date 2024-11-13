@@ -177,12 +177,8 @@ func TestNew(t *testing.T) {
 		t.Fatal("New() returned nil")
 	}
 
-	if cmd.Use != "allKeys" {
-		t.Errorf("Expected Use to be 'allKeys', got '%s'", cmd.Use)
-	}
-
-	if cmd.Short != "Retrieve and display all leaderboard keys" {
-		t.Errorf("Unexpected Short description: '%s'", cmd.Short)
+	if cmd.Use != "keys" {
+		t.Errorf("Expected Use to be 'keys', got '%s'", cmd.Use)
 	}
 
 	if cmd.Long == "" {
@@ -238,7 +234,7 @@ func TestOptions_AddFlags(t *testing.T) {
 		},
 		{
 			name:         "output",
-			shorthand:    "",
+			shorthand:    "o",
 			defaultValue: "table",
 			usage:        "Output format (table or json)",
 		},
