@@ -1,9 +1,8 @@
 package leaderboard
 
 import (
-	"github.com/bitbomdev/minefield/cmd/leaderboard/allKeys"
 	"github.com/bitbomdev/minefield/cmd/leaderboard/custom"
-	"github.com/bitbomdev/minefield/cmd/leaderboard/weightedNACD"
+	"github.com/bitbomdev/minefield/cmd/leaderboard/keys"
 	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
@@ -16,16 +15,15 @@ func New(storage graph.Storage) *cobra.Command {
 	o := &options{}
 	cmd := &cobra.Command{
 		Use:               "leaderboard",
-		Short:             "all the different ways to sort the ingested data",
+		Short:             "Commands to display and sort leaderboard data",
+		Long:              `Commands to display and sort leaderboard data`,
 		SilenceUsage:      true,
 		DisableAutoGenTag: true,
 	}
 
 	o.AddFlags(cmd)
 
-	cmd.AddCommand(allKeys.New(storage))
-	cmd.AddCommand(weightedNACD.New(storage))
+	cmd.AddCommand(keys.New())
 	cmd.AddCommand(custom.New(storage))
-
 	return cmd
 }
