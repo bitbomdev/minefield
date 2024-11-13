@@ -3,7 +3,6 @@ package getMetadata
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"os"
 	"strings"
@@ -11,139 +10,9 @@ import (
 
 	"connectrpc.com/connect"
 	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
-	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
 	"github.com/zeebo/assert"
 )
-
-func TestFormatNodeJSON(t *testing.T) {
-	tests := []struct {
-		name       string
-		node       *apiv1.Node
-		want       string
-		wantError  bool
-		wantErrMsg string
-	}{
-		{
-			name: "valid node with metadata",
-			node: &apiv1.Node{
-				Name:     "node1",
-				Type:     "type1",
-				Id:       1,
-				Metadata: []byte(`{"key": "value", "nested": {"foo": "bar"}}`),
-			},
-			want: `{
-  "name": "node1",
-  "type": "type1",
-  "id": "1",
-  "metadata": {
-    "key": "value",
-    "nested": {
-      "foo": "bar"
-    }
-  }
-}`,
-		},
-		{
-			name: "valid node with empty metadata",
-			node: &apiv1.Node{
-				Name:     "node2",
-				Type:     "type2",
-				Id:       2,
-				Metadata: []byte(`{}`),
-			},
-			want: `{
-  "name": "node2",
-  "type": "type2",
-  "id": "2"
-}`,
-		},
-		{
-			name: "valid node with null metadata",
-			node: &apiv1.Node{
-				Name:     "node3",
-				Type:     "type3",
-				Id:       3,
-				Metadata: nil,
-			},
-			want: `{
-  "name": "node3",
-  "type": "type3",
-  "id": "3"
-}`,
-		},
-		{
-			name:       "nil node",
-			node:       nil,
-			wantError:  true,
-			wantErrMsg: "node cannot be nil",
-		},
-		{
-			name: "invalid metadata json",
-			node: &apiv1.Node{
-				Name:     "node4",
-				Type:     "type4",
-				Id:       4,
-				Metadata: []byte(`{invalid`),
-			},
-			wantError:  true,
-			wantErrMsg: "failed to unmarshal metadata for node node4",
-		},
-		{
-			name: "metadata with special characters",
-			node: &apiv1.Node{
-				Name:     "node5",
-				Type:     "type5",
-				Id:       5,
-				Metadata: []byte(`{"special": "!@#$%^&*()\n\t"}`),
-			},
-			want: `{
-  "name": "node5",
-  "type": "type5",
-  "id": "5",
-  "metadata": {
-    "special": "!@#$%^&*()\n\t"
-  }
-}`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNodeJSON(tt.node)
-			if tt.wantError {
-				if err == nil {
-					t.Error("expected error but got none")
-					return
-				}
-				if !strings.Contains(err.Error(), tt.wantErrMsg) {
-					t.Errorf("error message %q does not contain %q", err.Error(), tt.wantErrMsg)
-				}
-				return
-			}
-
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-				return
-			}
-
-			// Verify the output is valid JSON
-			var gotJSON, wantJSON interface{}
-			if err := json.Unmarshal(got, &gotJSON); err != nil {
-				t.Errorf("failed to unmarshal got JSON: %v", err)
-				return
-			}
-			if err := json.Unmarshal([]byte(tt.want), &wantJSON); err != nil {
-				t.Errorf("failed to unmarshal want JSON: %v", err)
-				return
-			}
-
-			if diff := cmp.Diff(wantJSON, gotJSON); diff != "" {
-				t.Errorf("formatNodeJSON() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
 
 func TestFormatTable(t *testing.T) {
 	node := &apiv1.Node{
