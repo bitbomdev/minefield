@@ -2,7 +2,6 @@ package getMetadata
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 	"strconv"
 
 	"connectrpc.com/connect"
+	"github.com/bitbomdev/minefield/cmd/helpers"
 	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
 	"github.com/olekukonko/tablewriter"
@@ -119,7 +119,7 @@ func (o *options) formatAndDisplayOutput(cmd *cobra.Command, node *apiv1.Node) e
 // handleJSONOutput processes the node data into JSON format and either writes it
 // to a file or displays it to the command output.
 func (o *options) handleJSONOutput(cmd *cobra.Command, node *apiv1.Node) error {
-	jsonOutput, err := formatNodeJSON(node)
+	jsonOutput, err := helpers.FormatNodeJSON([]*apiv1.Node{node})
 	if err != nil {
 		return fmt.Errorf("failed to format node as JSON: %v", err)
 	}
@@ -133,30 +133,6 @@ func (o *options) handleJSONOutput(cmd *cobra.Command, node *apiv1.Node) error {
 
 	cmd.Println(string(jsonOutput))
 	return nil
-}
-
-// formatNodeJSON converts a node into a JSON formatted byte slice.
-// It handles the conversion of metadata and ensures proper formatting of all fields.
-func formatNodeJSON(node *apiv1.Node) ([]byte, error) {
-	if node == nil {
-		return nil, fmt.Errorf("node cannot be nil")
-	}
-
-	var metadata map[string]interface{}
-	if len(node.Metadata) > 0 {
-		if err := json.Unmarshal(node.Metadata, &metadata); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal metadata for node %s: %w", node.Name, err)
-		}
-	}
-
-	output := nodeOutput{
-		Name:     node.Name,
-		Type:     node.Type,
-		ID:       strconv.FormatUint(uint64(node.Id), 10),
-		Metadata: metadata,
-	}
-
-	return json.MarshalIndent(output, "", "  ")
 }
 
 // formatTable writes the node information in a tabular format to the provided writer.
