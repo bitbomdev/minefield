@@ -64,6 +64,18 @@ message GetNodesByGlobResponse {
   repeated Node nodes = 1;
 }
 
+message IngestSBOMRequest {
+  bytes sbom = 1;
+}
+
+message IngestVulnerabilityRequest {
+  bytes vulnerability = 1;
+}
+
+message IngestScorecardRequest {
+  bytes scorecard = 1;
+}
+
 message HealthCheckResponse {
   string status = 1;
 }
@@ -86,6 +98,12 @@ service GraphService {
   rpc GetNode(GetNodeRequest) returns (GetNodeResponse) {}
   rpc GetNodesByGlob(GetNodesByGlobRequest) returns (GetNodesByGlobResponse) {}
   rpc GetNodeByName(GetNodeByNameRequest) returns (GetNodeByNameResponse) {}
+}
+
+service IngestService {
+  rpc IngestSBOM(IngestSBOMRequest) returns (google.protobuf.Empty) {}
+  rpc IngestVulnerability(IngestVulnerabilityRequest) returns (google.protobuf.Empty) {}
+  rpc IngestScorecard(IngestScorecardRequest) returns (google.protobuf.Empty) {}
 }
 
 service HealthService {

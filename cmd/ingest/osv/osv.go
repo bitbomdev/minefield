@@ -1,8 +1,13 @@
 package osv
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 
+	"connectrpc.com/connect"
+	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
+	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
 	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/bitbomdev/minefield/pkg/tools"
 	"github.com/bitbomdev/minefield/pkg/tools/ingest"
@@ -11,11 +16,25 @@ import (
 
 type options struct {
 	storage graph.Storage
+	addr  string // Address of the minefield server
+
+	ingestServiceClient apiv1connect.IngestServiceClient
 }
 
-func (o *options) AddFlags(_ *cobra.Command) {}
+const (
+	DefaultAddr = "http://localhost:8089" // Default address of the minefield server
+)
 
+func (o *options) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&o.addr, "addr", DefaultAddr, "Address of the minefield server")
+}
 func (o *options) Run(_ *cobra.Command, args []string) error {
+	if o.ingestServiceClient == nil {
+		o.ingestServiceClient = apiv1connect.NewIngestServiceClient(
+			http.DefaultClient,
+			o.addr,
+		)
+	}
 	vulnsPath := args[0]
 	// Ingest vulnerabilities
 	result, err := ingest.LoadDataFromPath(o.storage, vulnsPath)
@@ -23,8 +42,11 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load vulnerabilities: %w", err)
 	}
 	for index, data := range result {
-		if err := ingest.Vulnerabilities(o.storage, data.Data); err != nil {
-			return fmt.Errorf("failed to graph vuln data: %w", err)
+		req := connect.NewRequest(&apiv1.IngestVulnerabilityRequest{
+			Vulnerability: data.Data,
+		})
+		if _, err := o.ingestServiceClient.IngestVulnerability(context.Background(), req); err != nil {
+			return fmt.Errorf("failed to ingest vulnerabilities: %w", err)
 		}
 		// Clear the line by overwriting with spaces
 		fmt.Printf("\r\033[1;36m%-80s\033[0m", " ")

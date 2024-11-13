@@ -10,6 +10,7 @@ import (
 	"connectrpc.com/connect"
 	service "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/bitbomdev/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/tools/ingest"
 	"github.com/goccy/go-json"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -288,6 +289,34 @@ func (s *Service) Query(ctx context.Context, req *connect.Request[service.QueryR
 	return res, nil
 }
 
+func (s *Service) Check(ctx context.Context, req *connect.Request[emptypb.Empty]) (*connect.Response[service.HealthCheckResponse], error) {
+	return connect.NewResponse(&service.HealthCheckResponse{Status: "ok"}), nil
+}
+
+func (s *Service) IngestSBOM(ctx context.Context, req *connect.Request[service.IngestSBOMRequest]) (*connect.Response[emptypb.Empty], error) {
+	err := ingest.SBOM(s.storage, req.Msg.Sbom)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+func (s *Service) IngestVulnerability(ctx context.Context, req *connect.Request[service.IngestVulnerabilityRequest]) (*connect.Response[emptypb.Empty], error) {
+	err := ingest.Vulnerabilities(s.storage, req.Msg.Vulnerability)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+func (s *Service) IngestScorecard(ctx context.Context, req *connect.Request[service.IngestScorecardRequest]) (*connect.Response[emptypb.Empty], error) {
+	err := ingest.Scorecards(s.storage, req.Msg.Scorecard)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
 type queryHeap []*Query
 
 func (h queryHeap) Len() int { return len(h) }
@@ -305,8 +334,4 @@ func (h *queryHeap) Pop() interface{} {
 	x := old[n-1]
 	*h = old[0 : n-1]
 	return x
-}
-
-func (s *Service) Check(ctx context.Context, req *connect.Request[emptypb.Empty]) (*connect.Response[service.HealthCheckResponse], error) {
-	return connect.NewResponse(&service.HealthCheckResponse{Status: "ok"}), nil
 }
