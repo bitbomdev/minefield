@@ -57,6 +57,9 @@ func FormatCustomQueriesJSON(queries []*v1.Query) ([]byte, error) {
 
 	outputs := make([]nodeOutput, 0, len(queries))
 	for _, query := range queries {
+		if query.Node == nil {
+			return nil, fmt.Errorf("node cannot be nil for query")
+		}
 		var metadata map[string]interface{}
 		if len(query.Node.Metadata) > 0 {
 			if err := json.Unmarshal(query.Node.Metadata, &metadata); err != nil {
