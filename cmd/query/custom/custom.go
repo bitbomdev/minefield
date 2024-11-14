@@ -1,157 +1,133 @@
 package custom
 
 import (
-	"bufio"
 	"fmt"
+	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
 	"connectrpc.com/connect"
-	"github.com/RoaringBitmap/roaring"
 	"github.com/bitbomdev/minefield/cmd/helpers"
 	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
-	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
+// options holds the command-line options.
 type options struct {
-	storage        graph.Storage
-	visualize      bool
-	visualizerAddr string
-	maxOutput      int
-	showInfo       bool
-	saveQuery      string
+	maxOutput          int
+	showInfo           bool
+	saveQuery          string
+	addr               string
+	output             string
+	queryServiceClient apiv1connect.QueryServiceClient
 }
 
+// AddFlags adds command-line flags to the provided cobra command.
 func (o *options) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().IntVar(&o.maxOutput, "max-getMetadata", 10, "max getMetadata length")
-	cmd.Flags().BoolVar(&o.visualize, "visualize", false, "visualize the query")
-	cmd.Flags().StringVar(&o.visualizerAddr, "addr", "8081", "address to run the visualizer on")
+	cmd.Flags().IntVar(&o.maxOutput, "max-output", 10, "maximum number of results to display")
 	cmd.Flags().BoolVar(&o.showInfo, "show-info", true, "display the info column")
-	cmd.Flags().StringVar(&o.saveQuery, "save-query", "", "save the query to a specific file")
+	cmd.Flags().StringVar(&o.addr, "addr", "http://localhost:8089", "address of the minefield server")
+	cmd.Flags().StringVar(&o.output, "output", "table", "output format (table or json)")
 }
 
+// Run executes the custom command with the provided arguments.
 func (o *options) Run(cmd *cobra.Command, args []string) error {
 	script := strings.Join(args, " ")
-
 	if strings.TrimSpace(script) == "" {
 		return fmt.Errorf("script cannot be empty")
 	}
-	httpClient := &http.Client{}
-	addr := os.Getenv("BITBOMDEV_ADDR")
-	if addr == "" {
-		addr = "http://localhost:8089"
+
+	// Initialize client if not injected (for testing)
+	if o.queryServiceClient == nil {
+		o.queryServiceClient = apiv1connect.NewQueryServiceClient(
+			http.DefaultClient,
+			o.addr,
+			connect.WithGRPC(),
+			connect.WithSendGzip(),
+		)
 	}
-	client := apiv1connect.NewQueryServiceClient(httpClient, addr)
 
-	// Create a new context
 	ctx := cmd.Context()
-
-	// Create a new QueryRequest
 	req := connect.NewRequest(&apiv1.QueryRequest{
 		Script: script,
 	})
 
-	// Make the Query request
-	res, err := client.Query(ctx, req)
+	res, err := o.queryServiceClient.Query(ctx, req)
 	if err != nil {
 		return fmt.Errorf("query failed: %v", err)
 	}
 
-	// Initialize the table
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAutoWrapText(false)
-	table.SetRowLine(true)
+	if len(res.Msg.Nodes) == 0 {
+		return fmt.Errorf("no nodes found for script: %s", script)
+	}
 
-	// Dynamically set the header based on the showInfo flag
+	switch o.output {
+	case "json":
+		jsonOutput, err := helpers.FormatNodeJSON(res.Msg.Nodes)
+		if err != nil {
+			return fmt.Errorf("failed to format nodes as JSON: %w", err)
+		}
+		cmd.Println(string(jsonOutput))
+		return nil
+	case "table":
+		return formatTable(cmd.OutOrStdout(), res.Msg.Nodes, o.maxOutput, o.showInfo)
+	default:
+		return fmt.Errorf("unknown output format: %s", o.output)
+	}
+}
+
+// formatTable formats the nodes into a table and writes it to the provided writer.
+func formatTable(w io.Writer, nodes []*apiv1.Node, maxOutput int, showInfo bool) error {
+	table := tablewriter.NewWriter(w)
 	headers := []string{"Name", "Type", "ID"}
-	if o.showInfo {
+	if showInfo {
 		headers = append(headers, "Info")
 	}
 	table.SetHeader(headers)
+	table.SetAutoWrapText(false)
+	table.SetRowLine(true)
 
-	// Build the rows
 	count := 0
-	var f *os.File
-	if o.saveQuery != "" {
-		f, err = os.Create(o.saveQuery)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-	}
-	for _, node := range res.Msg.Nodes {
-		if count >= o.maxOutput {
+	for _, node := range nodes {
+		if count >= maxOutput {
 			break
 		}
 
-		// Build the common row data
 		row := []string{
 			node.Name,
 			node.Type,
-			strconv.Itoa(int(node.Id)),
+			strconv.FormatUint(uint64(node.Id), 10),
 		}
 
-		// If showInfo is true, compute the additionalInfo and append it
-		if o.showInfo {
+		if showInfo {
 			additionalInfo := helpers.ComputeAdditionalInfo(node)
 			row = append(row, additionalInfo)
 		}
 
-		// Append the row to the table
 		table.Append(row)
-
-		if o.saveQuery != "" {
-			f.WriteString(node.Name + "\n")
-		}
 		count++
 	}
 
-	// Render the table
 	table.Render()
-
-	// Visualization logic (remaining the same)
-	if o.visualize {
-		server := &http.Server{
-			Addr: ":" + o.visualizerAddr,
-		}
-
-		ids := roaring.New()
-
-		for _, node := range res.Msg.Nodes {
-			ids.Add(node.Id)
-		}
-
-		shutdown, err := graph.RunGraphVisualizer(o.storage, ids, script, server)
-		if err != nil {
-			return err
-		}
-		defer shutdown()
-
-		fmt.Println("Press Enter to stop the server and continue...")
-		if _, err := bufio.NewReader(os.Stdin).ReadBytes('\n'); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-func New(storage graph.Storage) *cobra.Command {
-	o := &options{
-		storage: storage,
-	}
+// New creates and returns a new Cobra command for executing custom query scripts.
+func New() *cobra.Command {
+	o := &options{}
+
 	cmd := &cobra.Command{
 		Use:               "custom [script]",
-		Short:             "Query dependencies and dependents of a project",
-		Args:              cobra.MinimumNArgs(1),
+		Short:             "Execute a custom query script",
+		Long:              "Execute a custom query script to perform tailored queries against the project's dependencies and dependents.",
+		Args:              cobra.ExactArgs(1),
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}
+
 	o.AddFlags(cmd)
 
 	return cmd

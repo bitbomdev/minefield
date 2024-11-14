@@ -4,19 +4,21 @@ import (
 	"github.com/bitbomdev/minefield/cmd/query/custom"
 	"github.com/bitbomdev/minefield/cmd/query/getMetadata"
 	"github.com/bitbomdev/minefield/cmd/query/globsearch"
-	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
 
-func New(storage graph.Storage) *cobra.Command {
+func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "query",
-		Short:             "Query dependencies and dependents of a project",
+		Use:   "query",
+		Short: "Query dependencies and dependents of a project",
+		Long:  "A comprehensive set of commands to query dependencies and dependents of a project, enabling detailed data retrieval and analysis.",
 		DisableAutoGenTag: true,
 	}
 
-	cmd.AddCommand(custom.New(storage))
+	// Add subcommands
+	cmd.AddCommand(custom.New())
 	cmd.AddCommand(getMetadata.New())
 	cmd.AddCommand(globsearch.New())
+
 	return cmd
 }
