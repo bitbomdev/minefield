@@ -19,7 +19,7 @@ require (
 	github.com/zeebo/assert v1.3.1
 	go.uber.org/fx v1.23.0
 	golang.org/x/net v0.31.0
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.35.2
 )
 
 require (
