@@ -12,7 +12,7 @@ func TestVulnerabilities(t *testing.T) {
 	vulnsDir := "../../../testdata/osv-vulns"
 	sbomDir := "../../../testdata/osv-sboms"
 
-	result, err := LoadDataFromPath(storage, sbomDir)
+	result, err := LoadDataFromPath(sbomDir)
 	if err != nil {
 		t.Fatalf("Failed to ingest SBOM: %v", err)
 	}
@@ -33,7 +33,7 @@ func TestVulnerabilities(t *testing.T) {
 
 	numberOfNodes := len(keys)
 
-	result, err = LoadDataFromPath(storage, vulnsDir)
+	result, err = LoadDataFromPath(vulnsDir)
 	if err != nil {
 		t.Fatalf("Failed to load vulnerabilities from directory %s: %v", vulnsDir, err)
 	}

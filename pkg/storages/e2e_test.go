@@ -20,14 +20,14 @@ func TestParseAndExecute_E2E(t *testing.T) {
 	vulnsPath := filepath.Join("..", "..", "testdata", "osv-vulns")
 
 	// Ingest data from the folder
-	result, err := ingest.LoadDataFromPath(redisStorage, sbomPath)
+	result, err := ingest.LoadDataFromPath(sbomPath)
 	assert.NoError(t, err)
 	for _, data := range result {
 		if err := ingest.SBOM(redisStorage, data.Data); err != nil {
 			t.Fatalf("Failed to load SBOM from data: %v", err)
 		}
 	}
-	result, err = ingest.LoadDataFromPath(redisStorage, vulnsPath)
+	result, err = ingest.LoadDataFromPath(vulnsPath)
 	assert.NoError(t, err)
 	for _, data := range result {
 		if err := ingest.Vulnerabilities(redisStorage, data.Data); err != nil {

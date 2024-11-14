@@ -32,7 +32,7 @@ func New(storage graph.Storage) *cobra.Command {
 	o.AddFlags(cmd)
 
 	cmd.AddCommand(query.New())
-	cmd.AddCommand(ingest.New(storage))
+	cmd.AddCommand(ingest.New())
 	cmd.AddCommand(cache.New())
 	cmd.AddCommand(leaderboard.New())
 	cmd.AddCommand(server.New(storage))
