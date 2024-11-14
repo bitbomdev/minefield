@@ -70,22 +70,29 @@ func TestGetNodesByGlob(t *testing.T) {
 	assert.Len(t, resp.Msg.Nodes, 0)
 }
 
-func TestQueriesAndCache(t *testing.T) {
+func TestQueriesIngestAndCache(t *testing.T) {
 	s := setupService()
+
 	result, err := ingest.LoadDataFromPath(s.storage, "../../testdata/osv-sboms/google_agi.sbom.json")
 	require.NoError(t, err)
 	for _, data := range result {
-		err = ingest.SBOM(s.storage, data.Data)
+		sbomReq := connect.NewRequest(&service.IngestSBOMRequest{
+			Sbom: data.Data,
+		})
+		_, err = s.IngestSBOM(context.Background(), sbomReq)
 		require.NoError(t, err)
 	}
 
 	content, err := os.ReadFile("../../testdata/osv-vulns/GHSA-cx63-2mw6-8hw5.json")
 	require.NoError(t, err)
-	err = ingest.Vulnerabilities(s.storage, content)
+	vulnReq := connect.NewRequest(&service.IngestVulnerabilityRequest{
+		Vulnerability: content,
+	})
+	_, err = s.IngestVulnerability(context.Background(), vulnReq)
 	require.NoError(t, err)
 	// Check if the node with name "pkg:pypi/astroid@2.11.7" exists
-	req := connect.NewRequest(&service.GetNodeByNameRequest{Name: "pkg:pypi/astroid@2.11.7"})
-	resp, err := s.GetNodeByName(context.Background(), req)
+	graphReq := connect.NewRequest(&service.GetNodeByNameRequest{Name: "pkg:pypi/astroid@2.11.7"})
+	resp, err := s.GetNodeByName(context.Background(), graphReq)
 	require.NoError(t, err)
 	assert.NotNil(t, resp.Msg.Node)
 
@@ -149,6 +156,29 @@ func TestQuery(t *testing.T) {
 	_, err = s.Query(context.Background(), nil)
 	assert.Error(t, err)
 }
+
+func TestIngestSBOM(t *testing.T) {
+	s := setupService()
+	content, err := os.ReadFile("../../testdata/osv-sboms/google_agi.sbom.json")
+	require.NoError(t, err)
+	req := connect.NewRequest(&service.IngestSBOMRequest{
+		Sbom: content,
+	})
+	_, err = s.IngestSBOM(context.Background(), req)
+	require.NoError(t, err)
+}
+
+func TestIngestVulnerability(t *testing.T) {
+	s := setupService()
+	content, err := os.ReadFile("../../testdata/osv-vulns/GHSA-cx63-2mw6-8hw5.json")
+	require.NoError(t, err)
+	req := connect.NewRequest(&service.IngestVulnerabilityRequest{
+		Vulnerability: content,
+	})
+	_, err = s.IngestVulnerability(context.Background(), req)
+	require.NoError(t, err)
+}
+
 func TestHealthCheck(t *testing.T) {
 	s := setupService()
 	req := connect.NewRequest(&emptypb.Empty{})
