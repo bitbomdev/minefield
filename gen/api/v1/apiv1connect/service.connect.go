@@ -30,6 +30,8 @@ const (
 	LeaderboardServiceName = "api.v1.LeaderboardService"
 	// GraphServiceName is the fully-qualified name of the GraphService service.
 	GraphServiceName = "api.v1.GraphService"
+	// IngestServiceName is the fully-qualified name of the IngestService service.
+	IngestServiceName = "api.v1.IngestService"
 	// HealthServiceName is the fully-qualified name of the HealthService service.
 	HealthServiceName = "api.v1.HealthService"
 )
@@ -62,6 +64,15 @@ const (
 	// GraphServiceGetNodeByNameProcedure is the fully-qualified name of the GraphService's
 	// GetNodeByName RPC.
 	GraphServiceGetNodeByNameProcedure = "/api.v1.GraphService/GetNodeByName"
+	// IngestServiceIngestSBOMProcedure is the fully-qualified name of the IngestService's IngestSBOM
+	// RPC.
+	IngestServiceIngestSBOMProcedure = "/api.v1.IngestService/IngestSBOM"
+	// IngestServiceIngestVulnerabilityProcedure is the fully-qualified name of the IngestService's
+	// IngestVulnerability RPC.
+	IngestServiceIngestVulnerabilityProcedure = "/api.v1.IngestService/IngestVulnerability"
+	// IngestServiceIngestScorecardProcedure is the fully-qualified name of the IngestService's
+	// IngestScorecard RPC.
+	IngestServiceIngestScorecardProcedure = "/api.v1.IngestService/IngestScorecard"
 	// HealthServiceCheckProcedure is the fully-qualified name of the HealthService's Check RPC.
 	HealthServiceCheckProcedure = "/api.v1.HealthService/Check"
 )
@@ -80,6 +91,10 @@ var (
 	graphServiceGetNodeMethodDescriptor                 = graphServiceServiceDescriptor.Methods().ByName("GetNode")
 	graphServiceGetNodesByGlobMethodDescriptor          = graphServiceServiceDescriptor.Methods().ByName("GetNodesByGlob")
 	graphServiceGetNodeByNameMethodDescriptor           = graphServiceServiceDescriptor.Methods().ByName("GetNodeByName")
+	ingestServiceServiceDescriptor                      = v1.File_api_v1_service_proto.Services().ByName("IngestService")
+	ingestServiceIngestSBOMMethodDescriptor             = ingestServiceServiceDescriptor.Methods().ByName("IngestSBOM")
+	ingestServiceIngestVulnerabilityMethodDescriptor    = ingestServiceServiceDescriptor.Methods().ByName("IngestVulnerability")
+	ingestServiceIngestScorecardMethodDescriptor        = ingestServiceServiceDescriptor.Methods().ByName("IngestScorecard")
 	healthServiceServiceDescriptor                      = v1.File_api_v1_service_proto.Services().ByName("HealthService")
 	healthServiceCheckMethodDescriptor                  = healthServiceServiceDescriptor.Methods().ByName("Check")
 )
@@ -458,6 +473,126 @@ func (UnimplementedGraphServiceHandler) GetNodesByGlob(context.Context, *connect
 
 func (UnimplementedGraphServiceHandler) GetNodeByName(context.Context, *connect.Request[v1.GetNodeByNameRequest]) (*connect.Response[v1.GetNodeByNameResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.GraphService.GetNodeByName is not implemented"))
+}
+
+// IngestServiceClient is a client for the api.v1.IngestService service.
+type IngestServiceClient interface {
+	IngestSBOM(context.Context, *connect.Request[v1.IngestSBOMRequest]) (*connect.Response[emptypb.Empty], error)
+	IngestVulnerability(context.Context, *connect.Request[v1.IngestVulnerabilityRequest]) (*connect.Response[emptypb.Empty], error)
+	IngestScorecard(context.Context, *connect.Request[v1.IngestScorecardRequest]) (*connect.Response[emptypb.Empty], error)
+}
+
+// NewIngestServiceClient constructs a client for the api.v1.IngestService service. By default, it
+// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
+// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
+// connect.WithGRPCWeb() options.
+//
+// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
+// http://api.acme.com or https://acme.com/grpc).
+func NewIngestServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) IngestServiceClient {
+	baseURL = strings.TrimRight(baseURL, "/")
+	return &ingestServiceClient{
+		ingestSBOM: connect.NewClient[v1.IngestSBOMRequest, emptypb.Empty](
+			httpClient,
+			baseURL+IngestServiceIngestSBOMProcedure,
+			connect.WithSchema(ingestServiceIngestSBOMMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		ingestVulnerability: connect.NewClient[v1.IngestVulnerabilityRequest, emptypb.Empty](
+			httpClient,
+			baseURL+IngestServiceIngestVulnerabilityProcedure,
+			connect.WithSchema(ingestServiceIngestVulnerabilityMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		ingestScorecard: connect.NewClient[v1.IngestScorecardRequest, emptypb.Empty](
+			httpClient,
+			baseURL+IngestServiceIngestScorecardProcedure,
+			connect.WithSchema(ingestServiceIngestScorecardMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+	}
+}
+
+// ingestServiceClient implements IngestServiceClient.
+type ingestServiceClient struct {
+	ingestSBOM          *connect.Client[v1.IngestSBOMRequest, emptypb.Empty]
+	ingestVulnerability *connect.Client[v1.IngestVulnerabilityRequest, emptypb.Empty]
+	ingestScorecard     *connect.Client[v1.IngestScorecardRequest, emptypb.Empty]
+}
+
+// IngestSBOM calls api.v1.IngestService.IngestSBOM.
+func (c *ingestServiceClient) IngestSBOM(ctx context.Context, req *connect.Request[v1.IngestSBOMRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.ingestSBOM.CallUnary(ctx, req)
+}
+
+// IngestVulnerability calls api.v1.IngestService.IngestVulnerability.
+func (c *ingestServiceClient) IngestVulnerability(ctx context.Context, req *connect.Request[v1.IngestVulnerabilityRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.ingestVulnerability.CallUnary(ctx, req)
+}
+
+// IngestScorecard calls api.v1.IngestService.IngestScorecard.
+func (c *ingestServiceClient) IngestScorecard(ctx context.Context, req *connect.Request[v1.IngestScorecardRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.ingestScorecard.CallUnary(ctx, req)
+}
+
+// IngestServiceHandler is an implementation of the api.v1.IngestService service.
+type IngestServiceHandler interface {
+	IngestSBOM(context.Context, *connect.Request[v1.IngestSBOMRequest]) (*connect.Response[emptypb.Empty], error)
+	IngestVulnerability(context.Context, *connect.Request[v1.IngestVulnerabilityRequest]) (*connect.Response[emptypb.Empty], error)
+	IngestScorecard(context.Context, *connect.Request[v1.IngestScorecardRequest]) (*connect.Response[emptypb.Empty], error)
+}
+
+// NewIngestServiceHandler builds an HTTP handler from the service implementation. It returns the
+// path on which to mount the handler and the handler itself.
+//
+// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
+// and JSON codecs. They also support gzip compression.
+func NewIngestServiceHandler(svc IngestServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	ingestServiceIngestSBOMHandler := connect.NewUnaryHandler(
+		IngestServiceIngestSBOMProcedure,
+		svc.IngestSBOM,
+		connect.WithSchema(ingestServiceIngestSBOMMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	ingestServiceIngestVulnerabilityHandler := connect.NewUnaryHandler(
+		IngestServiceIngestVulnerabilityProcedure,
+		svc.IngestVulnerability,
+		connect.WithSchema(ingestServiceIngestVulnerabilityMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	ingestServiceIngestScorecardHandler := connect.NewUnaryHandler(
+		IngestServiceIngestScorecardProcedure,
+		svc.IngestScorecard,
+		connect.WithSchema(ingestServiceIngestScorecardMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/api.v1.IngestService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case IngestServiceIngestSBOMProcedure:
+			ingestServiceIngestSBOMHandler.ServeHTTP(w, r)
+		case IngestServiceIngestVulnerabilityProcedure:
+			ingestServiceIngestVulnerabilityHandler.ServeHTTP(w, r)
+		case IngestServiceIngestScorecardProcedure:
+			ingestServiceIngestScorecardHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// UnimplementedIngestServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedIngestServiceHandler struct{}
+
+func (UnimplementedIngestServiceHandler) IngestSBOM(context.Context, *connect.Request[v1.IngestSBOMRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.IngestService.IngestSBOM is not implemented"))
+}
+
+func (UnimplementedIngestServiceHandler) IngestVulnerability(context.Context, *connect.Request[v1.IngestVulnerabilityRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.IngestService.IngestVulnerability is not implemented"))
+}
+
+func (UnimplementedIngestServiceHandler) IngestScorecard(context.Context, *connect.Request[v1.IngestScorecardRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.IngestService.IngestScorecard is not implemented"))
 }
 
 // HealthServiceClient is a client for the api.v1.HealthService service.

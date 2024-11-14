@@ -45,6 +45,7 @@ type ScorecardResult struct {
 
 // Scorecard processes the Scorecard JSON data and stores it in the graph.
 func Scorecards(storage graph.Storage, data []byte) error {
+
 	if len(data) == 0 {
 		return fmt.Errorf("data is empty")
 	}

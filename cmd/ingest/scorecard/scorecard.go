@@ -1,8 +1,13 @@
 package scorecard
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 
+	"connectrpc.com/connect"
+	"github.com/bitbomdev/minefield/gen/api/v1"
+	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
 	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/bitbomdev/minefield/pkg/tools"
 	"github.com/bitbomdev/minefield/pkg/tools/ingest"
@@ -11,11 +16,26 @@ import (
 
 type options struct {
 	storage graph.Storage
+	addr  string // Address of the minefield server
+
+	ingestServiceClient apiv1connect.IngestServiceClient
 }
 
-func (o *options) AddFlags(_ *cobra.Command) {}
+const (
+	DefaultAddr = "http://localhost:8089" // Default address of the minefield server
+)
+
+func (o *options) AddFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&o.addr, "addr", DefaultAddr, "Address of the minefield server")
+}
 
 func (o *options) Run(_ *cobra.Command, args []string) error {
+	if o.ingestServiceClient == nil {
+		o.ingestServiceClient = apiv1connect.NewIngestServiceClient(
+			http.DefaultClient,
+			o.addr,
+		)
+	}
 	scorecardPath := args[0]
 
 	result, err := ingest.LoadDataFromPath(o.storage, scorecardPath)
@@ -24,7 +44,10 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	}
 
 	for index, data := range result {
-		if err := ingest.Scorecards(o.storage, data.Data); err != nil {
+		req := connect.NewRequest(&apiv1.IngestScorecardRequest{
+			Scorecard: data.Data,
+		})
+		if _, err := o.ingestServiceClient.IngestScorecard(context.Background(), req); err != nil {
 			return fmt.Errorf("failed to ingest Scorecard: %w", err)
 		}
 		// Clear the line by overwriting with spaces
