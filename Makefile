@@ -38,7 +38,7 @@ check-wire:
 	@command -v wire >/dev/null 2>&1 || { echo >&2 "wire is not installed. Please install wire. go install github.com/google/wire/cmd/wire@latest"; exit 1; }
 
 wire: check-wire
-	cd cmd/server && wire
+	cd cmd/server && wire || { echo "Wire generation failed in cmd/server"; exit 1; }
 
 all: build test docker-build go-mod-tidy git-porcelain wire
 

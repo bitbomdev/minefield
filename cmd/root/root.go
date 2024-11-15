@@ -23,7 +23,7 @@ func (o *Options) AddFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&o.PprofAddr, "pprof-addr", "localhost:6060", "Address for pprof server")
 }
 
-func New() (*cobra.Command, error) {
+func New() *cobra.Command {
 	o := &Options{}
 	rootCmd := &cobra.Command{
 		Use:               "minefield",
@@ -55,5 +55,5 @@ func New() (*cobra.Command, error) {
 	rootCmd.AddCommand(leaderboard.New())
 	rootCmd.AddCommand(server.New())
 
-	return rootCmd, nil
+	return rootCmd
 }
