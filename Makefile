@@ -40,6 +40,6 @@ check-wire:
 wire: check-wire
 	cd cmd/server && wire || { echo "Wire generation failed in cmd/server"; exit 1; }
 
-all: build test docker-build go-mod-tidy git-porcelain wire
+all: wire build test docker-build go-mod-tidy git-porcelain
 
 .PHONY: test test-e2e build clean clean-redis docker-up docker-down docker-logs docker-build all wire
