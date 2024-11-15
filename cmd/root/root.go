@@ -13,18 +13,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type Options struct {
+type options struct {
 	PprofAddr    string
 	PprofEnabled bool
 }
 
-func (o *Options) AddFlags(cmd *cobra.Command) {
+func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolVar(&o.PprofEnabled, "pprof", false, "Enable pprof server")
 	cmd.PersistentFlags().StringVar(&o.PprofAddr, "pprof-addr", "localhost:6060", "Address for pprof server")
 }
 
 func New() *cobra.Command {
-	o := &Options{}
+	o := &options{}
 	rootCmd := &cobra.Command{
 		Use:               "minefield",
 		Short:             "Graphing SBOM's with the power of roaring bitmaps",
