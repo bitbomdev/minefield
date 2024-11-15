@@ -1,41 +1,50 @@
 package root
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/bitbomdev/minefield/cmd/cache"
 	"github.com/bitbomdev/minefield/cmd/ingest"
 	"github.com/bitbomdev/minefield/cmd/leaderboard"
 	"github.com/bitbomdev/minefield/cmd/query"
 	"github.com/bitbomdev/minefield/cmd/server"
-	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
 
-type options struct {
-	pprofAddr    string
-	pprofEnabled bool
+type Options struct {
+	PprofAddr    string
+	PprofEnabled bool
 }
 
-func (o *options) AddFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().BoolVar(&o.pprofEnabled, "pprof", false, "enable pprof server")
-	cmd.PersistentFlags().StringVar(&o.pprofAddr, "pprof-addr", "localhost:6060", "address for pprof server")
+func (o *Options) AddFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().BoolVar(&o.PprofEnabled, "pprof", false, "Enable pprof server")
+	cmd.PersistentFlags().StringVar(&o.PprofAddr, "pprof-addr", "localhost:6060", "Address for pprof server")
 }
 
-func New(storage graph.Storage) *cobra.Command {
-	o := &options{}
-	cmd := &cobra.Command{
+func New() (*cobra.Command, error) {
+	o := &Options{}
+	rootCmd := &cobra.Command{
 		Use:               "minefield",
-		Short:             "graphing SBOM's with the power of roaring bitmaps",
+		Short:             "Graphing SBOM's with the power of roaring bitmaps",
 		SilenceUsage:      true,
 		DisableAutoGenTag: true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			o.AddFlags(cmd)
+			if o.PprofEnabled {
+				go func() {
+					fmt.Printf("Starting pprof server on %s\n", o.PprofAddr)
+					http.ListenAndServe(o.PprofAddr, nil)
+				}()
+			}
+		},
 	}
 
-	o.AddFlags(cmd)
+	rootCmd.AddCommand(query.New())
+	rootCmd.AddCommand(ingest.New())
+	rootCmd.AddCommand(cache.New())
+	rootCmd.AddCommand(leaderboard.New())
+	rootCmd.AddCommand(server.New())
 
-	cmd.AddCommand(query.New())
-	cmd.AddCommand(ingest.New())
-	cmd.AddCommand(cache.New())
-	cmd.AddCommand(leaderboard.New())
-	cmd.AddCommand(server.New(storage))
-
-	return cmd
+	return rootCmd, nil
 }

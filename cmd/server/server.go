@@ -14,6 +14,7 @@ import (
 	service "github.com/bitbomdev/minefield/api/v1"
 	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
 	"github.com/bitbomdev/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/storages"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -23,17 +24,42 @@ type options struct {
 	storage     graph.Storage
 	concurrency int32
 	addr        string
+	StorageType string
+	StorageAddr string
 }
 
+const (
+	defaultConcurrency = 10
+	defaultAddr        = "localhost:8089"
+	redisStorageType   = "redis"
+)
+
 func (o *options) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().Int32Var(&o.concurrency, "concurrency", 10, "Maximum number of concurrent operations for leaderboard operations")
-	cmd.Flags().StringVar(&o.addr, "addr", "localhost:8089", "Network address and port for the server (e.g. localhost:8089)")
+	cmd.Flags().Int32Var(&o.concurrency, "concurrency", defaultConcurrency, "Maximum number of concurrent operations for leaderboard operations")
+	cmd.Flags().StringVar(&o.addr, "addr", defaultAddr, "Network address and port for the server (e.g. localhost:8089)")
+	cmd.Flags().StringVar(&o.StorageType, "storage-type", redisStorageType, "Type of storage to use (e.g., redis, sql)")
+	cmd.Flags().StringVar(&o.StorageAddr, "storage-addr", "localhost:6379", "Address for storage backend")
+}
+
+func (o *options) ProvideStorage() (graph.Storage, error) {
+	switch o.StorageType {
+	case redisStorageType:
+		return storages.NewRedisStorage(o.StorageAddr)
+	default:
+		return nil, fmt.Errorf("unknown storage type: %s", o.StorageType)
+	}
 }
 
 func (o *options) Run(cmd *cobra.Command, args []string) error {
+	var err error
+	o.storage, err = o.ProvideStorage()
+	if err != nil {
+		return fmt.Errorf("failed to initialize storage: %w", err)
+	}
+
 	server, err := o.setupServer()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to setup server: %w", err)
 	}
 	return o.startServer(server)
 }
@@ -45,7 +71,7 @@ func (o *options) setupServer() (*http.Server, error) {
 
 	serviceAddr := o.addr
 	if serviceAddr == "" {
-		serviceAddr = "localhost:8089"
+		serviceAddr = defaultAddr
 	}
 
 	newService := service.NewService(o.storage, o.concurrency)
@@ -98,10 +124,8 @@ func (o *options) startServer(server *http.Server) error {
 }
 
 // New returns a new cobra command for the server.
-func New(storage graph.Storage) *cobra.Command {
-	o := &options{
-		storage: storage,
-	}
+func New() *cobra.Command {
+	o := &options{}
 	cmd := &cobra.Command{
 		Use:               "server",
 		Short:             "Start the minefield server for graph operations and queries",
@@ -110,6 +134,18 @@ func New(storage graph.Storage) *cobra.Command {
 		DisableAutoGenTag: true,
 	}
 	o.AddFlags(cmd)
-
 	return cmd
+}
+
+func NewServerCommand(storage graph.Storage, o *options) (*cobra.Command, error) {
+	o.storage = storage
+	cmd := &cobra.Command{
+		Use:               "server",
+		Short:             "Start the minefield server for graph operations and queries",
+		Args:              cobra.ExactArgs(0),
+		RunE:              o.Run,
+		DisableAutoGenTag: true,
+	}
+	o.AddFlags(cmd)
+	return cmd, nil
 }

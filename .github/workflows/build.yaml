@@ -18,6 +18,10 @@ jobs:
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v2
         with:
           go-version: '1.22.5'
+      - name: Install Wire
+        run: |
+          go install github.com/google/wire/cmd/wire@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
       - name: Build
         run: make build && make git-porcelain
 

@@ -2,7 +2,7 @@
 .DEFAULT_GOAL := all
 
 # Build target
-build:
+build: wire
 	go build -o bin/minefield main.go
 
 # Test target
@@ -40,6 +40,9 @@ go-mod-tidy:
 git-porcelain: 
 	git status --porcelain
 
-all: build test docker-build go-mod-tidy git-porcelain
+wire:
+	cd cmd/server && wire
+
+all: build test docker-build go-mod-tidy git-porcelain wire
 
 .PHONY: test test-e2e build clean clean-redis docker-up docker-down docker-logs docker-build all buf-generate install-buf
