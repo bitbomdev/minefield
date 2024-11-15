@@ -1,27 +1,21 @@
-# Default target
 .DEFAULT_GOAL := all
 
-# Build target
 build: wire
 	go build -o bin/minefield main.go
 
-# Test target
 test:
 	go test -v -coverprofile=coverage.out ./...
 
 test-e2e: docker-up
 	e2e=true go test -v -coverprofile=coverage.out ./...
 
-# Clean target
 clean:
 	rm -rf bin
 
-# Clean Redis data
 clean-redis:
 	docker compose exec -T redis redis-cli ping || docker compose up -d redis
 	docker compose exec -T redis redis-cli FLUSHALL
 
-# Docker targets
 docker-up: docker-down
 	docker compose up -d
 
@@ -40,9 +34,12 @@ go-mod-tidy:
 git-porcelain: 
 	git status --porcelain
 
-wire:
+check-wire:
+	@command -v wire >/dev/null 2>&1 || { echo >&2 "wire is not installed. Please install wire. go install github.com/google/wire/cmd/wire@latest"; exit 1; }
+
+wire: check-wire
 	cd cmd/server && wire
 
 all: build test docker-build go-mod-tidy git-porcelain wire
 
-.PHONY: test test-e2e build clean clean-redis docker-up docker-down docker-logs docker-build all buf-generate install-buf
+.PHONY: test test-e2e build clean clean-redis docker-up docker-down docker-logs docker-build all wire

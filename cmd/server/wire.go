@@ -9,8 +9,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const redis = "redis"
-
 func InitializeServerCommand(o *options) (*cobra.Command, error) {
 	wire.Build(
 		ProvideStorage,

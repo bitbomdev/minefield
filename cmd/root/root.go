@@ -1,6 +1,7 @@
 package root
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -32,10 +33,18 @@ func New() (*cobra.Command, error) {
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			o.AddFlags(cmd)
 			if o.PprofEnabled {
+				srv := &http.Server{Addr: o.PprofAddr}
 				go func() {
 					fmt.Printf("Starting pprof server on %s\n", o.PprofAddr)
-					http.ListenAndServe(o.PprofAddr, nil)
+					if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+						fmt.Printf("pprof server error: %v\n", err)
+					}
 				}()
+				cmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
+					if err := srv.Shutdown(context.Background()); err != nil {
+						fmt.Printf("pprof server shutdown error: %v\n", err)
+					}
+				}
 			}
 		},
 	}

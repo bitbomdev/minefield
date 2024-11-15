@@ -27,8 +27,6 @@ func InitializeServerCommand(o *options) (*cobra.Command, error) {
 
 // wire.go:
 
-const redis = "redis"
-
 func ProvideStorage(o *options) (graph.Storage, error) {
 	return o.ProvideStorage()
 }
