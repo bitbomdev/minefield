@@ -8,15 +8,13 @@ import (
 	"connectrpc.com/connect"
 	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
-	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/bitbomdev/minefield/pkg/tools"
 	"github.com/bitbomdev/minefield/pkg/tools/ingest"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	storage graph.Storage
-	addr    string // Address of the minefield server
+	addr string // Address of the minefield server
 
 	ingestServiceClient apiv1connect.IngestServiceClient
 }
@@ -38,7 +36,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	}
 	sbomPath := args[0]
 	// Ingest SBOM
-	result, err := ingest.LoadDataFromPath(o.storage, sbomPath)
+	result, err := ingest.LoadDataFromPath(sbomPath)
 	if err != nil {
 		return fmt.Errorf("failed to ingest SBOM: %w", err)
 	}
@@ -59,10 +57,8 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func New(storage graph.Storage) *cobra.Command {
-	o := &options{
-		storage: storage,
-	}
+func New() *cobra.Command {
+	o := &options{}
 	cmd := &cobra.Command{
 		Use:               "sbom [path to sbom file/dir]",
 		Short:             "Ingest an sbom into the graph ",

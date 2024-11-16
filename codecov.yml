@@ -10,6 +10,5 @@ coverage:
         threshold: 1%
 
   ignore:
-    - "cmd/**/*"
     - "gen/**/*" # generated code
     - "pkg/graph/mockGraph.go" # mockGraph is not covered

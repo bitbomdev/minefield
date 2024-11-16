@@ -6,8 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/bitbomdev/minefield/pkg/graph"
 )
 
 // LoadDataFromPath takes in a directory or file path and processes the data into the storage.
@@ -18,7 +16,7 @@ type Data struct {
 	Data []byte
 }
 
-func LoadDataFromPath(storage graph.Storage, path string) ([]Data, error) {
+func LoadDataFromPath(path string) ([]Data, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, fmt.Errorf("error accessing path %s: %w", path, err)
@@ -35,7 +33,7 @@ func LoadDataFromPath(storage graph.Storage, path string) ([]Data, error) {
 		}
 		for _, entry := range entries {
 			entryPath := filepath.Join(path, entry.Name())
-			subResult, err := LoadDataFromPath(storage, entryPath)
+			subResult, err := LoadDataFromPath(entryPath)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("failed to load data from path %s: %w", entryPath, err))
 			} else {
@@ -48,7 +46,7 @@ func LoadDataFromPath(storage graph.Storage, path string) ([]Data, error) {
 	} else {
 		switch filepath.Ext(path) {
 		case ".zip":
-			subResult, err := processZipFile(storage, path)
+			subResult, err := processZipFile(path)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("failed to process zip file %s: %w", path, err))
 			} else {
@@ -70,7 +68,7 @@ func LoadDataFromPath(storage graph.Storage, path string) ([]Data, error) {
 	return result, nil
 }
 
-func processZipFile(storage graph.Storage, filePath string) ([]Data, error) {
+func processZipFile(filePath string) ([]Data, error) {
 	r, err := zip.OpenReader(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open zip file %s: %w", filePath, err)
@@ -102,5 +100,5 @@ func processZipFile(storage graph.Storage, filePath string) ([]Data, error) {
 		}
 	}
 
-	return LoadDataFromPath(storage, tempDir)
+	return LoadDataFromPath(tempDir)
 }

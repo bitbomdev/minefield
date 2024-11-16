@@ -90,7 +90,7 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := New(tt.storage)
+			cmd := New()
 
 			assert.NotNil(t, cmd)
 			assert.Equal(t, tt.want.use, cmd.Use)

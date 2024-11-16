@@ -73,7 +73,7 @@ func TestGetNodesByGlob(t *testing.T) {
 func TestQueriesIngestAndCache(t *testing.T) {
 	s := setupService()
 
-	result, err := ingest.LoadDataFromPath(s.storage, "../../testdata/osv-sboms/google_agi.sbom.json")
+	result, err := ingest.LoadDataFromPath("../../testdata/osv-sboms/google_agi.sbom.json")
 	require.NoError(t, err)
 	for _, data := range result {
 		sbomReq := connect.NewRequest(&service.IngestSBOMRequest{

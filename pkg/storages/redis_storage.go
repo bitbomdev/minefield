@@ -14,11 +14,14 @@ type RedisStorage struct {
 	Client *redis.Client
 }
 
-func NewRedisStorage(addr string) graph.Storage {
+func NewRedisStorage(addr string) (graph.Storage, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: addr,
 	})
-	return &RedisStorage{Client: rdb}
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+	return &RedisStorage{Client: rdb}, nil
 }
 
 func (r *RedisStorage) GenerateID() (uint32, error) {

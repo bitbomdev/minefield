@@ -4,7 +4,6 @@ import (
 	"github.com/bitbomdev/minefield/cmd/ingest/osv"
 	"github.com/bitbomdev/minefield/cmd/ingest/sbom"
 	"github.com/bitbomdev/minefield/cmd/ingest/scorecard"
-	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +12,7 @@ type options struct{}
 func (o *options) AddFlags(_ *cobra.Command) {
 }
 
-func New(storage graph.Storage) *cobra.Command {
+func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "ingest",
 		Short:             "ingest metadata into the graph",
@@ -21,8 +20,8 @@ func New(storage graph.Storage) *cobra.Command {
 		DisableAutoGenTag: true,
 	}
 
-	cmd.AddCommand(osv.New(storage))
-	cmd.AddCommand(sbom.New(storage))
-	cmd.AddCommand(scorecard.New(storage))
+	cmd.AddCommand(osv.New())
+	cmd.AddCommand(sbom.New())
+	cmd.AddCommand(scorecard.New())
 	return cmd
 }

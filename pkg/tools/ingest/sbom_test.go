@@ -1,7 +1,6 @@
 package ingest
 
 import (
-
 	"os"
 	"sort"
 	"testing"
@@ -37,7 +36,7 @@ func TestIngestSBOM(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			storage := graph.NewMockStorage()
-			result, err := LoadDataFromPath(storage, test.sbomPath)
+			result, err := LoadDataFromPath(test.sbomPath)
 			if test.wantErr != (err != nil) {
 				t.Errorf("Sbom() error = %v, wantErr = %v", err, test.wantErr)
 			}
@@ -46,7 +45,7 @@ func TestIngestSBOM(t *testing.T) {
 				if err := SBOM(storage, data.Data); err != nil {
 					if test.wantErr != (err != nil) {
 						t.Errorf("Sbom() error = %v, wantErr = %v", err, test.wantErr)
-					}				
+					}
 				}
 			}
 

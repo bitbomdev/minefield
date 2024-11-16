@@ -1,41 +1,59 @@
 package root
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+
 	"github.com/bitbomdev/minefield/cmd/cache"
 	"github.com/bitbomdev/minefield/cmd/ingest"
 	"github.com/bitbomdev/minefield/cmd/leaderboard"
 	"github.com/bitbomdev/minefield/cmd/query"
 	"github.com/bitbomdev/minefield/cmd/server"
-	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	pprofAddr    string
-	pprofEnabled bool
+	PprofAddr    string
+	PprofEnabled bool
 }
 
 func (o *options) AddFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().BoolVar(&o.pprofEnabled, "pprof", false, "enable pprof server")
-	cmd.PersistentFlags().StringVar(&o.pprofAddr, "pprof-addr", "localhost:6060", "address for pprof server")
+	cmd.PersistentFlags().BoolVar(&o.PprofEnabled, "pprof", false, "Enable pprof server")
+	cmd.PersistentFlags().StringVar(&o.PprofAddr, "pprof-addr", "localhost:6060", "Address for pprof server")
 }
 
-func New(storage graph.Storage) *cobra.Command {
+func New() *cobra.Command {
 	o := &options{}
-	cmd := &cobra.Command{
+	rootCmd := &cobra.Command{
 		Use:               "minefield",
-		Short:             "graphing SBOM's with the power of roaring bitmaps",
+		Short:             "Graphing SBOM's with the power of roaring bitmaps",
 		SilenceUsage:      true,
 		DisableAutoGenTag: true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			o.AddFlags(cmd)
+			if o.PprofEnabled {
+				srv := &http.Server{Addr: o.PprofAddr}
+				go func() {
+					fmt.Printf("Starting pprof server on %s\n", o.PprofAddr)
+					if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+						fmt.Printf("pprof server error: %v\n", err)
+					}
+				}()
+				cmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
+					if err := srv.Shutdown(context.Background()); err != nil {
+						fmt.Printf("pprof server shutdown error: %v\n", err)
+					}
+				}
+			}
+		},
 	}
 
-	o.AddFlags(cmd)
+	rootCmd.AddCommand(query.New())
+	rootCmd.AddCommand(ingest.New())
+	rootCmd.AddCommand(cache.New())
+	rootCmd.AddCommand(leaderboard.New())
+	rootCmd.AddCommand(server.New())
 
-	cmd.AddCommand(query.New(storage))
-	cmd.AddCommand(ingest.New(storage))
-	cmd.AddCommand(cache.New())
-	cmd.AddCommand(leaderboard.New(storage))
-	cmd.AddCommand(server.New(storage))
-
-	return cmd
+	return rootCmd
 }

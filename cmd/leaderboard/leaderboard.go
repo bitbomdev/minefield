@@ -3,7 +3,6 @@ package leaderboard
 import (
 	"github.com/bitbomdev/minefield/cmd/leaderboard/custom"
 	"github.com/bitbomdev/minefield/cmd/leaderboard/keys"
-	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +10,7 @@ type options struct{}
 
 func (o *options) AddFlags(_ *cobra.Command) {}
 
-func New(storage graph.Storage) *cobra.Command {
+func New() *cobra.Command {
 	o := &options{}
 	cmd := &cobra.Command{
 		Use:               "leaderboard",

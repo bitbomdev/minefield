@@ -7,17 +7,17 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/alecthomas/participle/v2 v2.1.1
-	github.com/go-echarts/go-echarts/v2 v2.4.5
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/goccy/go-json v0.10.3
 	github.com/google/go-cmp v0.6.0
+	github.com/google/wire v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/package-url/packageurl-go v0.1.3
 	github.com/protobom/protobom v0.5.0
 	github.com/spf13/cobra v1.8.1
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
 	github.com/zeebo/assert v1.3.1
-	go.uber.org/fx v1.23.0
 	golang.org/x/net v0.31.0
 	google.golang.org/protobuf v1.35.2
 )
@@ -44,11 +44,7 @@ require (
 	github.com/onsi/gomega v1.30.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spdx/tools-golang v0.5.5 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	go.uber.org/dig v1.18.0 // indirect
-	go.uber.org/multierr v1.10.0 // indirect
-	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.20.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
