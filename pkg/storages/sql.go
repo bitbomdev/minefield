@@ -75,11 +75,11 @@ func (s *SQLStorage) NameToID(name string) (uint32, error) {
 		return 0, fmt.Errorf("failed to get name-to-ID mapping: %w", err)
 	}
 	id, err := strconv.ParseUint(kv.Value, 10, 32)
-	if id > math.MaxUint32 {
-		return 0, fmt.Errorf("ID exceeds uint32 maximum value")
-	}
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert ID to integer: %w", err)
+	}
+	if id > math.MaxUint32 {
+		return 0, fmt.Errorf("ID exceeds uint32 maximum value")
 	}
 	return uint32(id), nil
 }
@@ -155,13 +155,23 @@ func (s *SQLStorage) GetNode(id uint32) (*graph.Node, error) {
 
 // GetNodes retrieves multiple nodes by their IDs.
 func (s *SQLStorage) GetNodes(ids []uint32) (map[uint32]*graph.Node, error) {
+	nodeKeys := generateNodeKeys(ids)
+	var kvNodes []KVStore
+	if err := s.DB.Where(KeyIN, nodeKeys).Find(&kvNodes).Error; err != nil {
+		return nil, fmt.Errorf("failed to get nodes: %w", err)
+	}
 	nodes := make(map[uint32]*graph.Node)
-	for _, id := range ids {
-		node, err := s.GetNode(id)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get node: %w", err)
+	for _, kvNode := range kvNodes {
+		var node graph.Node
+		if err := node.UnmarshalJSON([]byte(kvNode.Value)); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal node: %w", err)
 		}
-		nodes[id] = node
+		idStr := strings.TrimPrefix(kvNode.Key, NodeKeyPrefix)
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse node ID: %w", err)
+		}
+		nodes[uint32(id)] = &node
 	}
 	return nodes, nil
 }

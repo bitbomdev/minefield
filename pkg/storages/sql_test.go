@@ -94,7 +94,7 @@ func TestGenerateID_FileBased(t *testing.T) {
 	}
 }
 
-// TestGenerateID_InvalidStorage tests GenerateID method with an invalid storage setup.
+// TestSQLSaveNode tests the SaveNode method.
 func TestSQLSaveNode(t *testing.T) {
 	s, err := setupTestDB("file::memory:?cache=shared")
 	if err != nil {
@@ -295,4 +295,5 @@ func TestSQLGetAllKeysByGlob(t *testing.T) {
 	nodes, err := s.GetNodesByGlob("node%")
 	assert.NoError(t, err)
 	assert.Equal(t, node1.ID, nodes[0].ID)
+	assert.Equal(t, node2.ID, nodes[1].ID)
 }
