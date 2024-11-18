@@ -3,6 +3,7 @@ package ingest
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"strings"
 
@@ -63,7 +64,14 @@ func Scorecards(storage graph.Storage, data []byte) error {
 		}
 		purl, err := packageurl.FromString(result.PURL)
 		if err != nil {
-			return err
+			// Log and skip invalid PURLs instead of failing
+			log.Printf("Warning: Invalid PURL %q: %v", result.PURL, err)
+			continue
+		}
+
+		if purl.Name == "" {
+			log.Printf("Warning: Empty package name in PURL %q", result.PURL)
+			continue
 		}
 
 		scorecardResults[purl.Name] = append(scorecardResults[purl.Name], result)
