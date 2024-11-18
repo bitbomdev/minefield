@@ -26,25 +26,32 @@ type options struct {
 	addr        string
 	StorageType string
 	StorageAddr string
+	StoragePath string
+	UseInMemory bool
 }
 
 const (
 	defaultConcurrency = 10
 	defaultAddr        = "localhost:8089"
 	redisStorageType   = "redis"
+	sqliteStorageType  = "sqlite"
 )
 
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().Int32Var(&o.concurrency, "concurrency", defaultConcurrency, "Maximum number of concurrent operations for leaderboard operations")
 	cmd.Flags().StringVar(&o.addr, "addr", defaultAddr, "Network address and port for the server (e.g. localhost:8089)")
-	cmd.Flags().StringVar(&o.StorageType, "storage-type", redisStorageType, "Type of storage to use (e.g., redis, sql)")
+	cmd.Flags().StringVar(&o.StorageType, "storage-type", redisStorageType, "Type of storage to use (e.g., redis, sqlite)")
 	cmd.Flags().StringVar(&o.StorageAddr, "storage-addr", "localhost:6379", "Address for storage backend")
+	cmd.Flags().StringVar(&o.StoragePath, "storage-path", "", "Path to the SQLite database file")
+	cmd.Flags().BoolVar(&o.UseInMemory, "use-in-memory", true, "Use in-memory SQLite database")
 }
 
 func (o *options) ProvideStorage() (graph.Storage, error) {
 	switch o.StorageType {
 	case redisStorageType:
 		return storages.NewRedisStorage(o.StorageAddr)
+	case sqliteStorageType:
+		return storages.NewSQLStorage(o.StoragePath, o.UseInMemory)
 	default:
 		return nil, fmt.Errorf("unknown storage type: %s", o.StorageType)
 	}
@@ -62,6 +69,24 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to setup server: %w", err)
 	}
 	return o.startServer(server)
+}
+
+func (o *options) PersistentPreRunE(cmd *cobra.Command, args []string) error {
+	if o.StorageType != redisStorageType && o.StorageType != sqliteStorageType {
+		return fmt.Errorf("invalid storage-type %q: must be one of [redis, sqlite]", o.StorageType)
+	}
+
+	if o.StorageType == sqliteStorageType && o.StoragePath == "" {
+		if !o.UseInMemory {
+			return fmt.Errorf("storage-path is required when using SQLite with file-based storage")
+		}
+	}
+
+	if o.StorageType == redisStorageType && o.StorageAddr == "" {
+		return fmt.Errorf("storage-addr is required when using Redis (format: host:port)")
+	}
+
+	return nil
 }
 
 func (o *options) setupServer() (*http.Server, error) {
@@ -130,6 +155,7 @@ func New() *cobra.Command {
 		Use:               "server",
 		Short:             "Start the minefield server for graph operations and queries",
 		Args:              cobra.ExactArgs(0),
+		PersistentPreRunE: o.PersistentPreRunE,
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}
