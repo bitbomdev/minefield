@@ -26,25 +26,32 @@ type options struct {
 	addr        string
 	StorageType string
 	StorageAddr string
+	StoragePath string
+	UseInMemory bool
 }
 
 const (
 	defaultConcurrency = 10
 	defaultAddr        = "localhost:8089"
 	redisStorageType   = "redis"
+	sqliteStorageType  = "sqlite"
 )
 
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().Int32Var(&o.concurrency, "concurrency", defaultConcurrency, "Maximum number of concurrent operations for leaderboard operations")
 	cmd.Flags().StringVar(&o.addr, "addr", defaultAddr, "Network address and port for the server (e.g. localhost:8089)")
-	cmd.Flags().StringVar(&o.StorageType, "storage-type", redisStorageType, "Type of storage to use (e.g., redis, sql)")
+	cmd.Flags().StringVar(&o.StorageType, "storage-type", redisStorageType, "Type of storage to use (e.g., redis, sqlite)")
 	cmd.Flags().StringVar(&o.StorageAddr, "storage-addr", "localhost:6379", "Address for storage backend")
+	cmd.Flags().StringVar(&o.StoragePath, "storage-path", "", "Path to the SQLite database file")
+	cmd.Flags().BoolVar(&o.UseInMemory, "use-in-memory", true, "Use in-memory SQLite database")
 }
 
 func (o *options) ProvideStorage() (graph.Storage, error) {
 	switch o.StorageType {
 	case redisStorageType:
 		return storages.NewRedisStorage(o.StorageAddr)
+	case sqliteStorageType:
+		return storages.NewSQLStorage(o.StoragePath, o.UseInMemory)
 	default:
 		return nil, fmt.Errorf("unknown storage type: %s", o.StorageType)
 	}

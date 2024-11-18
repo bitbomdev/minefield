@@ -3,7 +3,9 @@ package storages
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bitbomdev/minefield/pkg/graph"
@@ -14,6 +16,7 @@ import (
 
 const key = "key = ?"
 const KeyLike = "key LIKE ?"
+const KeyIN = "key IN ?"
 
 // KVStore represents the key-value storage table.
 type KVStore struct {
@@ -39,11 +42,14 @@ type SQLStorage struct {
 }
 
 // NewSQLStorage initializes a new SQLStorage with a SQLite database.
-func NewSQLStorage(dsn string) (*SQLStorage, error) {
-	if dsn == "" {
-		return nil, fmt.Errorf("DSN is required")
+func NewSQLStorage(dsn string, useInMemory bool) (*SQLStorage, error) {
+	var db *gorm.DB
+	var err error
+	if useInMemory {
+		db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+	} else {
+		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	}
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to SQLite: %w", err)
 	}
@@ -68,7 +74,10 @@ func (s *SQLStorage) NameToID(name string) (uint32, error) {
 	if err := s.DB.First(&kv, key, NameToIDKey+name).Error; err != nil {
 		return 0, fmt.Errorf("failed to get name-to-ID mapping: %w", err)
 	}
-	id, err := strconv.Atoi(kv.Value)
+	id, err := strconv.ParseUint(kv.Value, 10, 32)
+	if id > math.MaxUint32 {
+		return 0, fmt.Errorf("ID exceeds uint32 maximum value")
+	}
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert ID to integer: %w", err)
 	}
@@ -157,21 +166,57 @@ func (s *SQLStorage) GetNodes(ids []uint32) (map[uint32]*graph.Node, error) {
 	return nodes, nil
 }
 
-// GetNodesByGlob retrieves nodes matching a glob pattern.
+// GetNodesByGlob retrieves nodes matching a glob pattern using SQL queries.
 func (s *SQLStorage) GetNodesByGlob(pattern string) ([]*graph.Node, error) {
-	nodes := make([]*graph.Node, 0)
-	var kvNodes []KVStore
-	if err := s.DB.Where("name LIKE ?", pattern).Find(&kvNodes).Error; err != nil {
-		return nil, fmt.Errorf("failed to get nodes by glob pattern: %w", err)
+	// Construct the SQL LIKE pattern
+	sqlPattern := fmt.Sprintf("%s%s%s", "%", pattern, "%")
+
+	// Retrieve all name-to-ID mappings that match the pattern
+	var mappings []KVStore
+	if err := s.DB.Where(KeyLike, fmt.Sprintf("%s%s", NameToIDKey, sqlPattern)).Find(&mappings).Error; err != nil {
+		return nil, fmt.Errorf("failed to get name-to-ID mappings with pattern %s: %w", pattern, err)
 	}
-	for _, kvNode := range kvNodes {
-		var node graph.Node
-		if err := node.UnmarshalJSON([]byte(kvNode.Value)); err != nil {
+
+	if len(mappings) == 0 {
+		return []*graph.Node{}, nil // No matches found
+	}
+
+	// Extract IDs from the mappings
+	ids := make([]uint32, 0, len(mappings))
+	for _, mapping := range mappings {
+		id, err := strconv.ParseUint(mapping.Value, 10, 32)
+		if id > math.MaxUint32 {
+			return nil, fmt.Errorf("ID exceeds uint32 maximum value")
+		}
+		if err != nil {
+			return nil, fmt.Errorf("invalid ID format for key %s: %w", mapping.Key, err)
+		}
+		ids = append(ids, uint32(id))
+	}
+	var nodes []KVStore
+	var resultNodes []*graph.Node
+	// Retrieve nodes with the extracted IDs
+	if err := s.DB.Where("key IN ?", generateNodeKeys(ids)).Find(&nodes).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve nodes for IDs %v: %w", ids, err)
+	}
+	for _, node := range nodes {
+		var graphNode graph.Node
+		if err := graphNode.UnmarshalJSON([]byte(node.Value)); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal node data: %w", err)
 		}
-		nodes = append(nodes, &node)
+		resultNodes = append(resultNodes, &graphNode)
 	}
-	return nodes, nil
+
+	return resultNodes, nil
+}
+
+// generateNodeKeys creates a slice of node keys based on IDs.
+func generateNodeKeys(ids []uint32) []string {
+	keys := make([]string, len(ids))
+	for i, id := range ids {
+		keys[i] = fmt.Sprintf("%s%d", NodeKeyPrefix, id)
+	}
+	return keys
 }
 
 // GetAllKeys retrieves all node IDs.
@@ -269,16 +314,29 @@ func (s *SQLStorage) GetCache(id uint32) (*graph.NodeCache, error) {
 
 // GetCaches retrieves multiple caches by their IDs.
 func (s *SQLStorage) GetCaches(ids []uint32) (map[uint32]*graph.NodeCache, error) {
-	caches := make(map[uint32]*graph.NodeCache)
-	for _, id := range ids {
-		cache, err := s.GetCache(id)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				continue // Skip if the cache does not exist
-			}
-			return nil, fmt.Errorf("failed to get cache: %w", err)
+	cacheKeys := make([]string, len(ids))
+	for i, id := range ids {
+		cacheKeys[i] = fmt.Sprintf("%s%d", CacheKeyPrefix, id)
+	}
+	var kvCaches []KVStore
+	if err := s.DB.Where(KeyIN, cacheKeys).Find(&kvCaches).Error; err != nil {
+		return nil, fmt.Errorf("failed to get caches: %w", err)
+	}
+	caches := make(map[uint32]*graph.NodeCache, len(kvCaches))
+	for _, kvCache := range kvCaches {
+		var cache graph.NodeCache
+		if err := cache.UnmarshalJSON([]byte(kvCache.Value)); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal cache: %w", err)
 		}
-		caches[id] = cache
+		idStr := strings.TrimPrefix(kvCache.Key, CacheKeyPrefix)
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse ID from key: %w", err)
+		}
+		if id > math.MaxUint32 {
+			return nil, fmt.Errorf("ID exceeds uint32 maximum value")
+		}
+		caches[uint32(id)] = &cache
 	}
 	return caches, nil
 }

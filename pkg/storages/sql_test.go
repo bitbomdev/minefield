@@ -12,7 +12,7 @@ import (
 
 // setupTestDB initializes a new SQLStorage with the given DSN.
 func setupTestDB(dsn string) (*SQLStorage, error) {
-	storage, err := NewSQLStorage(dsn)
+	storage, err := NewSQLStorage(dsn, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize SQLStorage: %w", err)
 	}
@@ -95,14 +95,6 @@ func TestGenerateID_FileBased(t *testing.T) {
 }
 
 // TestGenerateID_InvalidStorage tests GenerateID method with an invalid storage setup.
-func TestGenerateID_InvalidStorage(t *testing.T) {
-	// Attempt to initialize SQLStorage with an invalid DSN
-	invalidDSN := ""
-	_, err := setupTestDB(invalidDSN)
-	if err == nil {
-		t.Fatal("Expected error when initializing with invalid DSN, but got none")
-	}
-}
 func TestSQLSaveNode(t *testing.T) {
 	s, err := setupTestDB("file::memory:?cache=shared")
 	if err != nil {
@@ -286,4 +278,21 @@ func TestSQLAddAndGetDataToDB(t *testing.T) {
 	}
 	err = s.AddOrUpdateCustomData("test_tag", "test_key1", "test_data1", []byte("test_data1"))
 	assert.Error(t, err)
+}
+
+func TestSQLGetAllKeysByGlob(t *testing.T) {
+	s, err := setupTestDB("file::memory:")
+	if err != nil {
+		t.Fatalf("Setup failed: %v", err)
+	}
+	node1 := &graph.Node{ID: 1, Name: "node1", Children: roaring.New(), Parents: roaring.New()}
+	node2 := &graph.Node{ID: 2, Name: "node2", Children: roaring.New(), Parents: roaring.New()}
+	err = s.SaveNode(node1)
+	assert.NoError(t, err)
+	err = s.SaveNode(node2)
+	assert.NoError(t, err)
+
+	nodes, err := s.GetNodesByGlob("node%")
+	assert.NoError(t, err)
+	assert.Equal(t, node1.ID, nodes[0].ID)
 }
