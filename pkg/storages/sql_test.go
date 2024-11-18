@@ -167,7 +167,6 @@ func TestSQLGetAllKeys(t *testing.T) {
 	assert.NoError(t, err)
 
 	keys, err := s.GetAllKeys()
-	fmt.Println(keys)
 	assert.NoError(t, err)
 	assert.Contains(t, keys, node1.ID)
 	assert.Contains(t, keys, node2.ID)

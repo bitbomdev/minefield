@@ -47,13 +47,20 @@ func NewSQLStorage(dsn string, useInMemory bool) (*SQLStorage, error) {
 	var db *gorm.DB
 	var err error
 	if useInMemory {
-		db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+		db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Warn)})
 	} else {
-		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Warn)})
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to SQLite: %w", err)
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get SQLDB: %w", err)
+	}
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	storage := &SQLStorage{DB: db}
 
@@ -266,10 +273,20 @@ func (s *SQLStorage) SaveCache(cache *graph.NodeCache) error {
 
 // SaveCaches saves multiple node caches.
 func (s *SQLStorage) SaveCaches(caches []*graph.NodeCache) error {
-	for _, cache := range caches {
-		if err := s.SaveCache(cache); err != nil {
-			return fmt.Errorf("failed to save cache: %w", err)
+	kvCaches := make([]KVStore, len(caches))
+	for i, cache := range caches {
+		cacheKey := fmt.Sprintf("%s%d", CacheKeyPrefix, cache.ID)
+		data, err := cache.MarshalJSON()
+		if err != nil {
+			return fmt.Errorf("failed to marshal cache: %w", err)
 		}
+		kvCaches[i] = KVStore{
+			Key:   cacheKey,
+			Value: string(data),
+		}
+	}
+	if err := s.DB.Create(&kvCaches).Error; err != nil {
+		return fmt.Errorf("failed to save caches: %w", err)
 	}
 	return nil
 }
