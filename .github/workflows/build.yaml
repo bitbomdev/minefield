@@ -15,7 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@cbb722410c2e876e24abbe8de2cc27693e501dcb # v2
       - name: Set up Go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v2
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v2
         with:
           go-version: '1.23'
       - name: Install Wire
@@ -49,7 +49,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@cbb722410c2e876e24abbe8de2cc27693e501dcb # v2
       - name: Set up Go
-        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v2
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v2
         with:
           go-version: '1.23'
       - name: Docker Up
