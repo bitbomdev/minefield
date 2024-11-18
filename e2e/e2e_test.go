@@ -1,24 +1,35 @@
-package storages
+package e2e
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/bitbomdev/minefield/pkg/graph"
-	"github.com/bitbomdev/minefield/pkg/tools/ingest"
+	"connectrpc.com/connect"
+	apiv1 "github.com/bitbomdev/minefield/api/v1"
+	service "github.com/bitbomdev/minefield/gen/api/v1"
+	"github.com/bitbomdev/minefield/pkg/storages"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestParseAndExecute_E2E(t *testing.T) {
-	if _, ok := os.LookupEnv("e2e"); !ok {
-		t.Skip("E2E tests are not enabled")
+	//if _, ok := os.LookupEnv("e2e"); !ok {
+	//	t.Skip("E2E tests are not enabled")
+	//}
+	testDBPath := "test_e2e.db"
+	sqlite, err := storages.SetupSQLTestDB(testDBPath)
+	if err != nil {
+		t.Fatal(err)
 	}
-	redisStorage := setupTestRedis()
+	defer os.Remove(testDBPath) // Clean up after the test
 
-	sbomPath := filepath.Join("..", "..", "testdata", "sboms")
-	vulnsPath := filepath.Join("..", "..", "testdata", "osv-vulns")
+	s := apiv1.NewService(sqlite, 1)
+
+	sbomPath := filepath.Join("..", "testdata", "sboms")
+	vulnsPath := filepath.Join("..", "testdata", "osv-vulns")
 
 	// Process SBOM files
 	sbomFiles, err := os.ReadDir(sbomPath)
@@ -32,10 +43,11 @@ func TestParseAndExecute_E2E(t *testing.T) {
 		data, err := os.ReadFile(filepath.Join(sbomPath, file.Name()))
 		assert.NoError(t, err)
 
-		err = ingest.SBOM(redisStorage, data)
-		if err != nil {
-			t.Fatalf("Failed to load SBOM from file %s: %v", file.Name(), err)
-		}
+		req := connect.NewRequest(&service.IngestSBOMRequest{
+			Sbom: data,
+		})
+		_, err = s.IngestSBOM(context.Background(), req)
+		assert.NoError(t, err)
 	}
 	// Process vulnerability files
 	vulnFiles, err := os.ReadDir(vulnsPath)
@@ -49,22 +61,27 @@ func TestParseAndExecute_E2E(t *testing.T) {
 		data, err := os.ReadFile(filepath.Join(vulnsPath, file.Name()))
 		assert.NoError(t, err)
 
-		err = ingest.Vulnerabilities(redisStorage, data)
+		req := connect.NewRequest(&service.IngestVulnerabilityRequest{
+			Vulnerability: data,
+		})
+		_, err = s.IngestVulnerability(context.Background(), req)
 		if err != nil {
 			t.Fatalf("Failed to load vulnerabilities from file %s: %v", file.Name(), err)
 		}
 	}
 
 	// Cache data
-	err = graph.Cache(redisStorage)
+	req := connect.NewRequest(&emptypb.Empty{})
+	_, err = s.Cache(context.Background(), req)
 	assert.NoError(t, err)
 
 	tests := []struct {
-		name            string
-		script          string
-		defaultNodeName string
-		want            uint64
-		wantErr         bool
+		name               string
+		script             string
+		defaultNodeName    string
+		queryOrLeaderboard bool
+		want               uint64
+		wantErr            bool
 	}{
 		{
 			name:            "Simple dependents query",
@@ -132,11 +149,12 @@ func TestParseAndExecute_E2E(t *testing.T) {
 			defaultNodeName: "",
 		},
 		{
-			name:            "Query with default node name",
-			script:          "dependencies library",
-			want:            1,
-			defaultNodeName: "pkg:github/actions/checkout@v3",
-			wantErr:         false,
+			name:               "Query with default node name",
+			script:             "dependencies library",
+			want:               950,
+			queryOrLeaderboard: true,
+			defaultNodeName:    "pkg:github/actions/checkout@v3",
+			wantErr:            false,
 		},
 		{
 			name:            "Complex query with multiple operations",
@@ -155,23 +173,36 @@ func TestParseAndExecute_E2E(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			keys, err := redisStorage.GetAllKeys()
-			assert.NoError(t, err)
+			if tt.queryOrLeaderboard == true {
+				req := connect.NewRequest(&service.CustomLeaderboardRequest{
+					Script: tt.script,
+				})
+				resp, err := s.CustomLeaderboard(context.Background(), req)
+				nodes := resp.Msg.Queries
 
-			nodes, err := redisStorage.GetNodes(keys)
-			assert.NoError(t, err)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("CustomLeaderboard() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+				if !tt.wantErr && len(nodes[0].Output) != int(tt.want) {
+					t.Errorf("CustomLeaderboard() got the first nodes output len of = %v, want output len of %v", nodes[0].Output, tt.want)
+				}
+			} else {
+				req := connect.NewRequest(&service.QueryRequest{
+					Script: tt.script,
+				})
+				resp, err := s.Query(context.Background(), req)
+				nodes := resp.Msg.Nodes
 
-			caches, err := redisStorage.GetCaches(keys)
-			assert.NoError(t, err)
-
-			result, err := graph.ParseAndExecute(tt.script, redisStorage, tt.defaultNodeName, nodes, caches, true)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseAndExecute() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				if (err != nil) != tt.wantErr {
+					t.Errorf("Query() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+				if !tt.wantErr && len(nodes) != int(tt.want) {
+					t.Errorf("Query() got cardinality = %v, want cardinality %v", len(nodes), tt.want)
+				}
 			}
-			if !tt.wantErr && result.GetCardinality() != tt.want {
-				t.Errorf("ParseAndExecute() got cardinality = %v, want cardinality %v", result.GetCardinality(), tt.want)
-			}
+
 		})
 	}
 }
