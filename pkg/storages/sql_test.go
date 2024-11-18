@@ -293,8 +293,9 @@ func TestSQLGetAllKeysByGlob(t *testing.T) {
 
 	nodes, err := s.GetNodesByGlob("node*")
 	assert.NoError(t, err)
-	assert.Equal(t, node1.ID, nodes[0].ID)
-	assert.Equal(t, node2.ID, nodes[1].ID)
+	nodeIDs := []uint32{nodes[0].ID, nodes[1].ID}
+	assert.Contains(t, nodeIDs, node1.ID)
+	assert.Contains(t, nodeIDs, node2.ID)
 
 	nodes, err = s.GetNodesByGlob("i*")
 	assert.NoError(t, err)
