@@ -8,6 +8,7 @@ import (
 
 	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/bitbomdev/minefield/pkg/tools"
+	"github.com/package-url/packageurl-go"
 )
 
 type Repo struct {
@@ -45,7 +46,6 @@ type ScorecardResult struct {
 
 // Scorecard processes the Scorecard JSON data and stores it in the graph.
 func Scorecards(storage graph.Storage, data []byte) error {
-
 	if len(data) == 0 {
 		return fmt.Errorf("data is empty")
 	}
@@ -61,7 +61,12 @@ func Scorecards(storage graph.Storage, data []byte) error {
 		if !result.Success {
 			continue
 		}
-		scorecardResults[result.PURL] = append(scorecardResults[result.PURL], result)
+		purl, err := packageurl.FromString(result.PURL)
+		if err != nil {
+			return err
+		}
+
+		scorecardResults[purl.Name] = append(scorecardResults[purl.Name], result)
 	}
 
 	keys, err := storage.GetAllKeys()

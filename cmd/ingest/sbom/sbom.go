@@ -6,10 +6,10 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	"github.com/bitbomdev/minefield/cmd/helpers"
 	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
 	"github.com/bitbomdev/minefield/pkg/tools"
-	"github.com/bitbomdev/minefield/pkg/tools/ingest"
 	"github.com/spf13/cobra"
 )
 
@@ -36,7 +36,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	}
 	sbomPath := args[0]
 	// Ingest SBOM
-	result, err := ingest.LoadDataFromPath(sbomPath)
+	result, err := helpers.LoadDataFromPath(sbomPath)
 	if err != nil {
 		return fmt.Errorf("failed to ingest SBOM: %w", err)
 	}

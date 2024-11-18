@@ -3,6 +3,7 @@ package storages
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bitbomdev/minefield/pkg/graph"
@@ -19,19 +20,38 @@ func TestParseAndExecute_E2E(t *testing.T) {
 	sbomPath := filepath.Join("..", "..", "testdata", "sboms")
 	vulnsPath := filepath.Join("..", "..", "testdata", "osv-vulns")
 
-	// Ingest data from the folder
-	result, err := ingest.LoadDataFromPath(sbomPath)
+	// Process SBOM files
+	sbomFiles, err := os.ReadDir(sbomPath)
 	assert.NoError(t, err)
-	for _, data := range result {
-		if err := ingest.SBOM(redisStorage, data.Data); err != nil {
-			t.Fatalf("Failed to load SBOM from data: %v", err)
+
+	for _, file := range sbomFiles {
+		if !strings.HasSuffix(file.Name(), ".json") {
+			continue
+		}
+
+		data, err := os.ReadFile(filepath.Join(sbomPath, file.Name()))
+		assert.NoError(t, err)
+
+		err = ingest.SBOM(redisStorage, data)
+		if err != nil {
+			t.Fatalf("Failed to load SBOM from file %s: %v", file.Name(), err)
 		}
 	}
-	result, err = ingest.LoadDataFromPath(vulnsPath)
+	// Process vulnerability files
+	vulnFiles, err := os.ReadDir(vulnsPath)
 	assert.NoError(t, err)
-	for _, data := range result {
-		if err := ingest.Vulnerabilities(redisStorage, data.Data); err != nil {
-			t.Fatalf("Failed to load vulnerabilities from data: %v", err)
+
+	for _, file := range vulnFiles {
+		if !strings.HasSuffix(file.Name(), ".json") {
+			continue
+		}
+
+		data, err := os.ReadFile(filepath.Join(vulnsPath, file.Name()))
+		assert.NoError(t, err)
+
+		err = ingest.Vulnerabilities(redisStorage, data)
+		if err != nil {
+			t.Fatalf("Failed to load vulnerabilities from file %s: %v", file.Name(), err)
 		}
 	}
 

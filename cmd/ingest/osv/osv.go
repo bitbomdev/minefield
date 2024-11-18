@@ -6,16 +6,15 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	"github.com/bitbomdev/minefield/cmd/helpers"
 	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
 	"github.com/bitbomdev/minefield/pkg/tools"
-	"github.com/bitbomdev/minefield/pkg/tools/ingest"
 	"github.com/spf13/cobra"
 )
 
 type options struct {
-	addr string // Address of the minefield server
-
+	addr                string // Address of the minefield server
 	ingestServiceClient apiv1connect.IngestServiceClient
 }
 
@@ -35,7 +34,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 	}
 	vulnsPath := args[0]
 	// Ingest vulnerabilities
-	result, err := ingest.LoadDataFromPath(vulnsPath)
+	result, err := helpers.LoadDataFromPath(vulnsPath)
 	if err != nil {
 		return fmt.Errorf("failed to load vulnerabilities: %w", err)
 	}
