@@ -15,9 +15,15 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-const key = "key = ?"
-const KeyLike = "key LIKE ?"
-const KeyIN = "key IN ?"
+const (
+	key     = "key = ?"
+	KeyLike = "key LIKE ?"
+	KeyIN   = "key IN ?"
+
+	maxConnections        = 10
+	maxOpenConnections    = 100
+	connectionMaxLifetime = time.Hour
+)
 
 // KVStore represents the key-value storage table.
 type KVStore struct {
@@ -58,9 +64,9 @@ func NewSQLStorage(dsn string, useInMemory bool) (*SQLStorage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get SQLDB: %w", err)
 	}
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetMaxIdleConns(maxConnections)
+	sqlDB.SetMaxOpenConns(maxOpenConnections)
+	sqlDB.SetConnMaxLifetime(connectionMaxLifetime)
 
 	storage := &SQLStorage{DB: db}
 
@@ -203,11 +209,11 @@ func (s *SQLStorage) GetNodesByGlob(pattern string) ([]*graph.Node, error) {
 	ids := make([]uint32, 0, len(mappings))
 	for _, mapping := range mappings {
 		id, err := strconv.ParseUint(mapping.Value, 10, 32)
-		if id > math.MaxUint32 {
-			return nil, fmt.Errorf("ID exceeds uint32 maximum value")
-		}
 		if err != nil {
 			return nil, fmt.Errorf("invalid ID format for key %s: %w", mapping.Key, err)
+		}
+		if id > math.MaxUint32 {
+			return nil, fmt.Errorf("ID exceeds uint32 maximum value")
 		}
 		ids = append(ids, uint32(id))
 	}

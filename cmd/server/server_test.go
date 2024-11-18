@@ -129,3 +129,79 @@ func TestSetupServer(t *testing.T) {
 		t.Error("Expected handler to be set, got nil")
 	}
 }
+
+func TestOptions_PersistentPreRunE(t *testing.T) {
+	tests := []struct {
+		name        string
+		options     *options
+		wantErr     bool
+		errorMessage string
+	}{
+		{
+			name: "SQLite with empty StoragePath",
+			options: &options{
+				StorageType: sqliteStorageType,
+				StoragePath: "",
+			},
+			wantErr:      true,
+			errorMessage: "storage-path is required when using SQLite",
+		},
+		{
+			name: "Redis with empty StorageAddr",
+			options: &options{
+				StorageType: redisStorageType,
+				StorageAddr: "",
+			},
+			wantErr:      true,
+			errorMessage: "storage-addr is required when using Redis",
+		},
+		{
+			name: "Redis with UseInMemory enabled",
+			options: &options{
+				StorageType: redisStorageType,
+				StorageAddr: "localhost:6379",
+				UseInMemory: true,
+			},
+			wantErr:      true,
+			errorMessage: "use-in-memory is not allowed when using Redis",
+		},
+		{
+			name: "SQLite with valid StoragePath",
+			options: &options{
+				StorageType: sqliteStorageType,
+				StoragePath: "/path/to/sqlite.db",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Redis with valid StorageAddr and UseInMemory disabled",
+			options: &options{
+				StorageType: redisStorageType,
+				StorageAddr: "localhost:6379",
+				UseInMemory: false,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Unsupported StorageType",
+			options: &options{
+				StorageType: "unsupported",
+			},
+			wantErr: false,
+		},
+	}
+
+	cmd := &cobra.Command{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.options.PersistentPreRunE(cmd, []string{})
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PersistentPreRunE() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr && err.Error() != tt.errorMessage {
+				t.Errorf("PersistentPreRunE() error message = %v, want %v", err.Error(), tt.errorMessage)
+			}
+		})
+	}
+}

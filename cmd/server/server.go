@@ -71,6 +71,19 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 	return o.startServer(server)
 }
 
+func (o *options) PersistentPreRunE(cmd *cobra.Command, args []string) error {
+	if o.StorageType == sqliteStorageType && o.StoragePath == "" {
+		return fmt.Errorf("storage-path is required when using SQLite")
+	}
+	if o.StorageType == redisStorageType && o.StorageAddr == "" {
+		return fmt.Errorf("storage-addr is required when using Redis")
+	}
+	if o.StorageType == redisStorageType && o.UseInMemory {
+		return fmt.Errorf("use-in-memory is not allowed when using Redis")
+	}
+	return nil
+}
+
 func (o *options) setupServer() (*http.Server, error) {
 	if o.concurrency <= 0 {
 		return nil, fmt.Errorf("concurrency must be greater than zero")
@@ -137,6 +150,7 @@ func New() *cobra.Command {
 		Use:               "server",
 		Short:             "Start the minefield server for graph operations and queries",
 		Args:              cobra.ExactArgs(0),
+		PersistentPreRunE: o.PersistentPreRunE,
 		RunE:              o.Run,
 		DisableAutoGenTag: true,
 	}
