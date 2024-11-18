@@ -132,9 +132,9 @@ func TestSetupServer(t *testing.T) {
 
 func TestOptions_PersistentPreRunE(t *testing.T) {
 	tests := []struct {
-		name        string
-		options     *options
-		wantErr     bool
+		name         string
+		options      *options
+		wantErr      bool
 		errorMessage string
 	}{
 		{
@@ -144,7 +144,7 @@ func TestOptions_PersistentPreRunE(t *testing.T) {
 				StoragePath: "",
 			},
 			wantErr:      true,
-			errorMessage: "storage-path is required when using SQLite",
+			errorMessage: "storage-path is required when using SQLite with file-based storage",
 		},
 		{
 			name: "Redis with empty StorageAddr",
@@ -153,7 +153,7 @@ func TestOptions_PersistentPreRunE(t *testing.T) {
 				StorageAddr: "",
 			},
 			wantErr:      true,
-			errorMessage: "storage-addr is required when using Redis",
+			errorMessage: "storage-addr is required when using Redis (format: host:port)",
 		},
 		{
 			name: "Redis with UseInMemory enabled",
@@ -163,7 +163,7 @@ func TestOptions_PersistentPreRunE(t *testing.T) {
 				UseInMemory: true,
 			},
 			wantErr:      true,
-			errorMessage: "use-in-memory is not allowed when using Redis",
+			errorMessage: "use-in-memory flag is only applicable for SQLite storage",
 		},
 		{
 			name: "SQLite with valid StoragePath",
@@ -187,7 +187,8 @@ func TestOptions_PersistentPreRunE(t *testing.T) {
 			options: &options{
 				StorageType: "unsupported",
 			},
-			wantErr: false,
+			wantErr:      true,
+			errorMessage: `invalid storage-type "unsupported": must be one of [redis, sqlite]`,
 		},
 	}
 
@@ -199,8 +200,12 @@ func TestOptions_PersistentPreRunE(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PersistentPreRunE() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if tt.wantErr && err.Error() != tt.errorMessage {
-				t.Errorf("PersistentPreRunE() error message = %v, want %v", err.Error(), tt.errorMessage)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				} else if err.Error() != tt.errorMessage {
+					t.Errorf("PersistentPreRunE() error message = %v, want %v", err.Error(), tt.errorMessage)
+				}
 			}
 		})
 	}
