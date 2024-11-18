@@ -1,4 +1,4 @@
-package ingest
+package helpers
 
 import (
 	"archive/zip"

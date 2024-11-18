@@ -9,7 +9,6 @@ import (
 	"github.com/RoaringBitmap/roaring"
 	service "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/bitbomdev/minefield/pkg/graph"
-	"github.com/bitbomdev/minefield/pkg/tools/ingest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -73,23 +72,26 @@ func TestGetNodesByGlob(t *testing.T) {
 func TestQueriesIngestAndCache(t *testing.T) {
 	s := setupService()
 
-	result, err := ingest.LoadDataFromPath("../../testdata/osv-sboms/google_agi.sbom.json")
+	// Read and ingest SBOM file
+	sbomData, err := os.ReadFile("../../testdata/osv-sboms/google_agi.sbom.json")
 	require.NoError(t, err)
-	for _, data := range result {
-		sbomReq := connect.NewRequest(&service.IngestSBOMRequest{
-			Sbom: data.Data,
-		})
-		_, err = s.IngestSBOM(context.Background(), sbomReq)
-		require.NoError(t, err)
-	}
 
-	content, err := os.ReadFile("../../testdata/osv-vulns/GHSA-cx63-2mw6-8hw5.json")
+	sbomReq := connect.NewRequest(&service.IngestSBOMRequest{
+		Sbom: sbomData,
+	})
+	_, err = s.IngestSBOM(context.Background(), sbomReq)
 	require.NoError(t, err)
+
+	// Read and ingest vulnerability file
+	vulnData, err := os.ReadFile("../../testdata/osv-vulns/GHSA-cx63-2mw6-8hw5.json")
+	require.NoError(t, err)
+
 	vulnReq := connect.NewRequest(&service.IngestVulnerabilityRequest{
-		Vulnerability: content,
+		Vulnerability: vulnData,
 	})
 	_, err = s.IngestVulnerability(context.Background(), vulnReq)
 	require.NoError(t, err)
+
 	// Check if the node with name "pkg:pypi/astroid@2.11.7" exists
 	graphReq := connect.NewRequest(&service.GetNodeByNameRequest{Name: "pkg:pypi/astroid@2.11.7"})
 	resp, err := s.GetNodeByName(context.Background(), graphReq)
@@ -176,6 +178,17 @@ func TestIngestVulnerability(t *testing.T) {
 		Vulnerability: content,
 	})
 	_, err = s.IngestVulnerability(context.Background(), req)
+	require.NoError(t, err)
+}
+
+func TestIngestScorecard(t *testing.T) {
+	s := setupService()
+	content, err := os.ReadFile("../../testdata/scorecards/scorecards.json")
+	require.NoError(t, err)
+	req := connect.NewRequest(&service.IngestScorecardRequest{
+		Scorecard: content,
+	})
+	_, err = s.IngestScorecard(context.Background(), req)
 	require.NoError(t, err)
 }
 

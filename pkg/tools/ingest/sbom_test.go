@@ -2,118 +2,47 @@ package ingest
 
 import (
 	"os"
-	"sort"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bitbomdev/minefield/pkg/graph"
 )
 
 func TestIngestSBOM(t *testing.T) {
-	createTestFiles(t)
-	tests := []struct {
-		name     string
-		sbomPath string
-		want     map[uint32]*graph.Node
-		wantErr  bool
-	}{
-		{
-			name:     "non-existent file",
-			sbomPath: "non_existent_file.json",
-			wantErr:  true,
-		},
-		{
-			name:     "empty directory",
-			sbomPath: "../../../empty_dir",
-			want:     map[uint32]*graph.Node{},
-			wantErr:  false,
-		},
-		{
-			name:     "SBOM with no components",
-			sbomPath: "../../../no_components_sbom.json",
-			want:     map[uint32]*graph.Node{},
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			storage := graph.NewMockStorage()
-			result, err := LoadDataFromPath(test.sbomPath)
-			if test.wantErr != (err != nil) {
-				t.Errorf("Sbom() error = %v, wantErr = %v", err, test.wantErr)
-			}
+	storage := graph.NewMockStorage()
 
-			for _, data := range result {
-				if err := SBOM(storage, data.Data); err != nil {
-					if test.wantErr != (err != nil) {
-						t.Errorf("Sbom() error = %v, wantErr = %v", err, test.wantErr)
-					}
-				}
-			}
+	sbomDir := "../../../testdata/sboms"
 
-			keys, err := storage.GetAllKeys()
-			if err != nil {
-				t.Fatalf("Failed to get all keys, %v", err)
-			}
-
-			sort.Slice(keys, func(i, j int) bool {
-				return keys[i] < keys[j]
-			})
-
-			for _, key := range keys {
-				node, err := storage.GetNode(key)
-				if err != nil {
-					t.Fatalf("Failed to get node, %v", err)
-				}
-				if !nodeEquals(node, test.want[key]) {
-					t.Fatalf("expected node %v, got %v", test.want[key], node)
-				}
-			}
-		})
-	}
-	if err := os.RemoveAll("../../../empty_dir"); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Remove("../../../invalid_sbom.json"); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Remove("../../../no_components_sbom.json"); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func nodeEquals(n, n2 *graph.Node) bool {
-	if ((n == nil || n2 == nil) && n != n2) ||
-		(n != nil && (n.ID != n2.ID || n.Type != n2.Type || n.Name != n2.Name)) {
-		return false
-	}
-	return true
-}
-
-func createTestFiles(t *testing.T) {
-	t.Helper()
-
-	// Create an empty directory
-	err := os.MkdirAll("../../../empty_dir", 0o755)
+	// Read SBOM files
+	sbomFiles, err := os.ReadDir(sbomDir)
 	if err != nil {
-		t.Fatalf("Failed to create empty directory: %v", err)
+		t.Fatalf("Failed to read SBOM directory: %v", err)
 	}
 
-	// Create an invalid SBOM file
-	invalidSBOM := []byte(`{"invalid": "json"}`)
-	err = os.WriteFile("../../../invalid_sbom.json", invalidSBOM, 0o644)
-	if err != nil {
-		t.Fatalf("Failed to create invalid SBOM file: %v", err)
+	for _, file := range sbomFiles {
+		if !strings.HasSuffix(file.Name(), ".json") {
+			continue
+		}
+
+		data, err := os.ReadFile(filepath.Join(sbomDir, file.Name()))
+		if err != nil {
+			t.Fatalf("Failed to read SBOM file %s: %v", file.Name(), err)
+		}
+
+		if err := SBOM(storage, data); err != nil {
+			t.Fatalf("Failed to process SBOM from file %s: %v", file.Name(), err)
+		}
 	}
 
-	// Create a SBOM file with no components
-	noComponentsSBOM := []byte(`{
-		"bomFormat": "CycloneDX",
-		"specVersion": "1.5",
-		"version": 1,
-		"metadata": {},
-		"components": []
-	}`)
-	err = os.WriteFile("../../../no_components_sbom.json", noComponentsSBOM, 0o644)
+	keys, err := storage.GetAllKeys()
 	if err != nil {
-		t.Fatalf("Failed to create no components SBOM file: %v", err)
+		t.Fatalf("Failed to get all keys: %v", err)
 	}
+
+	// Verify we have the expected number of nodes
+	if len(keys) != 1600 {
+		t.Fatalf("Expected 1600 nodes to be created from SBOM ingestion, got %d", len(keys))
+	}
+
 }

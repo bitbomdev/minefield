@@ -1,28 +1,28 @@
 [
   {
-    "purl": "pkg:golang/github.com/stretchr/testify@v1.9.0",
+    "purl": "pkg:pypi/setuptools@65.5.1",
     "success": true,
     "scorecard": {
-      "date": "2024-10-14",
+      "date": "2024-11-04",
       "repo": {
-        "name": "github.com/stretchr/testify",
-        "commit": "a012e45d185128fe5bf3370e42b0854856e0998e"
+        "name": "github.com/pypa/setuptools",
+        "commit": "1f798478979b5bae6dbd13d1b47518982673283d"
       },
       "scorecard": {
-        "version": "v5.0.0-68-g28db9a99",
-        "commit": "28db9a99a4c2e43e1f90a5afed6753e6ef2c36d3"
+        "version": "v5.0.0-79-g6c2be58d",
+        "commit": "6c2be58d3899dc6b4d4c93891925d619c9afbdf1"
       },
-      "score": 5.9,
+      "score": 5.3,
       "Checks": [
         {
           "Name": "Code-Review",
-          "Score": 10,
-          "Reason": "all changesets reviewed"
+          "Score": 5,
+          "Reason": "Found 7/13 approved changesets -- score normalized to 5"
         },
         {
           "Name": "Maintained",
           "Score": 10,
-          "Reason": "29 commit(s) and 24 issue activity found in the last 90 days -- score normalized to 10"
+          "Reason": "30 commit(s) and 3 issue activity found in the last 90 days -- score normalized to 10"
         },
         {
           "Name": "CII-Best-Practices",
@@ -40,19 +40,24 @@
           "Reason": "no releases found"
         },
         {
-          "Name": "Packaging",
-          "Score": -1,
-          "Reason": "packaging workflow not detected"
-        },
-        {
           "Name": "Dangerous-Workflow",
           "Score": 10,
           "Reason": "no dangerous workflow patterns detected"
         },
         {
-          "Name": "Binary-Artifacts",
+          "Name": "Packaging",
+          "Score": -1,
+          "Reason": "packaging workflow not detected"
+        },
+        {
+          "Name": "Security-Policy",
           "Score": 10,
-          "Reason": "no binaries found in the repo"
+          "Reason": "security policy file detected"
+        },
+        {
+          "Name": "Branch-Protection",
+          "Score": 0,
+          "Reason": "branch protection not enabled on development/release branches"
         },
         {
           "Name": "Token-Permissions",
@@ -60,39 +65,34 @@
           "Reason": "detected GitHub workflow tokens with excessive permissions"
         },
         {
+          "Name": "Binary-Artifacts",
+          "Score": 2,
+          "Reason": "binaries present in source code"
+        },
+        {
           "Name": "Pinned-Dependencies",
           "Score": 0,
           "Reason": "dependency not pinned by hash detected -- score normalized to 0"
         },
         {
-          "Name": "Branch-Protection",
-          "Score": -1,
-          "Reason": "internal error: error during branchesHandler.setup: internal error: githubv4.Query: Resource not accessible by integration"
+          "Name": "Vulnerabilities",
+          "Score": 10,
+          "Reason": "0 existing vulnerabilities detected"
         },
         {
           "Name": "Fuzzing",
-          "Score": 0,
-          "Reason": "project is not fuzzed"
-        },
-        {
-          "Name": "Security-Policy",
-          "Score": 0,
-          "Reason": "security policy file not detected"
+          "Score": 10,
+          "Reason": "project is fuzzed"
         },
         {
           "Name": "SAST",
           "Score": 0,
           "Reason": "SAST tool is not run on all commits -- score normalized to 0"
-        },
-        {
-          "Name": "Vulnerabilities",
-          "Score": 10,
-          "Reason": "0 existing vulnerabilities detected"
         }
       ],
-      "purl": "pkg:golang/github.com/stretchr/testify@v1.9.0"
+      "purl": ""
     },
-    "github_url": "https://github.com/stretchr/testify",
-    "date": "2024-10-26T00:48:32.26303Z"
+    "github_url": "https://github.com/pypa/setuptools",
+    "date": "2024-11-12T18:30:55.033327Z"
   }
 ]
