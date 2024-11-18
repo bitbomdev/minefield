@@ -86,10 +86,6 @@ func (o *options) PersistentPreRunE(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("storage-addr is required when using Redis (format: host:port)")
 	}
 
-	if o.StorageType == redisStorageType && o.UseInMemory {
-		return fmt.Errorf("use-in-memory flag is only applicable for SQLite storage")
-	}
-
 	return nil
 }
 

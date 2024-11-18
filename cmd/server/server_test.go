@@ -156,16 +156,6 @@ func TestOptions_PersistentPreRunE(t *testing.T) {
 			errorMessage: "storage-addr is required when using Redis (format: host:port)",
 		},
 		{
-			name: "Redis with UseInMemory enabled",
-			options: &options{
-				StorageType: redisStorageType,
-				StorageAddr: "localhost:6379",
-				UseInMemory: true,
-			},
-			wantErr:      true,
-			errorMessage: "use-in-memory flag is only applicable for SQLite storage",
-		},
-		{
 			name: "SQLite with valid StoragePath",
 			options: &options{
 				StorageType: sqliteStorageType,
