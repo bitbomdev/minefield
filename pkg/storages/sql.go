@@ -12,6 +12,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/logger"
 )
 
 const key = "key = ?"
@@ -46,9 +47,9 @@ func NewSQLStorage(dsn string, useInMemory bool) (*SQLStorage, error) {
 	var db *gorm.DB
 	var err error
 	if useInMemory {
-		db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+		db, err = gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	} else {
-		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to SQLite: %w", err)
@@ -179,7 +180,7 @@ func (s *SQLStorage) GetNodes(ids []uint32) (map[uint32]*graph.Node, error) {
 // GetNodesByGlob retrieves nodes matching a glob pattern using SQL queries.
 func (s *SQLStorage) GetNodesByGlob(pattern string) ([]*graph.Node, error) {
 	// Construct the SQL LIKE pattern
-	sqlPattern := fmt.Sprintf("%s%s%s", "%", pattern, "%")
+	sqlPattern := convertGlobToSQLPattern(pattern)
 
 	// Retrieve all name-to-ID mappings that match the pattern
 	var mappings []KVStore
@@ -378,4 +379,24 @@ func (s *SQLStorage) GetCustomData(tag, key string) (map[string][]byte, error) {
 func (s *SQLStorage) AddOrUpdateCustomData(tag, key string, dataKey string, data []byte) error {
 	// TODO: Implement using GORM
 	return fmt.Errorf("not implemented")
+}
+
+// convertGlobToSQLPattern converts a glob pattern to a SQL LIKE pattern.
+// It replaces '*' with '%' and '?' with '_'. It also escapes existing '%' and '_' characters.
+func convertGlobToSQLPattern(pattern string) string {
+	var sb strings.Builder
+	for _, char := range pattern {
+		switch char {
+		case '*':
+			sb.WriteByte('%')
+		case '?':
+			sb.WriteByte('_')
+		case '%', '_':
+			sb.WriteByte('\\')
+			sb.WriteRune(char)
+		default:
+			sb.WriteRune(char)
+		}
+	}
+	return sb.String()
 }
