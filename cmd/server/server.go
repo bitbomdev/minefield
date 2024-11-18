@@ -72,15 +72,24 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 }
 
 func (o *options) PersistentPreRunE(cmd *cobra.Command, args []string) error {
+	if o.StorageType != redisStorageType && o.StorageType != sqliteStorageType {
+		return fmt.Errorf("invalid storage-type %q: must be one of [redis, sqlite]", o.StorageType)
+	}
+
 	if o.StorageType == sqliteStorageType && o.StoragePath == "" {
-		return fmt.Errorf("storage-path is required when using SQLite")
+		if !o.UseInMemory {
+			return fmt.Errorf("storage-path is required when using SQLite with file-based storage")
+		}
 	}
+
 	if o.StorageType == redisStorageType && o.StorageAddr == "" {
-		return fmt.Errorf("storage-addr is required when using Redis")
+		return fmt.Errorf("storage-addr is required when using Redis (format: host:port)")
 	}
+
 	if o.StorageType == redisStorageType && o.UseInMemory {
-		return fmt.Errorf("use-in-memory is not allowed when using Redis")
+		return fmt.Errorf("use-in-memory flag is only applicable for SQLite storage")
 	}
+
 	return nil
 }
 
