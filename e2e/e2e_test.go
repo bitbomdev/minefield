@@ -184,6 +184,10 @@ func TestParseAndExecute_E2E(t *testing.T) {
 					t.Errorf("CustomLeaderboard() error = %v, wantErr %v", err, tt.wantErr)
 					return
 				}
+				if len(nodes) == 0 {
+					t.Errorf("CustomLeaderboard() returned no queries, expected at least one")
+					return
+				}
 				if !tt.wantErr && len(nodes[0].Output) != int(tt.want) {
 					t.Errorf("CustomLeaderboard() got the first nodes output len of = %v, want output len of %v", nodes[0].Output, tt.want)
 				}
