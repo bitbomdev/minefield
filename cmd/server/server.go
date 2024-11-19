@@ -40,8 +40,8 @@ const (
 func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().Int32Var(&o.concurrency, "concurrency", defaultConcurrency, "Maximum number of concurrent operations for leaderboard operations")
 	cmd.Flags().StringVar(&o.addr, "addr", defaultAddr, "Network address and port for the server (e.g. localhost:8089)")
-	cmd.Flags().StringVar(&o.StorageType, "storage-type", redisStorageType, "Type of storage to use (e.g., redis, sqlite)")
-	cmd.Flags().StringVar(&o.StorageAddr, "storage-addr", "localhost:6379", "Address for storage backend")
+	cmd.Flags().StringVar(&o.StorageType, "storage-type", sqliteStorageType, "Type of storage to use (e.g., redis, sqlite)")
+	cmd.Flags().StringVar(&o.StorageAddr, "storage-addr", "localhost:6379", "Address for redis storage backend")
 	cmd.Flags().StringVar(&o.StoragePath, "storage-path", "", "Path to the SQLite database file")
 	cmd.Flags().BoolVar(&o.UseInMemory, "use-in-memory", true, "Use in-memory SQLite database")
 }
@@ -57,7 +57,7 @@ func (o *options) ProvideStorage() (graph.Storage, error) {
 	}
 }
 
-func (o *options) Run(cmd *cobra.Command, args []string) error {
+func (o *options) Run(_ *cobra.Command, _ []string) error {
 	var err error
 	o.storage, err = o.ProvideStorage()
 	if err != nil {
@@ -71,7 +71,7 @@ func (o *options) Run(cmd *cobra.Command, args []string) error {
 	return o.startServer(server)
 }
 
-func (o *options) PersistentPreRunE(cmd *cobra.Command, args []string) error {
+func (o *options) PersistentPreRunE(_ *cobra.Command, _ []string) error {
 	if o.StorageType != redisStorageType && o.StorageType != sqliteStorageType {
 		return fmt.Errorf("invalid storage-type %q: must be one of [redis, sqlite]", o.StorageType)
 	}

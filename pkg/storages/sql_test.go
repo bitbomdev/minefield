@@ -1,7 +1,6 @@
 package storages
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -10,18 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// setupTestDB initializes a new SQLStorage with the given DSN.
-func setupTestDB(dsn string) (*SQLStorage, error) {
-	storage, err := NewSQLStorage(dsn, false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize SQLStorage: %w", err)
-	}
-	return storage, nil
-}
-
 // TestGenerateID_InMemory tests the GenerateID method using an in-memory SQLite database.
 func TestSQLGenerateID_InMemory(t *testing.T) {
-	storage, err := setupTestDB("file::memory:")
+	storage, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -50,7 +40,7 @@ func TestGenerateID_FileBased(t *testing.T) {
 	tempDB := "test_generate_id.db"
 	defer os.Remove(tempDB) // Clean up after the test
 
-	storage, err := setupTestDB(tempDB)
+	storage, err := SetupSQLTestDB(tempDB)
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -73,7 +63,7 @@ func TestGenerateID_FileBased(t *testing.T) {
 	}
 
 	// Re-initialize the storage to ensure persistence
-	storage, err = setupTestDB(tempDB)
+	storage, err = SetupSQLTestDB(tempDB)
 	if err != nil {
 		t.Fatalf("Re-setup failed: %v", err)
 	}
@@ -96,7 +86,7 @@ func TestGenerateID_FileBased(t *testing.T) {
 
 // TestSQLSaveNode tests the SaveNode method.
 func TestSQLSaveNode(t *testing.T) {
-	s, err := setupTestDB("file::memory:?cache=shared")
+	s, err := SetupSQLTestDB("file::memory:?cache=shared")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -111,7 +101,7 @@ func TestSQLSaveNode(t *testing.T) {
 	assert.Equal(t, node.Name, savedNode.Name)
 }
 func TestSQLGetNodes(t *testing.T) {
-	s, err := setupTestDB("file::memory:")
+	s, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -142,7 +132,7 @@ func TestSQLGetNodes(t *testing.T) {
 }
 
 func TestSQLNameToID(t *testing.T) {
-	s, err := setupTestDB("file::memory:")
+	s, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -155,7 +145,7 @@ func TestSQLNameToID(t *testing.T) {
 	assert.Equal(t, node.ID, id)
 }
 func TestSQLGetAllKeys(t *testing.T) {
-	s, err := setupTestDB("file::memory:")
+	s, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -173,7 +163,7 @@ func TestSQLGetAllKeys(t *testing.T) {
 }
 
 func TestSQLSaveCache(t *testing.T) {
-	s, err := setupTestDB("file::memory:")
+	s, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -186,7 +176,7 @@ func TestSQLSaveCache(t *testing.T) {
 	assert.Equal(t, cache.ID, savedCache.ID)
 }
 func TestSQLToBeCached(t *testing.T) {
-	s, err := setupTestDB("file::memory:")
+	s, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -199,7 +189,7 @@ func TestSQLToBeCached(t *testing.T) {
 	assert.Contains(t, toBeCached, nodeID)
 }
 func TestSQLClearCacheStack(t *testing.T) {
-	s, err := setupTestDB("file::memory:")
+	s, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -215,7 +205,7 @@ func TestSQLClearCacheStack(t *testing.T) {
 	assert.NotContains(t, toBeCached, nodeID)
 }
 func TestSQLSaveCaches(t *testing.T) {
-	s, err := setupTestDB("file::memory:")
+	s, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -233,7 +223,7 @@ func TestSQLSaveCaches(t *testing.T) {
 	assert.Equal(t, cache2.ID, savedCache2.ID)
 }
 func TestSQLGetCaches(t *testing.T) {
-	s, err := setupTestDB("file::memory:")
+	s, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -251,7 +241,7 @@ func TestSQLGetCaches(t *testing.T) {
 	assert.Equal(t, cache2.ID, caches[2].ID)
 }
 func TestSQLRemoveAllCaches(t *testing.T) {
-	s, err := setupTestDB("file::memory:")
+	s, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -271,7 +261,7 @@ func TestSQLRemoveAllCaches(t *testing.T) {
 	assert.Nil(t, caches[2])
 }
 func TestSQLAddAndGetDataToDB(t *testing.T) {
-	s, err := setupTestDB("file::memory:")
+	s, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
@@ -280,7 +270,7 @@ func TestSQLAddAndGetDataToDB(t *testing.T) {
 }
 
 func TestSQLGetAllKeysByGlob(t *testing.T) {
-	s, err := setupTestDB("file::memory:")
+	s, err := SetupSQLTestDB("file::memory:")
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
