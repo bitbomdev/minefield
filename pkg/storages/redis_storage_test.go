@@ -11,7 +11,8 @@ import (
 )
 
 func TestGenerateID(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	id, err := r.GenerateID()
 	assert.NoError(t, err)
@@ -19,7 +20,7 @@ func TestGenerateID(t *testing.T) {
 }
 
 func TestSaveNode(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	node := &graph.Node{ID: 1, Name: "test_node", Children: roaring.New(), Parents: roaring.New()}
 	err = r.SaveNode(node)
@@ -33,7 +34,7 @@ func TestSaveNode(t *testing.T) {
 }
 
 func TestNameToID(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	node := &graph.Node{ID: 1, Name: "test_node", Children: roaring.New(), Parents: roaring.New()}
 	err = r.SaveNode(node)
@@ -45,7 +46,7 @@ func TestNameToID(t *testing.T) {
 }
 
 func TestGetAllKeys(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	node1 := &graph.Node{ID: 1, Name: "node1", Children: roaring.New(), Parents: roaring.New()}
 	node2 := &graph.Node{ID: 2, Name: "node2", Children: roaring.New(), Parents: roaring.New()}
@@ -61,7 +62,7 @@ func TestGetAllKeys(t *testing.T) {
 }
 
 func TestSaveCache(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	cache := &graph.NodeCache{ID: 1, AllParents: roaring.New(), AllChildren: roaring.New()}
 	err = r.SaveCache(cache)
@@ -73,7 +74,7 @@ func TestSaveCache(t *testing.T) {
 }
 
 func TestToBeCached(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	nodeID := uint32(1)
 	err = r.AddNodeToCachedStack(nodeID)
@@ -85,7 +86,7 @@ func TestToBeCached(t *testing.T) {
 }
 
 func TestClearCacheStack(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	nodeID := uint32(1)
 	err = r.AddNodeToCachedStack(nodeID)
@@ -100,7 +101,7 @@ func TestClearCacheStack(t *testing.T) {
 }
 
 func TestGetNodes(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	// Add test data
 	node1 := &graph.Node{ID: 1, Name: "test_node1", Children: roaring.New(), Parents: roaring.New()}
@@ -120,7 +121,7 @@ func TestGetNodes(t *testing.T) {
 }
 
 func TestSaveCaches(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	cache1 := &graph.NodeCache{ID: 1, AllParents: roaring.New(), AllChildren: roaring.New()}
 	cache2 := &graph.NodeCache{ID: 2, AllParents: roaring.New(), AllChildren: roaring.New()}
@@ -137,7 +138,7 @@ func TestSaveCaches(t *testing.T) {
 }
 
 func TestGetCaches(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	cache1 := &graph.NodeCache{ID: 1, AllParents: roaring.New(), AllChildren: roaring.New()}
 	cache2 := &graph.NodeCache{ID: 2, AllParents: roaring.New(), AllChildren: roaring.New()}
@@ -154,7 +155,7 @@ func TestGetCaches(t *testing.T) {
 }
 
 func TestRemoveAllCaches(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	cache1 := &graph.NodeCache{ID: 1, AllParents: roaring.New(), AllChildren: roaring.New()}
 	cache2 := &graph.NodeCache{ID: 2, AllParents: roaring.New(), AllChildren: roaring.New()}
@@ -173,7 +174,7 @@ func TestRemoveAllCaches(t *testing.T) {
 }
 
 func TestAddAndGetDataToDB(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	err = r.AddOrUpdateCustomData("test_tag", "test_key1", "test_data1", []byte("test_data1"))
 	assert.NoError(t, err)
@@ -194,7 +195,7 @@ func TestAddAndGetDataToDB(t *testing.T) {
 }
 
 func TestGetNodesByGlob(t *testing.T) {
-	r, err := SetupRedisTestDB(context.Background(), "localhost:6379")
+	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	// Add test nodes
 	node1 := &graph.Node{ID: 1, Name: "test_node1", Children: roaring.New(), Parents: roaring.New()}

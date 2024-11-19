@@ -3,6 +3,7 @@ package storages
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -25,9 +26,15 @@ func SetupSQLTestDB(dsn string) (*SQLStorage, error) {
 }
 
 // SetupRedisTestDB initializes a new RedisStorage with the given address.
-func SetupRedisTestDB(ctx context.Context, addr string) (*RedisStorage, error) {
+func SetupRedisTestDB(ctx context.Context) (*RedisStorage, error) {
+
+	redisURL := os.Getenv("TEST_REDIS_URL")
+	if redisURL == "" {
+		redisURL = "localhost:6379"
+	}
+
 	rdb := redis.NewClient(&redis.Options{
-		Addr: addr,
+		Addr: redisURL,
 	})
 
 	// Verify connection

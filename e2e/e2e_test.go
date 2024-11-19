@@ -52,7 +52,7 @@ func Test_E2E(t *testing.T) {
 			storage graph.Storage
 			cleanup func()
 		} {
-			redis, err := storages.SetupRedisTestDB(context.Background(), "localhost:6379")
+			redis, err := storages.SetupRedisTestDB(context.Background())
 			if err != nil {
 				t.Fatal(err)
 			}
