@@ -40,6 +40,10 @@
 [View Minefield demo on asciinema](https://asciinema.org/a/674302)
 
 ## Quickstart Guide
+1. **Start the server**
+   ```sh
+   minefield server
+   ```
 
 1. **Ingest some data:**
    ```sh
@@ -56,11 +60,9 @@
 
 ### Example
 
-_Redis must be running at `localhost:6379`. If not, please use `make docker-up` to start Redis._
-
 1. **Start the API server:**
    ```sh
-   minefield start-service 
+   minefield server 
    ```
 
 2. **Ingest the `testdata/small` SBOM directory:**
@@ -86,11 +88,6 @@ _Redis must be running at `localhost:6379`. If not, please use `make docker-up` 
     ```sh
     minefield query custom "dependencies library pkg:lib-B@1.0.0 and dependencies library pkg:lib-A@1.0.0"
     ```
-7. **Run queries with the visualizer:**
-    ```sh
-    minefield query custom "dependents library pkg:dep2@1.0.0" --visualize
-    ```
-
 ## To Start Using Minefield
 
 ### Using Docker
