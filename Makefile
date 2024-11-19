@@ -6,7 +6,7 @@ build: wire
 test:
 	go test -v -coverprofile=coverage.out ./...
 
-test-e2e: docker-up
+test-e2e: docker-up 
 	e2e=true go test -v -coverprofile=coverage.out ./...
 
 clean:
