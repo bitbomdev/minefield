@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := all
 
 build: wire
-	go build -o bin/minefield main.go
+	CGO_ENABLED=1 go build -o bin/minefield main.go
 
 test:
 	go test -v -coverprofile=coverage.out ./...
