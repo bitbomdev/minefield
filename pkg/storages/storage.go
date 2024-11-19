@@ -25,10 +25,20 @@ func SetupSQLTestDB(dsn string) (*SQLStorage, error) {
 }
 
 // SetupRedisTestDB initializes a new RedisStorage with the given address.
-func SetupRedisTestDB(addr string) *RedisStorage {
+func SetupRedisTestDB(ctx context.Context, addr string) (*RedisStorage, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: addr,
 	})
-	rdb.FlushDB(context.Background()) // Clear the database before each test
-	return &RedisStorage{Client: rdb}
+	
+	// Verify connection
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+	
+	// Clear the database before each test
+	if err := rdb.FlushDB(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("failed to flush Redis database: %w", err)
+	}
+	
+	return &RedisStorage{Client: rdb}, nil
 }
