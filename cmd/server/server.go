@@ -11,10 +11,12 @@ import (
 	"syscall"
 	"time"
 
+	connectcors "connectrpc.com/cors"
 	service "github.com/bitbomdev/minefield/api/v1"
 	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
 	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/bitbomdev/minefield/pkg/storages"
+	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -102,21 +104,21 @@ func (o *options) setupServer() (*http.Server, error) {
 	newService := service.NewService(o.storage, o.concurrency)
 	mux := http.NewServeMux()
 	path, handler := apiv1connect.NewQueryServiceHandler(newService)
-	mux.Handle(path, handler)
+	mux.Handle(path, withCORS(handler))
 	path, handler = apiv1connect.NewLeaderboardServiceHandler(newService)
-	mux.Handle(path, handler)
+	mux.Handle(path, withCORS(handler))
 	path, handler = apiv1connect.NewCacheServiceHandler(newService)
-	mux.Handle(path, handler)
+	mux.Handle(path, withCORS(handler))
 	path, handler = apiv1connect.NewGraphServiceHandler(newService)
-	mux.Handle(path, handler)
+	mux.Handle(path, withCORS(handler))
 	path, handler = apiv1connect.NewHealthServiceHandler(newService)
-	mux.Handle(path, handler)
+	mux.Handle(path, withCORS(handler))
 	path, handler = apiv1connect.NewIngestServiceHandler(newService)
-	mux.Handle(path, handler)
+	mux.Handle(path, withCORS(handler))
 
 	server := &http.Server{
 		Addr:    serviceAddr,
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
+		Handler: h2c.NewHandler(withCORS(mux), &http2.Server{}),
 	}
 
 	return server, nil
@@ -174,4 +176,15 @@ func NewServerCommand(storage graph.Storage, o *options) (*cobra.Command, error)
 	}
 	o.AddFlags(cmd)
 	return cmd, nil
+}
+
+// withCORS adds CORS support to a Connect HTTP handler.
+func withCORS(h http.Handler) http.Handler {
+	middleware := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: connectcors.AllowedMethods(),
+		AllowedHeaders: connectcors.AllowedHeaders(),
+		ExposedHeaders: connectcors.ExposedHeaders(),
+	})
+	return middleware.Handler(h)
 }

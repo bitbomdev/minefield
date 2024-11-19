@@ -4,6 +4,7 @@ go 1.23.1
 
 require (
 	connectrpc.com/connect v1.17.0
+	connectrpc.com/cors v0.1.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/alecthomas/participle/v2 v2.1.1
@@ -47,6 +48,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.24 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/onsi/gomega v1.30.0 // indirect
+	github.com/rs/cors v1.11.1
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spdx/tools-golang v0.5.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
