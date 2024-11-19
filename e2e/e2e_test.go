@@ -17,9 +17,9 @@ import (
 )
 
 func Test_E2E(t *testing.T) {
-	// if _, ok := os.LookupEnv("e2e"); !ok {
-	// 	t.Skip("E2E tests are not enabled")
-	// }
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 
 	// Setup storage backends
 	storageBackends := []struct {

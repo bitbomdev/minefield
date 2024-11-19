@@ -15,7 +15,7 @@ const (
 	CacheStackKey  = "to_be_cached"
 )
 
-// SetupRedisTestDB initializes a new SQLStorage with the given DSN.
+// SetupSQLTestDB initializes a new SQLStorage with the given DSN.
 func SetupSQLTestDB(dsn string) (*SQLStorage, error) {
 	storage, err := NewSQLStorage(dsn, false)
 	if err != nil {
@@ -29,16 +29,16 @@ func SetupRedisTestDB(ctx context.Context, addr string) (*RedisStorage, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: addr,
 	})
-	
+
 	// Verify connection
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
-	
+
 	// Clear the database before each test
 	if err := rdb.FlushDB(ctx).Err(); err != nil {
 		return nil, fmt.Errorf("failed to flush Redis database: %w", err)
 	}
-	
+
 	return &RedisStorage{Client: rdb}, nil
 }
