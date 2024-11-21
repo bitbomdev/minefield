@@ -30,6 +30,7 @@ type options struct {
 	StorageAddr string
 	StoragePath string
 	UseInMemory bool
+	CORS        []string
 }
 
 const (
@@ -46,6 +47,12 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.StorageAddr, "storage-addr", "localhost:6379", "Address for redis storage backend")
 	cmd.Flags().StringVar(&o.StoragePath, "storage-path", "", "Path to the SQLite database file")
 	cmd.Flags().BoolVar(&o.UseInMemory, "use-in-memory", true, "Use in-memory SQLite database")
+	cmd.Flags().StringSliceVar(
+		&o.CORS,
+		"cors",
+		[]string{"http://localhost:8089"},
+		"Allowed origins for CORS (e.g., 'https://app.bitbom.dev')",
+	)
 }
 
 func (o *options) ProvideStorage() (graph.Storage, error) {
@@ -104,21 +111,21 @@ func (o *options) setupServer() (*http.Server, error) {
 	newService := service.NewService(o.storage, o.concurrency)
 	mux := http.NewServeMux()
 	path, handler := apiv1connect.NewQueryServiceHandler(newService)
-	mux.Handle(path, withCORS(handler))
+	mux.Handle(path, handler)
 	path, handler = apiv1connect.NewLeaderboardServiceHandler(newService)
-	mux.Handle(path, withCORS(handler))
+	mux.Handle(path, handler)
 	path, handler = apiv1connect.NewCacheServiceHandler(newService)
-	mux.Handle(path, withCORS(handler))
+	mux.Handle(path, handler)
 	path, handler = apiv1connect.NewGraphServiceHandler(newService)
-	mux.Handle(path, withCORS(handler))
+	mux.Handle(path, handler)
 	path, handler = apiv1connect.NewHealthServiceHandler(newService)
-	mux.Handle(path, withCORS(handler))
+	mux.Handle(path, handler)
 	path, handler = apiv1connect.NewIngestServiceHandler(newService)
-	mux.Handle(path, withCORS(handler))
+	mux.Handle(path, handler)
 
 	server := &http.Server{
 		Addr:    serviceAddr,
-		Handler: h2c.NewHandler(withCORS(mux), &http2.Server{}),
+		Handler: h2c.NewHandler(withCORS(mux, o), &http2.Server{}),
 	}
 
 	return server, nil
@@ -179,12 +186,14 @@ func NewServerCommand(storage graph.Storage, o *options) (*cobra.Command, error)
 }
 
 // withCORS adds CORS support to a Connect HTTP handler.
-func withCORS(h http.Handler) http.Handler {
+func withCORS(h http.Handler, o *options) http.Handler {
 	middleware := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: connectcors.AllowedMethods(),
-		AllowedHeaders: connectcors.AllowedHeaders(),
-		ExposedHeaders: connectcors.ExposedHeaders(),
+		AllowedOrigins:   o.CORS,
+		AllowedMethods:   connectcors.AllowedMethods(),
+		AllowedHeaders:   connectcors.AllowedHeaders(),
+		ExposedHeaders:   connectcors.ExposedHeaders(),
+		AllowCredentials: true,
+		MaxAge:           3600,
 	})
 	return middleware.Handler(h)
 }
