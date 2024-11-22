@@ -6,10 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bitbomdev/minefield/pkg/tools"
-
 	"github.com/Masterminds/semver"
 	"github.com/bitbomdev/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/tools"
 )
 
 type Vulnerability struct {

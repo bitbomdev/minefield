@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bitbomdev/minefield/pkg/graph"
+	"github.com/bitbomdev/minefield/pkg/utils"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -29,7 +30,7 @@ func (r *RedisStorage) GenerateID() (uint32, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to generate ID: %w", err)
 	}
-	return uint32(id), nil
+	return utils.IntToUint32(int(id))
 }
 
 func (r *RedisStorage) SaveNode(node *graph.Node) error {
@@ -40,7 +41,8 @@ func (r *RedisStorage) SaveNode(node *graph.Node) error {
 	if err := r.Client.Set(context.Background(), fmt.Sprintf("%s%d", NodeKeyPrefix, node.ID), data, 0).Err(); err != nil {
 		return fmt.Errorf("failed to save node data: %w", err)
 	}
-	if err := r.Client.Set(context.Background(), fmt.Sprintf("%s%s", NameToIDKey, node.Name), strconv.Itoa(int(node.ID)), 0).Err(); err != nil {
+	nodeIDStr := utils.Uint32ToStr(node.ID)
+	if err := r.Client.Set(context.Background(), fmt.Sprintf("%s%s", NameToIDKey, node.Name), nodeIDStr, 0).Err(); err != nil {
 		return fmt.Errorf("failed to save node name to ID mapping: %w", err)
 	}
 	if err := r.AddNodeToCachedStack(node.ID); err != nil {
@@ -55,7 +57,7 @@ func (r *RedisStorage) NameToID(name string) (uint32, error) {
 		return 0, fmt.Errorf("failed to get ID for name %s: %w", name, err)
 	}
 
-	idInt, err := strconv.Atoi(id)
+	idInt, err := utils.StrToUint32(id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert ID to integer: %w", err)
 	}
