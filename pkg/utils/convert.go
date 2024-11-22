@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 )
 
@@ -29,12 +30,3 @@ func IntToUint32(val int) (uint32, error) {
 	}
 	return uint32(val), nil
 }
-```
-
-Note: The import statement modification should be applied separately at the top of the file:
-```go
-import (
-	"fmt"
-	"math"
-	"strconv"
-)

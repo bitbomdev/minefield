@@ -2,7 +2,6 @@ package graph
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/bitbomdev/minefield/pkg/utils"
@@ -227,7 +226,7 @@ func addCyclesToBindMap(scc map[uint32]uint32, cache, children, parents *NativeK
 		keycache := roaring.New()
 		childrenCache, parentCache := roaring.New(), roaring.New()
 		for _, key := range keysForAParent {
-			intkey, err := strconv.Atoi(key)
+			intkey, err := utils.StrToUint32(key)
 			if err != nil {
 				return err
 			}
@@ -289,7 +288,7 @@ func getTodoAndFutureNodes(children, parents *NativeKeyManagement, curNode *Node
 func addToCache(bm *NativeKeyManagement, curElem, todoElem uint32) error {
 	curElemStr := utils.Uint32ToStr(curElem)
 	todoElemStr := utils.Uint32ToStr(todoElem)
-	
+
 	curElemVal, err := bm.Get(curElemStr)
 	if err != nil {
 		return fmt.Errorf("error getting value for curElem key from value %d: %w", curElem, err)

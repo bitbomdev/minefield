@@ -57,7 +57,7 @@ func (r *RedisStorage) NameToID(name string) (uint32, error) {
 		return 0, fmt.Errorf("failed to get ID for name %s: %w", name, err)
 	}
 
-	idInt, err := strconv.Atoi(id)
+	idInt, err := utils.StrToUint32(id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert ID to integer: %w", err)
 	}
