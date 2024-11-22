@@ -70,5 +70,5 @@ func New() *cobra.Command {
 }
 
 func printProgress(count int, path string) string {
-	return fmt.Sprintf("\033[1;36mIngested %d SBOMs\033[0m | \033[1;34m%s\033[0m", count, helpers.TruncateString(path, 50))
+	return fmt.Sprintf("\033[1;36mIngested %d Scorecards\033[0m | \033[1;34m%s\033[0m", count, helpers.TruncateString(path, 50))
 }

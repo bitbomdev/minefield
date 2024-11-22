@@ -24,5 +24,17 @@ func IntToUint32(val int) (uint32, error) {
 	if val < 0 {
 		return 0, fmt.Errorf("negative value %d cannot be converted to uint32", val)
 	}
+	if val > math.MaxUint32 {
+		return 0, fmt.Errorf("value %d exceeds maximum uint32 value", val)
+	}
 	return uint32(val), nil
 }
+```
+
+Note: The import statement modification should be applied separately at the top of the file:
+```go
+import (
+	"fmt"
+	"math"
+	"strconv"
+)

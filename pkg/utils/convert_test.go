@@ -67,6 +67,8 @@ func TestIntToUint32(t *testing.T) {
 		{"small number", 42, 42, false},
 		{"max uint32", 4294967295, 4294967295, false},
 		{"negative number", -1, 0, true},
+		{"overflow uint32", 4294967296, 0, true},
+		{"int32 max", 2147483647, 2147483647, false},
 	}
 
 	for _, tt := range tests {
