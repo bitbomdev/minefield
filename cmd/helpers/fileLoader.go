@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // LoadDataFromPath takes in a directory or file path and processes the data into the storage.
@@ -68,6 +69,7 @@ func LoadDataFromPath(path string) ([]Data, error) {
 	return result, nil
 }
 
+// processZipFile safely extracts files from a ZIP archive, preventing Zip Slip.
 func processZipFile(filePath string) ([]Data, error) {
 	r, err := zip.OpenReader(filePath)
 	if err != nil {
@@ -79,24 +81,65 @@ func processZipFile(filePath string) ([]Data, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
+	// Ensure the temp directory is removed in case of an error.
+	defer func() {
+		if err != nil {
+			os.RemoveAll(tempDir)
+		}
+	}()
 
 	for _, f := range r.File {
+		// Clean the file name to remove any path traversal.
+		cleanName := filepath.Clean(f.Name)
+
+		// Prevent absolute paths.
+		if filepath.IsAbs(cleanName) {
+			return nil, fmt.Errorf("invalid file path %s: absolute paths are not allowed", f.Name)
+		}
+
+		// Resolve the absolute path.
+		extractedFilePath := filepath.Join(tempDir, cleanName)
+		absExtractedPath, err := filepath.Abs(extractedFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get absolute path for %s: %w", extractedFilePath, err)
+		}
+
+		absTempDir, err := filepath.Abs(tempDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get absolute path for temp directory: %w", err)
+		}
+
+		// Ensure that the extracted path is within the temp directory.
+		if !strings.HasPrefix(absExtractedPath, absTempDir+string(os.PathSeparator)) {
+			return nil, fmt.Errorf("invalid file path %s: outside of the extraction directory", f.Name)
+		}
+
+		// Create necessary directories.
+		if f.FileInfo().IsDir() {
+			if err := os.MkdirAll(absExtractedPath, os.ModePerm); err != nil {
+				return nil, fmt.Errorf("failed to create directory %s: %w", absExtractedPath, err)
+			}
+			continue
+		} else {
+			if err := os.MkdirAll(filepath.Dir(absExtractedPath), os.ModePerm); err != nil {
+				return nil, fmt.Errorf("failed to create directory for file %s: %w", absExtractedPath, err)
+			}
+		}
+
 		rc, err := f.Open()
 		if err != nil {
 			return nil, fmt.Errorf("failed to open file %s in zip: %w", f.Name, err)
 		}
 		defer rc.Close()
 
-		extractedFilePath := filepath.Join(tempDir, f.Name)
-		outFile, err := os.Create(extractedFilePath)
+		outFile, err := os.Create(absExtractedPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create file %s: %w", extractedFilePath, err)
+			return nil, fmt.Errorf("failed to create file %s: %w", absExtractedPath, err)
 		}
 		defer outFile.Close()
-		_, err = io.Copy(outFile, rc)
-		if err != nil {
-			return nil, fmt.Errorf("failed to copy file %s: %w", extractedFilePath, err)
+
+		if _, err := io.Copy(outFile, rc); err != nil {
+			return nil, fmt.Errorf("failed to copy file %s: %w", absExtractedPath, err)
 		}
 	}
 
