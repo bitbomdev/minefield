@@ -9,7 +9,6 @@ import (
 	"github.com/bitbomdev/minefield/cmd/helpers"
 	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
-	"github.com/bitbomdev/minefield/pkg/tools"
 	"github.com/spf13/cobra"
 )
 
@@ -49,7 +48,7 @@ func (o *options) Run(_ *cobra.Command, args []string) error {
 		}
 		// Clear the line by overwriting with spaces
 		fmt.Printf("\r\033[1;36m%-80s\033[0m", " ")
-		fmt.Printf("\r\033[1;36mIngested %d/%d Scorecards\033[0m | \033[1;34m%s\033[0m", index+1, len(result), tools.TruncateString(data.Path, 50))
+		fmt.Printf("\r\033[1;36mIngested %d/%d Scorecards\033[0m | \033[1;34m%s\033[0m", index+1, len(result), helpers.TruncateString(data.Path, 50))
 	}
 
 	fmt.Println("\nScorecards ingested successfully")
@@ -71,5 +70,5 @@ func New() *cobra.Command {
 }
 
 func printProgress(count int, path string) string {
-	return fmt.Sprintf("\033[1;36mIngested %d SBOMs\033[0m | \033[1;34m%s\033[0m", count, tools.TruncateString(path, 50))
+	return fmt.Sprintf("\033[1;36mIngested %d SBOMs\033[0m | \033[1;34m%s\033[0m", count, helpers.TruncateString(path, 50))
 }

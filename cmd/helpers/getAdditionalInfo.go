@@ -3,10 +3,12 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+
+	"strings"
+
 	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/bitbomdev/minefield/pkg/tools"
 	"github.com/bitbomdev/minefield/pkg/tools/ingest"
-	"strings"
 )
 
 func ComputeAdditionalInfo(node *apiv1.Node) string {

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/RoaringBitmap/roaring"
+	"github.com/bitbomdev/minefield/pkg/utils"
 )
 
 func Cache(storage Storage) error {
@@ -47,21 +48,21 @@ func Cache(storage Storage) error {
 
 	for i := 0; i < len(cachedChildKeys); i++ {
 		childId := cachedChildKeys[i]
-		childIntId, err := strconv.Atoi(childId)
+		childIntId, err := utils.StrToUint32(childId)
 		if err != nil {
-			return fmt.Errorf("error converting child key %s to int: %w", childId, err)
+			return fmt.Errorf("error converting child key %s: %w", childId, err)
 		}
 
 		childBindValue := cachedChildValues[i].Clone()
-		childBindValue.Add(uint32(childIntId))
+		childBindValue.Add(childIntId)
 
-		tempValue, err := cachedParents.Get(strconv.Itoa(childIntId))
+		tempValue, err := cachedParents.Get(utils.Uint32ToStr(childIntId))
 		if err != nil {
-			return fmt.Errorf("error getting value for key %s, err: %v", childId, err)
+			return fmt.Errorf("error getting value for key %s: %w", childId, err)
 		}
 		parentBindValue := tempValue.Clone()
-		parentBindValue.Add(uint32(childIntId))
-		caches = append(caches, NewNodeCache(uint32(childIntId), parentBindValue, childBindValue))
+		parentBindValue.Add(childIntId)
+		caches = append(caches, NewNodeCache(childIntId, parentBindValue, childBindValue))
 	}
 
 	if err := storage.SaveCaches(caches); err != nil {
@@ -209,7 +210,7 @@ func addCyclesToBindMap(scc map[uint32]uint32, cache, children, parents *NativeK
 	parentToKeys := map[uint32][]string{}
 
 	for k, v := range scc {
-		parentToKeys[v] = append(parentToKeys[v], strconv.Itoa(int(k)))
+		parentToKeys[v] = append(parentToKeys[v], utils.Uint32ToStr(k))
 	}
 
 	for _, keysForAParent := range parentToKeys {
@@ -258,23 +259,24 @@ func addCyclesToBindMap(scc map[uint32]uint32, cache, children, parents *NativeK
 
 func getTodoAndFutureNodes(children, parents *NativeKeyManagement, curNode *Node, direction Direction) ([]uint32, []uint32, error) {
 	var todoNodes, futureNodes []uint32
+	nodeIDStr := utils.Uint32ToStr(curNode.ID)
 
 	if direction == ChildrenDirection {
-		todoNodesBitmap, err := children.Get(strconv.Itoa(int(curNode.ID)))
+		todoNodesBitmap, err := children.Get(nodeIDStr)
 		if err != nil {
 			return nil, nil, err
 		}
-		futureNodesBitmap, err := parents.Get(strconv.Itoa(int(curNode.ID)))
+		futureNodesBitmap, err := parents.Get(nodeIDStr)
 		if err != nil {
 			return nil, nil, err
 		}
 		todoNodes, futureNodes = todoNodesBitmap.ToArray(), futureNodesBitmap.ToArray()
 	} else {
-		todoNodesBitmap, err := parents.Get(strconv.Itoa(int(curNode.ID)))
+		todoNodesBitmap, err := parents.Get(nodeIDStr)
 		if err != nil {
 			return nil, nil, err
 		}
-		futureNodesBitmap, err := children.Get(strconv.Itoa(int(curNode.ID)))
+		futureNodesBitmap, err := children.Get(nodeIDStr)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -285,22 +287,21 @@ func getTodoAndFutureNodes(children, parents *NativeKeyManagement, curNode *Node
 }
 
 func addToCache(bm *NativeKeyManagement, curElem, todoElem uint32) error {
-	curElemVal, err := bm.Get(strconv.Itoa(int(curElem)))
+	curElemStr := utils.Uint32ToStr(curElem)
+	todoElemStr := utils.Uint32ToStr(todoElem)
+	
+	curElemVal, err := bm.Get(curElemStr)
 	if err != nil {
-		return fmt.Errorf("error getting value for curElem key from value %d, err: %v", curElem, err)
+		return fmt.Errorf("error getting value for curElem key from value %d: %w", curElem, err)
 	}
 
-	todoVal, err := bm.Get(strconv.Itoa(int(todoElem)))
+	todoVal, err := bm.Get(todoElemStr)
 	if err != nil {
-		return fmt.Errorf("error getting value for curElem key %d, err: %v", todoElem, err)
+		return fmt.Errorf("error getting value for todoElem key %d: %w", todoElem, err)
 	}
 
 	curElemVal.Or(&todoVal)
 	curElemVal.Add(curElem)
 
-	err = bm.Set(strconv.Itoa(int(curElem)), curElemVal)
-	if err != nil {
-		return err
-	}
-	return nil
+	return bm.Set(curElemStr, curElemVal)
 }
