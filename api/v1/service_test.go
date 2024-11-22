@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	"github.com/RoaringBitmap/roaring"
 	service "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/stretchr/testify/assert"
@@ -97,11 +96,6 @@ func TestQueriesIngestAndCache(t *testing.T) {
 	resp, err := s.GetNodeByName(context.Background(), graphReq)
 	require.NoError(t, err)
 	assert.NotNil(t, resp.Msg.Node)
-
-	// Get the dependencies of the node
-	deps := roaring.New()
-	_, err = deps.FromBase64(resp.Msg.Node.Dependencies)
-	require.NoError(t, err)
 
 	cacheReq := connect.NewRequest(&emptypb.Empty{})
 	_, err = s.Cache(context.Background(), cacheReq)

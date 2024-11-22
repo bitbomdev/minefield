@@ -26,22 +26,13 @@ func NodeToServiceNode(node *graph.Node) (*service.Node, error) {
 		return nil, err
 	}
 
-	dependencies, err := node.Parents.ToBase64()
-	if err != nil {
-		return nil, err
-	}
-	dependents, err := node.Children.ToBase64()
-	if err != nil {
-		return nil, err
-	}
-
 	return &service.Node{
 		Id:           node.ID,
 		Name:         node.Name,
 		Type:         node.Type,
 		Metadata:     data,
-		Dependencies: dependencies,
-		Dependents:   dependents,
+		Dependencies: node.Children.ToArray(),
+		Dependents:   node.Parents.ToArray(),
 	}, nil
 }
 

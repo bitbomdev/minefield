@@ -11,10 +11,12 @@ import (
 	"syscall"
 	"time"
 
+	connectcors "connectrpc.com/cors"
 	service "github.com/bitbomdev/minefield/api/v1"
 	"github.com/bitbomdev/minefield/gen/api/v1/apiv1connect"
 	"github.com/bitbomdev/minefield/pkg/graph"
 	"github.com/bitbomdev/minefield/pkg/storages"
+	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -28,6 +30,7 @@ type options struct {
 	StorageAddr string
 	StoragePath string
 	UseInMemory bool
+	CORS        []string
 }
 
 const (
@@ -44,6 +47,12 @@ func (o *options) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.StorageAddr, "storage-addr", "localhost:6379", "Address for redis storage backend")
 	cmd.Flags().StringVar(&o.StoragePath, "storage-path", "", "Path to the SQLite database file")
 	cmd.Flags().BoolVar(&o.UseInMemory, "use-in-memory", true, "Use in-memory SQLite database")
+	cmd.Flags().StringSliceVar(
+		&o.CORS,
+		"cors",
+		[]string{"http://localhost:8089"},
+		"Allowed origins for CORS (e.g., 'https://app.bitbom.dev')",
+	)
 }
 
 func (o *options) ProvideStorage() (graph.Storage, error) {
@@ -116,7 +125,7 @@ func (o *options) setupServer() (*http.Server, error) {
 
 	server := &http.Server{
 		Addr:    serviceAddr,
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
+		Handler: h2c.NewHandler(withCORS(mux, o), &http2.Server{}),
 	}
 
 	return server, nil
@@ -174,4 +183,17 @@ func NewServerCommand(storage graph.Storage, o *options) (*cobra.Command, error)
 	}
 	o.AddFlags(cmd)
 	return cmd, nil
+}
+
+// withCORS adds CORS support to a Connect HTTP handler.
+func withCORS(h http.Handler, o *options) http.Handler {
+	middleware := cors.New(cors.Options{
+		AllowedOrigins:   o.CORS,
+		AllowedMethods:   connectcors.AllowedMethods(),
+		AllowedHeaders:   connectcors.AllowedHeaders(),
+		ExposedHeaders:   connectcors.ExposedHeaders(),
+		AllowCredentials: true,
+		MaxAge:           3600,
+	})
+	return middleware.Handler(h)
 }

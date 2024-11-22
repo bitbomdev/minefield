@@ -22,8 +22,8 @@ message Node {
   uint32 id = 1;
   string name = 2;
   string type = 3;
-  string dependencies = 4;
-  string dependents = 5;
+  repeated uint32 dependencies = 4;
+  repeated uint32 dependents = 5;
   bytes  metadata = 6;
 }
 
