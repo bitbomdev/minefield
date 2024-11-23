@@ -24,3 +24,9 @@ updates:
       exclude-patterns:
         - "actions/setup-go"
         - "goreleaser/goreleaser-action"
+
+- package-ecosystem: docker
+  directory: /
+  schedule:
+    interval: daily
+
