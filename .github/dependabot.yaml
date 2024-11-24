@@ -1,21 +1,18 @@
 version: 2
 updates:
 - package-ecosystem: gomod
-  directories:
-    - "/"
+  directory: "/"
   schedule:
     interval: daily
-  rebase-strategy: disabled
   commit-message:
-      prefix: ":seedling:"
+    prefix: ":seedling:"
   open-pull-requests-limit: 3
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:
-      interval: "weekly"
-  rebase-strategy: disabled
+    interval: daily
   commit-message:
-      prefix: ":seedling:"
+    prefix: ":seedling:"
   groups:
     github-actions:
       patterns:
@@ -26,7 +23,7 @@ updates:
         - "goreleaser/goreleaser-action"
 
 - package-ecosystem: docker
-  directory: /
+  directory: "/"
   schedule:
     interval: daily
 
