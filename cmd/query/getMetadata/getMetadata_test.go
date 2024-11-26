@@ -12,6 +12,7 @@ import (
 	apiv1 "github.com/bitbomdev/minefield/gen/api/v1"
 	"github.com/spf13/cobra"
 	"github.com/zeebo/assert"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestFormatTable(t *testing.T) {
@@ -48,6 +49,8 @@ type mockGraphServiceClient struct {
 	GetNodesByGlobFunc func(ctx context.Context, req *connect.Request[apiv1.GetNodesByGlobRequest]) (*connect.Response[apiv1.GetNodesByGlobResponse], error)
 	GetNodeFunc        func(ctx context.Context, req *connect.Request[apiv1.GetNodeRequest]) (*connect.Response[apiv1.GetNodeResponse], error)
 	GetNodeByNameFunc  func(ctx context.Context, req *connect.Request[apiv1.GetNodeByNameRequest]) (*connect.Response[apiv1.GetNodeByNameResponse], error)
+	AddNodeFunc        func(ctx context.Context, req *connect.Request[apiv1.AddNodeRequest]) (*connect.Response[apiv1.AddNodeResponse], error)
+	SetDependencyFunc  func(ctx context.Context, req *connect.Request[apiv1.SetDependencyRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 func (m *mockGraphServiceClient) GetNodesByGlob(ctx context.Context, req *connect.Request[apiv1.GetNodesByGlobRequest]) (*connect.Response[apiv1.GetNodesByGlobResponse], error) {
@@ -60,6 +63,14 @@ func (m *mockGraphServiceClient) GetNode(ctx context.Context, req *connect.Reque
 
 func (m *mockGraphServiceClient) GetNodeByName(ctx context.Context, req *connect.Request[apiv1.GetNodeByNameRequest]) (*connect.Response[apiv1.GetNodeByNameResponse], error) {
 	return m.GetNodeByNameFunc(ctx, req)
+}
+
+func (m *mockGraphServiceClient) AddNode(ctx context.Context, req *connect.Request[apiv1.AddNodeRequest]) (*connect.Response[apiv1.AddNodeResponse], error) {
+	return m.AddNodeFunc(ctx, req)
+}
+
+func (m *mockGraphServiceClient) SetDependency(ctx context.Context, req *connect.Request[apiv1.SetDependencyRequest]) (*connect.Response[emptypb.Empty], error) {
+	return m.SetDependencyFunc(ctx, req)
 }
 
 func TestRun(t *testing.T) {

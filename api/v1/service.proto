@@ -64,6 +64,19 @@ message GetNodesByGlobResponse {
   repeated Node nodes = 1;
 }
 
+message AddNodeRequest {
+  Node node = 1;
+}
+
+message AddNodeResponse {
+  Node node = 1;
+}
+
+message SetDependencyRequest {
+  uint32 nodeId = 1;
+  uint32 dependencyID = 2;
+}
+
 message IngestSBOMRequest {
   bytes sbom = 1;
 }
@@ -98,6 +111,8 @@ service GraphService {
   rpc GetNode(GetNodeRequest) returns (GetNodeResponse) {}
   rpc GetNodesByGlob(GetNodesByGlobRequest) returns (GetNodesByGlobResponse) {}
   rpc GetNodeByName(GetNodeByNameRequest) returns (GetNodeByNameResponse) {}
+  rpc AddNode(AddNodeRequest) returns (AddNodeResponse) {}
+  rpc SetDependency(SetDependencyRequest) returns (google.protobuf.Empty) {}
 }
 
 service IngestService {

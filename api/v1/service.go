@@ -89,6 +89,34 @@ func (s *Service) GetNodesByGlob(ctx context.Context, req *connect.Request[servi
 	return connect.NewResponse(&service.GetNodesByGlobResponse{Nodes: serviceNodes}), nil
 }
 
+func (s *Service) AddNode(ctx context.Context, req *connect.Request[service.AddNodeRequest]) (*connect.Response[service.AddNodeResponse], error) {
+	resultNode, err := graph.AddNode(s.storage, req.Msg.Node.Type, req.Msg.Node.Metadata, req.Msg.Node.Name)
+	if err != nil {
+		return nil, err
+	}
+	serviceNode, err := NodeToServiceNode(resultNode)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&service.AddNodeResponse{Node: serviceNode}), nil
+}
+
+func (s *Service) SetDependency(ctx context.Context, req *connect.Request[service.SetDependencyRequest]) (*connect.Response[emptypb.Empty], error) {
+	fromNode, err := s.storage.GetNode(req.Msg.NodeId)
+	if err != nil {
+		return nil, err
+	}
+	toNode, err := s.storage.GetNode(req.Msg.DependencyID)
+	if err != nil {
+		return nil, err
+	}
+	err = fromNode.SetDependency(s.storage, toNode)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
 func (s *Service) Cache(ctx context.Context, req *connect.Request[emptypb.Empty]) (*connect.Response[emptypb.Empty], error) {
 	err := graph.Cache(s.storage)
 	if err != nil {
