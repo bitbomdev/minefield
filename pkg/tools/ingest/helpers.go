@@ -1,6 +1,10 @@
 package ingest
 
-import "github.com/package-url/packageurl-go"
+import (
+	"fmt"
+
+	"github.com/package-url/packageurl-go"
+)
 
 type Ecosystem string
 
@@ -69,7 +73,7 @@ func getPURLEcosystem(pkgURL packageurl.PackageURL) Ecosystem {
 func PURLToPackage(purl string) (PackageInfo, error) {
 	parsedPURL, err := packageurl.FromString(purl)
 	if err != nil {
-		return PackageInfo{}, err
+		return PackageInfo{}, fmt.Errorf("failed to parse purl: %w", err)
 	}
 	ecosystem := getPURLEcosystem(parsedPURL)
 

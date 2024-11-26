@@ -103,7 +103,7 @@ func Vulnerabilities(storage graph.Storage, data []byte) error {
 
 	keys, err := storage.GetAllKeys()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get all keys: %w", err)
 	}
 
 	nodes, err := storage.GetNodes(keys)

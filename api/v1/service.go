@@ -48,11 +48,11 @@ type Query struct {
 func (s *Service) GetNode(ctx context.Context, req *connect.Request[service.GetNodeRequest]) (*connect.Response[service.GetNodeResponse], error) {
 	node, err := s.storage.GetNode(req.Msg.Id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get node by id: %w", err)
 	}
 	serviceNode, err := NodeToServiceNode(node)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to convert node to service node: %w", err)
 	}
 	return connect.NewResponse(&service.GetNodeResponse{Node: serviceNode}), nil
 }
@@ -60,15 +60,15 @@ func (s *Service) GetNode(ctx context.Context, req *connect.Request[service.GetN
 func (s *Service) GetNodeByName(ctx context.Context, req *connect.Request[service.GetNodeByNameRequest]) (*connect.Response[service.GetNodeByNameResponse], error) {
 	id, err := s.storage.NameToID(req.Msg.Name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get node by name: %w", err)
 	}
 	node, err := s.storage.GetNode(id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get node by id: %w", err)
 	}
 	serviceNode, err := NodeToServiceNode(node)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to convert node to service node: %w", err)
 	}
 	return connect.NewResponse(&service.GetNodeByNameResponse{Node: serviceNode}), nil
 }
@@ -76,13 +76,13 @@ func (s *Service) GetNodeByName(ctx context.Context, req *connect.Request[servic
 func (s *Service) GetNodesByGlob(ctx context.Context, req *connect.Request[service.GetNodesByGlobRequest]) (*connect.Response[service.GetNodesByGlobResponse], error) {
 	nodes, err := s.storage.GetNodesByGlob(req.Msg.Pattern)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get nodes by glob: %w", err)
 	}
 	serviceNodes := make([]*service.Node, 0, len(nodes))
 	for _, node := range nodes {
 		serviceNode, err := NodeToServiceNode(node)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to convert node to service node: %w", err)
 		}
 		serviceNodes = append(serviceNodes, serviceNode)
 	}
@@ -92,11 +92,11 @@ func (s *Service) GetNodesByGlob(ctx context.Context, req *connect.Request[servi
 func (s *Service) AddNode(ctx context.Context, req *connect.Request[service.AddNodeRequest]) (*connect.Response[service.AddNodeResponse], error) {
 	resultNode, err := graph.AddNode(s.storage, req.Msg.Node.Type, req.Msg.Node.Metadata, req.Msg.Node.Name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to add node: %w", err)
 	}
 	serviceNode, err := NodeToServiceNode(resultNode)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to convert node to service node: %w", err)
 	}
 	return connect.NewResponse(&service.AddNodeResponse{Node: serviceNode}), nil
 }
@@ -120,7 +120,7 @@ func (s *Service) SetDependency(ctx context.Context, req *connect.Request[servic
 func (s *Service) Cache(ctx context.Context, req *connect.Request[emptypb.Empty]) (*connect.Response[emptypb.Empty], error) {
 	err := graph.Cache(s.storage)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to cache: %w", err)
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
@@ -128,7 +128,7 @@ func (s *Service) Cache(ctx context.Context, req *connect.Request[emptypb.Empty]
 func (s *Service) Clear(ctx context.Context, req *connect.Request[emptypb.Empty]) (*connect.Response[emptypb.Empty], error) {
 	err := s.storage.RemoveAllCaches()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to clear: %w", err)
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
@@ -136,7 +136,7 @@ func (s *Service) Clear(ctx context.Context, req *connect.Request[emptypb.Empty]
 func (s *Service) CustomLeaderboard(ctx context.Context, req *connect.Request[service.CustomLeaderboardRequest]) (*connect.Response[service.CustomLeaderboardResponse], error) {
 	uncachedNodes, err := s.storage.ToBeCached()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get uncached nodes: %w", err)
 	}
 	if len(uncachedNodes) != 0 {
 		return nil, fmt.Errorf("cannot use sorted leaderboards without caching")
@@ -239,18 +239,18 @@ func (s *Service) CustomLeaderboard(ctx context.Context, req *connect.Request[se
 func (s *Service) AllKeys(ctx context.Context, req *connect.Request[emptypb.Empty]) (*connect.Response[service.AllKeysResponse], error) {
 	keys, err := s.storage.GetAllKeys()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get all keys: %w", err)
 	}
 	nodes, err := s.storage.GetNodes(keys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get nodes by keys: %w", err)
 	}
 
 	resultNodes := make([]*service.Node, 0, len(nodes))
 	for _, node := range nodes {
 		query, err := NodeToServiceNode(node)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to convert node to service node: %w", err)	
 		}
 		resultNodes = append(resultNodes, query)
 	}
@@ -266,37 +266,37 @@ func (s *Service) Query(ctx context.Context, req *connect.Request[service.QueryR
 	}
 	keys, err := s.storage.GetAllKeys()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get all keys: %w", err)
 	}
 
 	nodes, err := s.storage.GetNodes(keys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get nodes by keys: %w", err)
 	}
 
 	caches, err := s.storage.GetCaches(keys)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get caches by keys: %w", err)
 	}
 	cacheStack, err := s.storage.ToBeCached()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get to be cached nodes: %w", err)
 	}
 	result, err := graph.ParseAndExecute(req.Msg.Script, s.storage, "", nodes, caches, len(cacheStack) == 0)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse and execute script: %w", err)
 	}
 
 	outputNodes, err := s.storage.GetNodes(result.ToArray())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get nodes by ids: %w", err)
 	}
 
 	resultNodes := make([]*service.Node, 0, len(outputNodes))
 	for _, node := range outputNodes {
 		query, err := NodeToServiceNode(node)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to convert node to service node: %w", err)
 		}
 		resultNodes = append(resultNodes, query)
 	}
@@ -315,7 +315,7 @@ func (s *Service) Check(ctx context.Context, req *connect.Request[emptypb.Empty]
 func (s *Service) IngestSBOM(ctx context.Context, req *connect.Request[service.IngestSBOMRequest]) (*connect.Response[emptypb.Empty], error) {
 	err := ingest.SBOM(s.storage, req.Msg.Sbom)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to ingest sbom: %w", err)
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
@@ -323,7 +323,7 @@ func (s *Service) IngestSBOM(ctx context.Context, req *connect.Request[service.I
 func (s *Service) IngestVulnerability(ctx context.Context, req *connect.Request[service.IngestVulnerabilityRequest]) (*connect.Response[emptypb.Empty], error) {
 	err := ingest.Vulnerabilities(s.storage, req.Msg.Vulnerability)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to ingest vulnerability: %w", err)
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
@@ -331,7 +331,7 @@ func (s *Service) IngestVulnerability(ctx context.Context, req *connect.Request[
 func (s *Service) IngestScorecard(ctx context.Context, req *connect.Request[service.IngestScorecardRequest]) (*connect.Response[emptypb.Empty], error) {
 	err := ingest.Scorecards(s.storage, req.Msg.Scorecard)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to ingest scorecard: %w", err)
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
