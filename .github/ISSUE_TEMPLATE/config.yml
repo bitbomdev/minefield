@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+template_chooser:
+  types:
+    - name: 🐛 Bug Report
+      filename: bug_report.md
+      description: Report a reproducible bug or issue
+      labels: ["bug", "triage"]
+    
+    - name: 💡 Feature Request
+      filename: feature_request.md
+      description: Suggest a new feature or enhancement
+      labels: ["enhancement", "triage"]
+    
+    - name: ❓ Question
+      filename: question.md
+      description: Ask a question about this project
+      labels: ["question"]
