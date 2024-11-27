@@ -64,6 +64,11 @@ const (
 	// GraphServiceGetNodeByNameProcedure is the fully-qualified name of the GraphService's
 	// GetNodeByName RPC.
 	GraphServiceGetNodeByNameProcedure = "/api.v1.GraphService/GetNodeByName"
+	// GraphServiceAddNodeProcedure is the fully-qualified name of the GraphService's AddNode RPC.
+	GraphServiceAddNodeProcedure = "/api.v1.GraphService/AddNode"
+	// GraphServiceSetDependencyProcedure is the fully-qualified name of the GraphService's
+	// SetDependency RPC.
+	GraphServiceSetDependencyProcedure = "/api.v1.GraphService/SetDependency"
 	// IngestServiceIngestSBOMProcedure is the fully-qualified name of the IngestService's IngestSBOM
 	// RPC.
 	IngestServiceIngestSBOMProcedure = "/api.v1.IngestService/IngestSBOM"
@@ -91,6 +96,8 @@ var (
 	graphServiceGetNodeMethodDescriptor                 = graphServiceServiceDescriptor.Methods().ByName("GetNode")
 	graphServiceGetNodesByGlobMethodDescriptor          = graphServiceServiceDescriptor.Methods().ByName("GetNodesByGlob")
 	graphServiceGetNodeByNameMethodDescriptor           = graphServiceServiceDescriptor.Methods().ByName("GetNodeByName")
+	graphServiceAddNodeMethodDescriptor                 = graphServiceServiceDescriptor.Methods().ByName("AddNode")
+	graphServiceSetDependencyMethodDescriptor           = graphServiceServiceDescriptor.Methods().ByName("SetDependency")
 	ingestServiceServiceDescriptor                      = v1.File_api_v1_service_proto.Services().ByName("IngestService")
 	ingestServiceIngestSBOMMethodDescriptor             = ingestServiceServiceDescriptor.Methods().ByName("IngestSBOM")
 	ingestServiceIngestVulnerabilityMethodDescriptor    = ingestServiceServiceDescriptor.Methods().ByName("IngestVulnerability")
@@ -360,6 +367,8 @@ type GraphServiceClient interface {
 	GetNode(context.Context, *connect.Request[v1.GetNodeRequest]) (*connect.Response[v1.GetNodeResponse], error)
 	GetNodesByGlob(context.Context, *connect.Request[v1.GetNodesByGlobRequest]) (*connect.Response[v1.GetNodesByGlobResponse], error)
 	GetNodeByName(context.Context, *connect.Request[v1.GetNodeByNameRequest]) (*connect.Response[v1.GetNodeByNameResponse], error)
+	AddNode(context.Context, *connect.Request[v1.AddNodeRequest]) (*connect.Response[v1.AddNodeResponse], error)
+	SetDependency(context.Context, *connect.Request[v1.SetDependencyRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewGraphServiceClient constructs a client for the api.v1.GraphService service. By default, it
@@ -390,6 +399,18 @@ func NewGraphServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(graphServiceGetNodeByNameMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		addNode: connect.NewClient[v1.AddNodeRequest, v1.AddNodeResponse](
+			httpClient,
+			baseURL+GraphServiceAddNodeProcedure,
+			connect.WithSchema(graphServiceAddNodeMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		setDependency: connect.NewClient[v1.SetDependencyRequest, emptypb.Empty](
+			httpClient,
+			baseURL+GraphServiceSetDependencyProcedure,
+			connect.WithSchema(graphServiceSetDependencyMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -398,6 +419,8 @@ type graphServiceClient struct {
 	getNode        *connect.Client[v1.GetNodeRequest, v1.GetNodeResponse]
 	getNodesByGlob *connect.Client[v1.GetNodesByGlobRequest, v1.GetNodesByGlobResponse]
 	getNodeByName  *connect.Client[v1.GetNodeByNameRequest, v1.GetNodeByNameResponse]
+	addNode        *connect.Client[v1.AddNodeRequest, v1.AddNodeResponse]
+	setDependency  *connect.Client[v1.SetDependencyRequest, emptypb.Empty]
 }
 
 // GetNode calls api.v1.GraphService.GetNode.
@@ -415,11 +438,23 @@ func (c *graphServiceClient) GetNodeByName(ctx context.Context, req *connect.Req
 	return c.getNodeByName.CallUnary(ctx, req)
 }
 
+// AddNode calls api.v1.GraphService.AddNode.
+func (c *graphServiceClient) AddNode(ctx context.Context, req *connect.Request[v1.AddNodeRequest]) (*connect.Response[v1.AddNodeResponse], error) {
+	return c.addNode.CallUnary(ctx, req)
+}
+
+// SetDependency calls api.v1.GraphService.SetDependency.
+func (c *graphServiceClient) SetDependency(ctx context.Context, req *connect.Request[v1.SetDependencyRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.setDependency.CallUnary(ctx, req)
+}
+
 // GraphServiceHandler is an implementation of the api.v1.GraphService service.
 type GraphServiceHandler interface {
 	GetNode(context.Context, *connect.Request[v1.GetNodeRequest]) (*connect.Response[v1.GetNodeResponse], error)
 	GetNodesByGlob(context.Context, *connect.Request[v1.GetNodesByGlobRequest]) (*connect.Response[v1.GetNodesByGlobResponse], error)
 	GetNodeByName(context.Context, *connect.Request[v1.GetNodeByNameRequest]) (*connect.Response[v1.GetNodeByNameResponse], error)
+	AddNode(context.Context, *connect.Request[v1.AddNodeRequest]) (*connect.Response[v1.AddNodeResponse], error)
+	SetDependency(context.Context, *connect.Request[v1.SetDependencyRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewGraphServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -446,6 +481,18 @@ func NewGraphServiceHandler(svc GraphServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(graphServiceGetNodeByNameMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	graphServiceAddNodeHandler := connect.NewUnaryHandler(
+		GraphServiceAddNodeProcedure,
+		svc.AddNode,
+		connect.WithSchema(graphServiceAddNodeMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	graphServiceSetDependencyHandler := connect.NewUnaryHandler(
+		GraphServiceSetDependencyProcedure,
+		svc.SetDependency,
+		connect.WithSchema(graphServiceSetDependencyMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/api.v1.GraphService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case GraphServiceGetNodeProcedure:
@@ -454,6 +501,10 @@ func NewGraphServiceHandler(svc GraphServiceHandler, opts ...connect.HandlerOpti
 			graphServiceGetNodesByGlobHandler.ServeHTTP(w, r)
 		case GraphServiceGetNodeByNameProcedure:
 			graphServiceGetNodeByNameHandler.ServeHTTP(w, r)
+		case GraphServiceAddNodeProcedure:
+			graphServiceAddNodeHandler.ServeHTTP(w, r)
+		case GraphServiceSetDependencyProcedure:
+			graphServiceSetDependencyHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -473,6 +524,14 @@ func (UnimplementedGraphServiceHandler) GetNodesByGlob(context.Context, *connect
 
 func (UnimplementedGraphServiceHandler) GetNodeByName(context.Context, *connect.Request[v1.GetNodeByNameRequest]) (*connect.Response[v1.GetNodeByNameResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.GraphService.GetNodeByName is not implemented"))
+}
+
+func (UnimplementedGraphServiceHandler) AddNode(context.Context, *connect.Request[v1.AddNodeRequest]) (*connect.Response[v1.AddNodeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.GraphService.AddNode is not implemented"))
+}
+
+func (UnimplementedGraphServiceHandler) SetDependency(context.Context, *connect.Request[v1.SetDependencyRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.GraphService.SetDependency is not implemented"))
 }
 
 // IngestServiceClient is a client for the api.v1.IngestService service.

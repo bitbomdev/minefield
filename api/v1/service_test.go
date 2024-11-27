@@ -186,6 +186,59 @@ func TestIngestScorecard(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestAddNode(t *testing.T) {
+	s := setupService()
+	addNodeReq := connect.NewRequest(&service.AddNodeRequest{
+		Node: &service.Node{Name: "test_node", Type: "type1"},
+	})
+	_, err := s.AddNode(context.Background(), addNodeReq)
+	require.NoError(t, err)
+	getNodeReq := connect.NewRequest(&service.GetNodeByNameRequest{Name: "test_node"})
+	resp, err := s.GetNodeByName(context.Background(), getNodeReq)
+	require.NoError(t, err)
+	assert.NotNil(t, resp.Msg.Node)
+	assert.Equal(t, "test_node", resp.Msg.Node.Name)
+
+	getNodeReq = connect.NewRequest(&service.GetNodeByNameRequest{Name: "nonexistent_node"})
+	resp, err = s.GetNodeByName(context.Background(), getNodeReq)
+	require.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestSetDependency(t *testing.T) {
+	s := setupService()
+	addNodeReq := connect.NewRequest(&service.AddNodeRequest{
+		Node: &service.Node{Name: "test_node", Type: "type1"},
+	})
+	node1, err := s.AddNode(context.Background(), addNodeReq)
+	require.NoError(t, err)
+	addNodeReq2 := connect.NewRequest(&service.AddNodeRequest{
+		Node: &service.Node{Name: "test_node2", Type: "type1"},
+	})
+	node2, err := s.AddNode(context.Background(), addNodeReq2)
+	require.NoError(t, err)
+	setDependencyReq := connect.NewRequest(&service.SetDependencyRequest{
+		NodeId:       node1.Msg.Node.Id,
+		DependencyID: node2.Msg.Node.Id,
+	})
+	_, err = s.SetDependency(context.Background(), setDependencyReq)
+	require.NoError(t, err)
+	getNodeReq := connect.NewRequest(&service.GetNodeByNameRequest{Name: "test_node"})
+	resp, err := s.GetNodeByName(context.Background(), getNodeReq)
+	require.NoError(t, err)
+	assert.NotNil(t, resp.Msg.Node)
+	assert.NotEmpty(t, resp.Msg.Node.Dependencies, "Dependencies slice should not be empty")
+	assert.Equal(t, resp.Msg.Node.Dependencies[0], node2.Msg.Node.Id)
+	t.Run("non-existent node", func(t *testing.T) {
+		invalidReq := connect.NewRequest(&service.SetDependencyRequest{
+			NodeId:       0,
+			DependencyID: node2.Msg.Node.Id,
+		})
+		_, err = s.SetDependency(context.Background(), invalidReq)
+		assert.Error(t, err)
+	})
+}
+
 func TestHealthCheck(t *testing.T) {
 	s := setupService()
 	req := connect.NewRequest(&emptypb.Empty{})
