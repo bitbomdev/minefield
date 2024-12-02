@@ -19,11 +19,13 @@
 
 ---
 
+
 ## Documentation
 
-For comprehensive guides and detailed documentation, please visit our [Docs](https://bitbom.dev/docs/intro).
+For comprehensive guides and detailed documentation, please visit our [Docs](https://bitbom.dev/docs).
 
 ---
+
 
 ![Terminal Output](images/terminal.png)
 > Caching 10,000 SBOMs packages transitive dependents in 30 seconds.
