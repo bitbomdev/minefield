@@ -279,21 +279,34 @@ func (s *SQLStorage) SaveCache(cache *graph.NodeCache) error {
 
 // SaveCaches saves multiple node caches.
 func (s *SQLStorage) SaveCaches(caches []*graph.NodeCache) error {
-	kvCaches := make([]KVStore, len(caches))
-	for i, cache := range caches {
-		cacheKey := fmt.Sprintf("%s%d", CacheKeyPrefix, cache.ID)
-		data, err := cache.MarshalJSON()
-		if err != nil {
-			return fmt.Errorf("failed to marshal cache: %w", err)
+	const batchSize = 500 // Safe batch size considering SQLite's limits
+
+	// Process caches in batches
+	for i := 0; i < len(caches); i += batchSize {
+		end := i + batchSize
+		if end > len(caches) {
+			end = len(caches)
 		}
-		kvCaches[i] = KVStore{
-			Key:   cacheKey,
-			Value: string(data),
+
+		batch := caches[i:end]
+		kvCaches := make([]KVStore, len(batch))
+		for j, cache := range batch {
+			cacheKey := fmt.Sprintf("%s%d", CacheKeyPrefix, cache.ID)
+			data, err := cache.MarshalJSON()
+			if err != nil {
+				return fmt.Errorf("failed to marshal cache: %w", err)
+			}
+			kvCaches[j] = KVStore{
+				Key:   cacheKey,
+				Value: string(data),
+			}
+		}
+
+		if err := s.DB.Save(&kvCaches).Error; err != nil {
+			return fmt.Errorf("failed to save caches batch: %w", err)
 		}
 	}
-	if err := s.DB.Save(&kvCaches).Error; err != nil {
-		return fmt.Errorf("failed to save caches: %w", err)
-	}
+
 	return nil
 }
 
