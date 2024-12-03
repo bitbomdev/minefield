@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/bitbomLogoAndName.png" alt="BitBom Long Logo" >
+  <img src="images/bitbom-long-logo.png" alt="BitBom Long Logo" >
 </p>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/bit-bom/minefield)](https://goreportcard.com/report/github.com/bit-bom/minefield)
@@ -16,6 +16,12 @@
 ---
 
 >Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
+
+---
+
+## Documentation
+
+For comprehensive guides and detailed documentation, please visit our [Docs](https://bitbom.dev/docs/intro).
 
 ---
 
@@ -127,10 +133,6 @@ Minefield makes it easy to securely and efficiently manage and explore your soft
 ## Visualization of a Query
 
 ![Query Visualization](images/img.png)
-
-## Documentation
-
-For comprehensive guides and detailed documentation, please visit our [Docs](https://bitbom.dev/docs/intro).
 
 ## Blog
 
