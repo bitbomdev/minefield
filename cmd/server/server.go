@@ -33,8 +33,8 @@ type options struct {
 	StoragePath  string
 	UseInMemory  bool
 	CORS         []string
-	UseOpenAILLM  bool
-	VectorDBPath  string
+	UseOpenAILLM bool
+	VectorDBPath string
 }
 
 const (
@@ -145,12 +145,12 @@ func (o *options) startServer(server *http.Server) error {
 	if o.UseOpenAILLM {
 		db, err := chromadb.NewPersistentDB(o.VectorDBPath, false)
 		if err != nil {
-			log.Fatal("failed to initialize ChromaDB:", err)
+			return fmt.Errorf("failed to initialize ChromaDB: %w", err)
 		}
 
 		c, err := db.CreateCollection("knowledge-base", nil, nil)
 		if err != nil {
-			log.Fatal("failed to create collection in ChromaDB:", err)
+			return fmt.Errorf("failed to create collection in ChromaDB: %w", err)
 		}
 
 		// Initialize ChromaDB documents
@@ -229,7 +229,7 @@ func (o *options) startServer(server *http.Server) error {
 			},
 		}, runtime.NumCPU())
 		if err != nil {
-			log.Fatal("failed to add documents to ChromaDB:", err)
+			return fmt.Errorf("failed to add documents to ChromaDB: %w", err)
 		}
 	}
 
