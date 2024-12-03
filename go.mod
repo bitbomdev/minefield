@@ -49,7 +49,9 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.24 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/onsi/gomega v1.30.0 // indirect
+	github.com/philippgille/chromem-go v0.7.0
 	github.com/rs/cors v1.11.1
+	github.com/sashabaranov/go-openai v1.36.0
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spdx/tools-golang v0.5.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect

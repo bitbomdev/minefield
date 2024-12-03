@@ -10,6 +10,7 @@ import (
 	"github.com/bitbomdev/minefield/cmd/leaderboard"
 	"github.com/bitbomdev/minefield/cmd/query"
 	"github.com/bitbomdev/minefield/cmd/server"
+	llm "github.com/bitbomdev/minefield/cmd/llm"
 	"github.com/spf13/cobra"
 )
 
@@ -54,6 +55,6 @@ func New() *cobra.Command {
 	rootCmd.AddCommand(cache.New())
 	rootCmd.AddCommand(leaderboard.New())
 	rootCmd.AddCommand(server.New())
-
+	rootCmd.AddCommand(llm.New())
 	return rootCmd
 }
