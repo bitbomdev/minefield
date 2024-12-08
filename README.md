@@ -2,7 +2,7 @@
   <img src="images/bitbom-long-logo.png" alt="BitBom Long Logo" >
 </p>
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/bit-bom/minefield)](https://goreportcard.com/report/github.com/bit-bom/minefield)
+[![Go Report Card](https://goreportcard.com/badge/github.com/bitbomdev/minefield)](https://goreportcard.com/report/github.com/bitbomdev/minefield)
 [![Build and Test](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml/badge.svg)](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml)
 
 
@@ -51,15 +51,15 @@ For comprehensive guides and detailed documentation, please visit our [Docs](htt
    minefield server
    ```
 
-1. **Ingest some data:**
+2. **Ingest some data:**
    ```sh
    minefield ingest sbom <sbom_file or sbom_dir>
    ```
-2. **Cache the data:**
+3. **Cache the data:**
    ```sh
    minefield cache
    ```
-3. **Run a query:**
+4. **Run a query:**
    ```sh
    minefield query <query_string>
    ```
@@ -106,7 +106,7 @@ docker run -it ghcr.io/bitbomdev/minefield:latest
 ### Building From Source
 
 ```sh
-git clone https://github.com/bitbomdev/minefield.git
+git clone git@github.com:bitbomdev/minefield.git
 cd minefield
 go build -o minefield main.go
 ./minefield
