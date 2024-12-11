@@ -21,7 +21,7 @@ require (
 	github.com/zeebo/assert v1.3.1
 	golang.org/x/net v0.32.0
 	google.golang.org/protobuf v1.35.2
-	gorm.io/driver/sqlite v1.5.6
+	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
 )
 
