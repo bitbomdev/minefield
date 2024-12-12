@@ -9,7 +9,7 @@ require (
 	github.com/RoaringBitmap/roaring v1.9.4
 	github.com/alecthomas/participle/v2 v2.1.1
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/goccy/go-json v0.10.3
+	github.com/goccy/go-json v0.10.4
 	github.com/google/go-cmp v0.6.0
 	github.com/google/wire v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
