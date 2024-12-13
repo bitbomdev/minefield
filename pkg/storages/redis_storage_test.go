@@ -2,6 +2,7 @@ package storages
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/RoaringBitmap/roaring"
@@ -11,7 +12,9 @@ import (
 )
 
 func TestGenerateID(t *testing.T) {
-
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	id, err := r.GenerateID()
@@ -20,6 +23,9 @@ func TestGenerateID(t *testing.T) {
 }
 
 func TestSaveNode(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	node := &graph.Node{ID: 1, Name: "test_node", Children: roaring.New(), Parents: roaring.New()}
@@ -34,6 +40,9 @@ func TestSaveNode(t *testing.T) {
 }
 
 func TestNameToID(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	node := &graph.Node{ID: 1, Name: "test_node", Children: roaring.New(), Parents: roaring.New()}
@@ -46,6 +55,9 @@ func TestNameToID(t *testing.T) {
 }
 
 func TestGetAllKeys(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	node1 := &graph.Node{ID: 1, Name: "node1", Children: roaring.New(), Parents: roaring.New()}
@@ -62,6 +74,9 @@ func TestGetAllKeys(t *testing.T) {
 }
 
 func TestSaveCache(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	cache := &graph.NodeCache{ID: 1, AllParents: roaring.New(), AllChildren: roaring.New()}
@@ -74,6 +89,9 @@ func TestSaveCache(t *testing.T) {
 }
 
 func TestToBeCached(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	nodeID := uint32(1)
@@ -86,6 +104,9 @@ func TestToBeCached(t *testing.T) {
 }
 
 func TestClearCacheStack(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	nodeID := uint32(1)
@@ -101,6 +122,9 @@ func TestClearCacheStack(t *testing.T) {
 }
 
 func TestGetNodes(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	// Add test data
@@ -121,6 +145,9 @@ func TestGetNodes(t *testing.T) {
 }
 
 func TestSaveCaches(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	cache1 := &graph.NodeCache{ID: 1, AllParents: roaring.New(), AllChildren: roaring.New()}
@@ -138,6 +165,9 @@ func TestSaveCaches(t *testing.T) {
 }
 
 func TestGetCaches(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	cache1 := &graph.NodeCache{ID: 1, AllParents: roaring.New(), AllChildren: roaring.New()}
@@ -155,6 +185,9 @@ func TestGetCaches(t *testing.T) {
 }
 
 func TestRemoveAllCaches(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	cache1 := &graph.NodeCache{ID: 1, AllParents: roaring.New(), AllChildren: roaring.New()}
@@ -174,6 +207,9 @@ func TestRemoveAllCaches(t *testing.T) {
 }
 
 func TestAddAndGetDataToDB(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	err = r.AddOrUpdateCustomData("test_tag", "test_key1", "test_data1", []byte("test_data1"))
@@ -195,6 +231,9 @@ func TestAddAndGetDataToDB(t *testing.T) {
 }
 
 func TestGetNodesByGlob(t *testing.T) {
+	if _, ok := os.LookupEnv("e2e"); !ok {
+		t.Skip("E2E tests are not enabled")
+	}
 	r, err := SetupRedisTestDB(context.Background())
 	assert.NoError(t, err)
 	// Add test nodes
