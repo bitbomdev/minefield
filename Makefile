@@ -42,4 +42,29 @@ wire: check-wire
 
 all: wire build test docker-build go-mod-tidy git-porcelain
 
-.PHONY: test test-e2e build clean clean-redis docker-up docker-down docker-logs docker-build all wire
+define print_coverage
+	@echo "==> Coverage Report"
+	@echo "==> Per Package Coverage (excluding generated and mock files):"
+	@go tool cover -func=coverage.out | \
+		grep -v "gen/" | \
+		grep -v "mockGraph.go" | \
+		grep -v "total:" | \
+		awk '{print $$3 " " $$1 " " $$2}' | \
+		sed 's/%//' | \
+		sort -nr | \
+		awk '{print $$2 " " $$3 " " $$1 "%"}'
+	@echo "\n==> Total Coverage (excluding generated and mock files):"
+	@go tool cover -func=coverage.out | \
+		grep -v "gen/" | \
+		grep -v "mockGraph.go" | \
+		grep "total:" | \
+		awk '{print "Total coverage: " $$3}'
+	@echo "\n==> HTML Coverage Report:"
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated at coverage.html"
+endef
+
+coverage: test test-e2e
+	$(call print_coverage)
+
+.PHONY: test test-e2e build clean clean-redis docker-up docker-down docker-logs docker-build all wire coverage
