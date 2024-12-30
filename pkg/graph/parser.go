@@ -36,8 +36,8 @@ type Query struct {
 
 var (
 	simpleLexer = lexer.MustSimple([]lexer.SimpleRule{
-		{"Operator", `\b(?:and|or|xor)\b`},      // Prioritize operators
-		{"Ident", `[a-zA-Z][a-zA-Z0-9:/._@-]*`}, // Updated to handle colons, slashes, dots, underscores, hyphens, and @
+		{"Operator", `\b(?:and|or|xor)\b`},           // Prioritize operators
+		{"Ident", `[a-zA-Z][a-zA-Z0-9:/._@?=&+\-]*`}, // Updated to handle colons, slashes, dots, underscores, hyphens, and @
 		{"String", `"(?:\\.|[^"])*"`},
 		{"Whitespace", `[ \t\n\r]+`},
 		{"LBracket", `\[`},
