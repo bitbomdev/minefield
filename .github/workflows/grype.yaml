@@ -44,9 +44,3 @@ jobs:
           image: "localbuild/testimage:latest"
           fail-build: true
           severity-cutoff: high
-
-      - name: Upload scan results
-        uses: github/codeql-action/upload-sarif@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
-        if: success() || failure()
-        with:
-          sarif_file: results.sarif
