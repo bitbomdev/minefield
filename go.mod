@@ -3,7 +3,7 @@ module github.com/bitbomdev/minefield
 go 1.23.1
 
 require (
-	connectrpc.com/connect v1.18.0
+	connectrpc.com/connect v1.18.1
 	connectrpc.com/cors v0.1.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/RoaringBitmap/roaring v1.9.4
