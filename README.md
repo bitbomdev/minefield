@@ -1,10 +1,22 @@
 <p align="center">
-  <img src="images/bitbom-long-logo.png" alt="BitBom Long Logo" >
+  <img src="images/bitbom-long-logo.png" alt="BitBom Long Logo">
 </p>
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/bitbomdev/minefield)](https://goreportcard.com/report/github.com/bitbomdev/minefield)
-[![Build and Test](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml/badge.svg)](https://github.com/bitbomdev/minefield/actions/workflows/build.yaml)
+<p align="center">
+  <a href="https://goreportcard.com/report/github.com/bitbomdev/minefield">
+    <img src="https://goreportcard.com/badge/github.com/bitbomdev/minefield" alt="Go Report Card">
+  </a>
+  <a href="https://github.com/bitbomdev/minefield/actions/workflows/build.yaml">
+    <img src="https://github.com/bitbomdev/minefield/actions/workflows/build.yaml/badge.svg" alt="Build and Test">
+  </a>
+</p>
 
+<p align="center">
+  <a href="https://bitbom.dev">🌐 Web</a> •
+  <a href="https://bitbom.dev/demos/starting-up-minefield/">📝 Demos</a> •
+  <a href="https://bitbom.dev/docs">📚 Docs</a> •
+  <a href="https://bitbom.dev/blog">📰 Blog</a>
+</p>
 
 **BitBom** Minefield uses roaring **Bit**maps to graph S**BOM**s with four main fundamentals:
 
@@ -13,22 +25,14 @@
 * **Scalable**: Supports millions of nodes effortlessly.
 * **Customizable**: Allows users to extend the project without relying on upstream changes.
 
+![Terminal Output](images/terminal.png)
+> An example of Minefield caching ***10,000*** SBOMs packages transitive dependents in ***30 seconds***.
+
 ---
 
 >Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
 
 ---
-
-
-## Documentation
-
-For comprehensive guides and detailed documentation, please visit our [Docs](https://bitbom.dev/docs).
-
----
-
-
-![Terminal Output](images/terminal.png)
-> Caching 10,000 SBOMs packages transitive dependents in 30 seconds.
 
 ## Table of Contents
 
