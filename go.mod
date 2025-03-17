@@ -1,13 +1,14 @@
 module github.com/bitbomdev/minefield
 
 go 1.23.1
+toolchain go1.24.1
 
 require (
 	connectrpc.com/connect v1.18.1
 	connectrpc.com/cors v0.1.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/RoaringBitmap/roaring v1.9.4
-	github.com/alecthomas/participle/v2 v2.1.1
+	github.com/alecthomas/participle/v2 v2.1.2
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/goccy/go-json v0.10.5
 	github.com/google/go-cmp v0.7.0
@@ -34,8 +35,6 @@ require (
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.1 // indirect
-	github.com/alecthomas/assert/v2 v2.6.0 // indirect
-	github.com/alecthomas/repr v0.4.0 // indirect
 	github.com/anchore/go-struct-converter v0.0.0-20240925125616-a0883641c664 // indirect
 	github.com/bits-and-blooms/bitset v1.16.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
