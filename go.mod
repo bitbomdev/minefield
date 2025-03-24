@@ -20,7 +20,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/zeebo/assert v1.3.1
 	golang.org/x/net v0.37.0
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/protobuf v1.36.6
 	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
 )
