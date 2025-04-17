@@ -19,7 +19,7 @@ require (
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
 	github.com/zeebo/assert v1.3.1
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.39.0
 	google.golang.org/protobuf v1.36.5
 	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
@@ -55,8 +55,8 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spdx/tools-golang v0.5.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	sigs.k8s.io/release-utils v0.8.5 // indirect
 )
