@@ -20,12 +20,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v2
         with:
           fetch-depth: 0  
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3
 
       - name: Set up Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v2
@@ -45,7 +45,7 @@ jobs:
                 .
 
       - name: Log in to GHCR
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v2
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

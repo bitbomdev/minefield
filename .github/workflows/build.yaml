@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v2
       - name: Set up Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v2
         with:
@@ -32,16 +32,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v2
       - name: Set up Docker
-        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
       - name: Docker
         run: make docker-build && make git-porcelain
   check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v2
       - name: Check
         run: make git-porcelain go-mod-tidy
 
@@ -50,7 +50,7 @@ jobs:
     needs: [build, docker]
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v2
       - name: Set up Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v2
         with:
@@ -60,7 +60,7 @@ jobs:
       - name: Test
         run: make test-e2e
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574 # v5.4.0
+        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.out
