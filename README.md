@@ -1,3 +1,7 @@
+# BitBom Minefield (ARCHIVED)
+
+⚠️ **IMPORTANT: This repository is archived and no longer maintained.**
+
 <p align="center">
   <img src="images/bitbom-long-logo.png" alt="BitBom Long Logo">
 </p>
